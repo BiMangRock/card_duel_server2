@@ -1,0 +1,44 @@
+// login.js — 로그인/회원가입 화면 동작
+(() => {
+  const $ = id => document.getElementById(id);
+  const form = $('form'), err = $('err'), go = $('go');
+  let mode = 'login';
+
+  // 이미 로그인돼 있으면 바로 게임으로
+  const intro = () => { try { sessionStorage.setItem('cardDuel.intro', '1'); } catch (_) {} };   // v147 메인 화면에서 인트로(칼 + 로고)를 한 번 보여 준다 (intro.js)
+  fetch('/api/me').then(r => { if (r.ok) { intro(); location.replace('/'); } }).catch(() => {});
+
+  function setMode(m) {
+    mode = m;
+    $('tabLogin').classList.toggle('on', m === 'login');
+    $('tabSignup').classList.toggle('on', m === 'signup');
+    form.classList.toggle('signup', m === 'signup');
+    $('password').autocomplete = m === 'signup' ? 'new-password' : 'current-password';
+    $('password2').required = m === 'signup';
+    $('nickname').required = m === 'signup';
+    go.textContent = m === 'signup' ? '가입하고 시작' : '로그인';
+    err.textContent = '';
+  }
+  $('tabLogin').onclick = () => setMode('login');
+  $('tabSignup').onclick = () => setMode('signup');
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    err.textContent = '';
+    const username = $('username').value.trim(), password = $('password').value, nickname = $('nickname').value.trim();
+    if (mode === 'signup' && !/^[A-Za-z0-9_가-힣]{2,12}$/.test(nickname)) { err.textContent = '닉네임은 2~12자의 한글·영문·숫자·밑줄(_)만 쓸 수 있어요.'; return; }
+    if (mode === 'signup' && password !== $('password2').value) { err.textContent = '비밀번호 확인이 달라요.'; return; }
+    if (mode === 'signup' && !confirm(`닉네임을 「${nickname}」(으)로 정할까요?\n한 번 정하면 바꿀 수 없어요.`)) return;
+    go.disabled = true;
+    try {
+      const r = await fetch(mode === 'signup' ? '/api/signup' : '/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(mode === 'signup' ? { username, nickname, password } : { username, password }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) { err.textContent = data.error || '문제가 생겼어요. 잠시 후 다시 해 주세요.'; return; }
+      intro(); location.replace('/');
+    } catch (_) {
+      err.textContent = '서버에 연결할 수 없어요.';
+    } finally { go.disabled = false; }
+  });
+})();
