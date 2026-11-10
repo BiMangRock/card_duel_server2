@@ -38,7 +38,7 @@ app.use('/api', shop.router);
 app.use('/api', require('./progress').router);
 app.use('/api', require('./tutorial').router);          // v140 튜토리얼 첫 완료 보상 (첫 걸음)
 app.use('/api', require('./decks').router);           // v135 덱 슬롯 여러 개        // v132 카드 제작·분해 · 일일 퀘스트
-app.use('/api', pvp.router);                             // 유저 대전: /api/pvp/stream(SSE) · queue · cancel · mulligan · action · status
+app.use('/api', pvp.router);                             // 유저 대전: /api/pvp/ws(웹소켓, attachWs) · stream(SSE) · queue · cancel · mulligan · action · status
 app.use('/api', require('./social').createSocialRouter({ core: pvp.core, onRename: () => require('./pvp-db').invalidateBoard() }));   // v136 닉네임 · 친구
 app.use('/api', (req, res) => res.status(404).json({ error: '없는 API예요.' }));
 
@@ -60,5 +60,7 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`카드 결투 서버: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   if (!fs.existsSync(IMAGES)) console.warn('⚠ images/ 폴더가 없어요. 기존 프로젝트의 images 폴더를 이 폴더(프로젝트 루트)에 복사해 주세요.');
 });
+
+pvp.attachWs(server);                                   // v148 유저 대전 실시간 통로: 웹소켓 /api/pvp/ws (Quick Tunnel 은 SSE 를 막는다)
 
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { try { pvp.core.shutdown(); } catch (_) {} server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 1500).unref(); });

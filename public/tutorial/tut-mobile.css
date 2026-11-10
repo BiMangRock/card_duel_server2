@@ -1,0 +1,56 @@
+/* tut-mobile.css — v153 튜토리얼 4개 페이지 공용: 휴대폰 가로 화면에서 손패·영웅 능력이 화면 밑으로 잘리던 문제
+   · 전장 쪽(.stage)을 세로로 스크롤할 수 있게 하고, 화면 높이에 따라 카드·영웅 칸을 한 단계씩 더 줄인다
+   · 노치·홈 바(안전 영역)에 버튼이 가리지 않게 여백 */
+@media (orientation:landscape) and (max-height:540px){
+  .app{height:100vh;height:100dvh}
+  .top{padding-left:max(10px, env(safe-area-inset-left));padding-right:max(10px, env(safe-area-inset-right))}
+  .coach{padding-left:max(10px, env(safe-area-inset-left))}
+  .stage{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding-right:max(8px, env(safe-area-inset-right));padding-bottom:max(10px, env(safe-area-inset-bottom))}
+  .stage > *{flex-shrink:0}
+  .board{min-height:calc(var(--mh) + 10px)}
+  .sidecol{gap:2px}
+  .hpw{margin-top:2px}
+  .disc{overflow-y:auto;justify-content:flex-start;padding:8px}
+  .disc > :first-child{margin-top:auto} .disc > :last-child{margin-bottom:auto}
+  .modal{max-height:calc(100dvh - 20px);padding:12px 14px}
+  .over{padding:10px}
+  .inspect.show.force{max-height:calc(100dvh - 20px);overflow:auto}
+}
+/* 낮은 폰 (높이 420px 이하: 대부분의 폰 가로) */
+@media (orientation:landscape) and (max-height:420px){
+  :root{--cw:54px;--ch:76px;--mw:48px;--mh:56px}
+  .top{padding-top:3px;padding-bottom:3px}.top h1{font-size:12px}.tbtn{padding:3px 7px}
+  .coach{width:230px;padding-top:6px;padding-bottom:6px}
+  .coach h2{font-size:13px}
+  .sidecol{width:78px}.hero{width:78px;padding:2px 3px}.hero .av{width:22px;height:22px}.hero .hp{font-size:14px}
+  .hero .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9.5px}
+  .board{min-height:calc(var(--mh) + 8px)}
+  .stage{gap:2px;padding-top:2px}
+  .hpw{width:78px}.hpw .ic{font-size:13px}
+  .mid{min-height:26px}.endb{padding:5px 14px;font-size:12px}
+  .hc .art{height:34px}.hc .nm{font-size:9px}
+  .mn .nm{font-size:8px}
+}
+/* 아주 낮은 폰 (아이폰 SE 가로 등, 높이 360px 이하) */
+@media (orientation:landscape) and (max-height:360px){
+  :root{--cw:50px;--ch:70px;--mw:44px;--mh:50px}
+  .coach{width:205px}
+  .hero .av{display:none}.hero .mana{margin-top:1px}
+  .mid{min-height:22px}.turn{padding:1px 8px}.endb{padding:4px 12px}
+  .msg img{width:22px;height:22px}.msg .bub{font-size:11px;padding:4px 7px}
+  .cbtn{padding:6px 8px;font-size:12px}
+}
+/* 폭이 좁은 폰 가로 (700px 이하): 안내 칸을 줄여 전장을 넓힌다 */
+@media (orientation:landscape) and (max-height:540px) and (max-width:760px){
+  .coach{width:200px}
+  .me-wrap{gap:6px;max-width:100%;justify-content:flex-start}
+  .me-wrap > :first-child{margin-left:auto} .me-wrap > :last-child{margin-right:auto}   /* 넘치면 왼쪽부터 (가운데 정렬은 양쪽이 잘린다) */
+  .hand{gap:0}
+  .hand .hc + .hc{margin-left:-12px}             /* 손패가 많으면 카드끼리 살짝 겹쳐서 양옆이 잘리지 않게 */
+  .hand .hc:hover,.hand .hc.picked{z-index:22}
+}
+@media (orientation:landscape) and (max-height:540px) and (max-width:620px){
+  .hand .hc + .hc{margin-left:-20px}
+  .sidecol{width:70px}.hero{width:70px}.hpw{width:70px}
+}

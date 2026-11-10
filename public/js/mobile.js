@@ -18,7 +18,7 @@
     try {
       if (!isFs() && canFs) await (root.requestFullscreen || root.webkitRequestFullscreen).call(root, { navigationUI: 'hide' });
     } catch (_) {}
-    if (isFs()) lockLandscape();
+    if (isFs() && (!window.Orient || Orient.need())) lockLandscape();     // v153 태블릿 메뉴 화면은 세로도 되므로 묶지 않는다
   }
   async function exitFs() {
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (_) {}
@@ -37,8 +37,7 @@
   // 버튼들
   const fsBtn = $('fsBtn');
   if (fsBtn) fsBtn.addEventListener('click', () => { if (isFs()) { userExited = true; exitFs(); } else { userExited = false; enterFs(); } });
-  const rBtn = $('rotateFsBtn');
-  if (rBtn) rBtn.addEventListener('click', () => { userExited = false; enterFs(); });
+  // v153 가로 안내 화면의 버튼은 orient.js 가 처리한다
 
   // 터치 기기에서 첫 터치(게임 시작 버튼 등)에 자동으로 전체화면 + 가로 고정 시도 (브라우저는 사용자 터치 안에서만 허용)
   if (coarse && canFs) {

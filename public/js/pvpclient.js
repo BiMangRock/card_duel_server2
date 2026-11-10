@@ -7,7 +7,7 @@ const PvpClient = (() => {
   'use strict';
   const J = { 'Content-Type': 'application/json' };
   const S = {
-    es: null, esOpen: false, want: false,                 // 스트림 연결 / 화면에서 필요로 하는지
+    es: null, esOpen: false, want: false, retryMs: 0, replaced: false,   // 실시간 연결(v148 웹소켓) / 화면에서 필요로 하는지
     status: null, cfg: null,                              // 서버가 알려 준 상태(전적·대기 인원…)와 시간 설정
     matchId: null, lastSeq: -1, over: false,              // 지금 화면에 그리고 있는 판
     chain: Promise.resolve(),                             // 서버 메시지는 순서대로 하나씩 처리한다 (연출이 끝난 뒤 다음 것)
@@ -45,36 +45,71 @@ const PvpClient = (() => {
     el.textContent = text; el.classList.toggle('bad', !!bad); el.style.display = 'block';
   }
 
-  // ---------- 스트림 ----------
+  // ---------- 실시간 통로 (v148 웹소켓) ----------
+  //  예전엔 SSE(EventSource)였지만 Cloudflare Quick Tunnel(trycloudflare.com)이 SSE 본문을 붙잡아 두어
+  //  서버 상태가 오지 않았다(→ '상대 찾기' 버튼이 잠김). 웹소켓은 터널을 그대로 통과한다.
+  //  서버 → 화면 메시지는 예전과 같은 JSON. 화면 → 서버 행동은 지금처럼 POST.
+  //  웹소켓은 끊겨도 저절로 다시 붙지 않으므로 여기서 직접 다시 붙는다 (1초 → 최대 5초 간격).
+  const wsUrl = () => (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/api/pvp/ws';
   function open() {
-    S.want = true;
+    S.want = true; S.replaced = false;                    // v148 직접 다시 열면 이 탭이 자리를 되찾는다
     if (S.es) return;
-    let es; try { es = new EventSource('/api/pvp/stream'); } catch (e) { return; }
-    S.es = es;
-    es.onopen = () => { S.esOpen = true; renderScreen(); };
-    es.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (_) { return; } onMsg(m); };
-    es.onerror = () => {
-      S.esOpen = false; renderScreen();
-      if (es.readyState === 2) {                           // 브라우저가 포기함(서버가 거부: 로그인 만료·탭 수 초과 등) → 잠시 뒤 직접 다시 시도
-        if (S.es === es) S.es = null;
-        clearTimeout(S.retry);
-        S.retry = setTimeout(async () => {
-          if (!S.want || S.es) return;
-          try { const r = await fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' }); if (r.status === 401) { location.replace('/login.html'); return; } } catch (_) {}
-          open();
-        }, 3000);
-      }
+    clearTimeout(S.retry);
+    let ws; try { ws = new WebSocket(wsUrl()); } catch (e) { retryLater(); return; }
+    S.es = ws;
+    ws.onopen = () => { if (S.es !== ws) return; S.esOpen = true; S.retryMs = 0; S.lastRx = Date.now(); renderScreen(); if (typeof Friends !== 'undefined') Friends.load(); };
+    ws.onmessage = ev => { if (S.es !== ws) return; S.lastRx = Date.now(); let m; try { m = JSON.parse(ev.data); } catch (_) { return; } onMsg(m); };
+    ws.onclose = () => {
+      if (S.es !== ws) return;                             // 이미 새 연결로 바꾼 뒤에 닫힌 옛 연결
+      S.es = null; S.esOpen = false; renderScreen(); if (S.matchId && !S.over) tickHud();
+      retryLater();
     };
+    ws.onerror = () => {};                                 // 이어서 onclose 가 온다
+  }
+  function retryLater() {
+    if (!S.want || S.replaced) return;
+    clearTimeout(S.retry);
+    S.retryMs = Math.min(5000, (S.retryMs || 500) * 2);
+    S.retry = setTimeout(async () => {
+      if (!S.want || S.es || S.replaced) return;
+      try { const r = await fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' }); if (r.status === 401) { location.replace('/login.html'); return; } } catch (_) {}   // 로그인이 풀렸으면 로그인 화면으로
+      open();
+    }, S.retryMs);
   }
   function close() {
     S.want = false; clearTimeout(S.retry);
-    if (S.es) { S.es.close(); S.es = null; }
-    S.esOpen = false;
+    const ws = S.es; S.es = null; S.esOpen = false;
+    if (ws) { try { ws.close(); } catch (_) {} }
   }
-  function resync() { if (S.es) { S.es.close(); S.es = null; S.esOpen = false; } if (S.want) open(); }   // 다시 접속하면 서버가 현재 상태를 통째로 보내 준다
+  function resync() { const ws = S.es; S.es = null; S.esOpen = false; if (ws) { try { ws.close(); } catch (_) {} } if (S.want) open(); }   // 다시 접속하면 서버가 현재 상태를 통째로 보내 준다
+
+  // ---------- v153 연결 살아 있는지 확인 (휴대폰 대비) ----------
+  //  휴대폰은 화면을 끄거나 다른 앱에 갔다 오면 웹소켓이 "열려 있는 척"만 하고 실제로는 끊겨 있는 일이 흔하다.
+  //  그러면 서버는 나를 오프라인으로 보고, 친구가 보낸 대전 신청도 오지 않는다.
+  //  → 20초마다 'ping' 을 보내고 서버의 'pong' 이 45초 넘게 안 오면 다시 붙는다. 화면이 다시 보이면 바로 확인한다.
+  S.lastRx = 0;
+  function ping() { const ws = S.es; if (ws && ws.readyState === 1) { try { ws.send('ping'); } catch (_) {} } }
+  setInterval(() => {
+    if (!S.want || S.replaced) return;
+    if (!S.es) return;                                                       // 다시 붙는 중 (retryLater)
+    if (S.esOpen && S.lastRx && Date.now() - S.lastRx > 45000) { resync(); return; }
+    ping();
+  }, 20000);
+  function wake() {                                                          // 화면이 다시 보일 때 · 네트워크가 돌아왔을 때
+    if (document.visibilityState === 'hidden') return;
+    if (S.replaced) { S.replaced = false; open(); renderScreen(); return; }  // 다른 탭(기기)에 넘겼던 자리를, 지금 보고 있는 이 화면이 되찾는다
+    if (!S.want) return;
+    if (!S.es) { clearTimeout(S.retry); S.retryMs = 0; open(); return; }
+    const sent = Date.now(); ping();
+    setTimeout(() => { if (S.es && S.lastRx < sent) resync(); }, 4000);   // 4초 안에 답이 없으면 끊긴 연결
+  }
+  document.addEventListener('visibilitychange', wake);
+  addEventListener('pageshow', e => { if (e.persisted) wake(); });            // 뒤로 가기 캐시에서 돌아옴
+  addEventListener('online', wake);
 
   function onMsg(m) {
     if (!m || typeof m !== 'object') return;
+    if (m.t === 'pong') return;                                           // v153 연결 확인 답
     if (m.t === 'status') {
       S.status = m; if (m.cfg) S.cfg = m.cfg;
       if (m.state === 'queue' && !S.queuedAt) S.queuedAt = Date.now();
@@ -94,6 +129,9 @@ const PvpClient = (() => {
       if (m.matchId === S.matchId) { S.oppOffAt = m.oppOnline ? 0 : Date.now() - (m.oppOfflineMs || 0); S.reconnectMs = m.reconnectMs || S.reconnectMs; tickHud(); }
     } else if (m.t === 'error') {
       showMsg(m.error || '문제가 생겼어요.');
+    } else if (m.t === 'replaced') {                                      // v148 같은 계정의 새 탭(기기)이 자리를 가져갔다 → 다시 붙지 않는다 (서로 밀어내기 방지)
+      close(); S.replaced = true;
+      renderScreen(); if (S.matchId && !S.over) tickHud();
     }
   }
 
@@ -117,10 +155,10 @@ const PvpClient = (() => {
     { const fb = el('pvpFallbackBtn'), long = st && st.state === 'queue' && S.mode === 'rank' && S.queuedAt && Date.now() - S.queuedAt > RANK.FALLBACK_MS;   // v127 랭크전 상대가 안 잡히면
       fb.style.display = long ? '' : 'none'; }
     const b = el('pvpFindBtn'), q = st && st.state === 'queue';
-    b.disabled = !S.esOpen || !st;
-    b.classList.toggle('waiting', !!q);
-    el('pvpFindTxt').textContent = !S.esOpen ? '서버에 연결하는 중…' : q ? `${S.mode === 'rank' ? '랭크전' : '일반전'} 상대를 찾는 중… ${sec(Date.now() - S.queuedAt)}초 (누르면 취소)` : (S.mode === 'rank' ? '🏆 랭크전 상대 찾기' : '⚔️ 일반전 상대 찾기');
-    el('pvpSpin').style.display = q ? '' : 'none';
+    b.disabled = S.replaced ? false : (!S.esOpen || !st);                // v148 자리를 넘긴 탭: 누르면 이 탭으로 다시 가져온다
+    b.classList.toggle('waiting', !!q && !S.replaced);
+    el('pvpFindTxt').textContent = S.replaced ? '🔄 다른 탭(기기)에서 열려 있어요 · 눌러서 여기서 하기' : !S.esOpen ? '서버에 연결하는 중…' : q ? `${S.mode === 'rank' ? '랭크전' : '일반전'} 상대를 찾는 중… ${sec(Date.now() - S.queuedAt)}초 (누르면 취소)` : (S.mode === 'rank' ? '🏆 랭크전 상대 찾기' : '⚔️ 일반전 상대 찾기');
+    el('pvpSpin').style.display = q && !S.replaced ? '' : 'none';
     el('pvpRules').textContent = `한 턴 ${sec(c.turnMs)}초 · 멀리건 ${sec(c.mulliganMs)}초 · 시간이 지나면 턴이 자동으로 넘어가고, 연속 ${c.maxTimeouts}번 넘기면 패배해요. 연결이 끊기면 ${sec(c.reconnectMs)}초 안에 돌아와야 해요.`;
     document.querySelectorAll('.pvpWinGold').forEach(x => { x.textContent = PVP.WIN_GOLD; });
   }
@@ -136,6 +174,7 @@ const PvpClient = (() => {
     showMsg(''); showScreen('pvp'); open(); renderScreen();
   }
   async function toggleQueue() {
+    if (S.replaced) { showMsg(''); open(); renderScreen(); return; }      // v148
     const st = S.status; if (!st || st.state === 'match') return;
     if (st.state === 'queue') { const r = await post('/api/pvp/cancel'); if (!r.ok && r.data.error) showMsg(r.data.error); return; }
     showMsg(''); const b = el('pvpFindBtn'); b.disabled = true;
@@ -257,12 +296,11 @@ const PvpClient = (() => {
     if (mullFor === m.matchId && modal.classList.contains('show')) return;                    // 이미 고르는 중이면 다시 그리지 않는다 (선택 표시 유지)
     mullFor = m.matchId;
     const ids = new Set(m.mulligan.startIds), cards = m.view.me.hand.filter(c => ids.has(c.id)), out = new Set();
-    const grid = $('mulliganGrid'), ok = $('mulliganOk');
+    const ok = $('mulliganOk');
     $('mulliganTitle').textContent = `멀리건 — 시작 카드 ${cards.length}장`;
     const upd = () => { ok.textContent = out.size ? `${out.size}장 바꾸고 시작` : '바꾸지 않고 시작'; };
-    grid.innerHTML = '';
-    cards.forEach(c => { const e = cardEl(c, {}); e.onclick = () => { if (out.has(c.id)) { out.delete(c.id); e.classList.remove('mull-out'); } else { out.add(c.id); e.classList.add('mull-out'); } upd(); }; grid.appendChild(e); });
-    ok.disabled = false; upd(); modal.classList.add('show');
+    ok.disabled = false; upd(); modal.classList.add('show'); modal.scrollTop = 0;
+    mullCards(cards, out, upd);                                          // v153 ui.js 공용 (터치에서 확실히 골라지게 · 화면 크기에 맞춤)
     ok.onclick = async () => {
       ok.disabled = true;
       const r = await post('/api/pvp/mulligan', { matchId: m.matchId, ids: [...out] });
@@ -366,16 +404,33 @@ const PvpClient = (() => {
   el('specLeaveBtn').onclick = leaveSpectate;
   el('pvpReplayBtn').onclick = () => { const id = S.replayId; goToMenu(); if (id && typeof Replay !== 'undefined') Replay.open(id); };   // v137
   el('pvpReplaysBtn').onclick = () => { if (typeof Replay !== 'undefined') Replay.list(); };
-  async function invite(friendId) {
+  // v153 연결이 끊겨 있으면 다시 붙을 때까지 잠깐 기다린다 (최대 ms)
+  async function ensureLive(ms = 5000) {
     open();
+    const until = Date.now() + ms;
+    while (!S.esOpen && Date.now() < until) await new Promise(r => setTimeout(r, 150));
+    return S.esOpen;
+  }
+  async function invite(friendId) {
+    if (!(await ensureLive())) return '서버에 연결하는 중이에요. 잠시 뒤 다시 눌러 주세요.';
     const saved = await ServerStore.waitSaved();
     if (!saved) return '저장이 아직 끝나지 않았어요. 잠시 뒤 다시 해 주세요.';
-    await Preload.ensure();                                                // v138 친구가 수락하면 바로 판이 시작되므로 먼저 받아 둔다
+    // v153 예전엔 그림을 전부 받은 뒤에야 신청을 보냈다 → 휴대폰 데이터로는 한참 걸려서 "신청이 안 간다"처럼 보였다.
+    //      이제 신청부터 보내고, 친구가 답하는 동안 뒤에서 그림을 받는다 (판이 시작될 때 덜 받았으면 그때 로딩 화면)
+    try { Preload.warmup(); } catch (_) {}
     const r = await post('/api/pvp/invite', { to: friendId, heroPower: HeroPowerPref.get() });
     return r.ok ? null : (r.data.error || '대전을 신청하지 못했어요.');
   }
-  async function respondInvite(id, accept) {
-    if (accept) { const saved = await ServerStore.waitSaved(); if (!saved) return '저장이 아직 끝나지 않았어요. 잠시 뒤 다시 해 주세요.'; await Preload.ensure(); }   // v138
+  async function respondInvite(id, accept, until) {
+    if (accept) {
+      if (!(await ensureLive())) return '서버에 연결하는 중이에요. 잠시 뒤 다시 눌러 주세요.';
+      const saved = await ServerStore.waitSaved(); if (!saved) return '저장이 아직 끝나지 않았어요. 잠시 뒤 다시 해 주세요.';
+      // v153 그림을 받는 동안 신청 시간이 끝나 버리던 문제: 끝나기 5초 전까지만 기다리고 바로 수락한다
+      if (!Preload.isReady()) {
+        const left = (until || Date.now() + 20000) - Date.now() - 5000;
+        if (left > 0) await Promise.race([Preload.ensure(), new Promise(r => setTimeout(r, left))]);
+      }
+    }
     const r = await post('/api/pvp/invite/respond', { id, accept: !!accept, heroPower: HeroPowerPref.get() });
     return r.ok ? null : (r.data.error || '처리하지 못했어요.');
   }
@@ -402,7 +457,8 @@ const PvpClient = (() => {
       t.innerHTML = `<b class="tn">${sec(left)}초</b><small>${who}${S.timeouts && !S.spectate ? ` · 초과 ${S.timeouts}/${S.maxTimeouts}` : ''}</small>`;
       ropeSet(left, cfgOf().turnMs);
     } else { t.style.display = 'none'; rope.style.display = 'none'; }
-    if (!S.esOpen) banner('⚠ 서버와 연결이 끊겼어요. 다시 연결하는 중… (시간 안에 돌아오면 이어서 할 수 있어요)', true);
+    if (S.replaced) banner('⚠ 같은 계정을 다른 탭(기기)에서 열어서 이 탭의 연결을 넘겼어요. 여기서 계속하려면 새로고침해 주세요.', true);
+    else if (!S.esOpen) banner('⚠ 서버와 연결이 끊겼어요. 다시 연결하는 중… (시간 안에 돌아오면 이어서 할 수 있어요)', true);
     else if (S.oppOffAt && !S.spectate) banner(`상대의 연결이 끊겼어요. ${sec(S.reconnectMs - (Date.now() - S.oppOffAt))}초 안에 돌아오지 않으면 승리합니다.`, false);
     else banner(null);
   }

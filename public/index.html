@@ -15,6 +15,8 @@
 <link rel="stylesheet" href="/css/intro.css">
 <link rel="stylesheet" href="/css/cutscene.css">
 <link rel="stylesheet" href="/css/advstory.css">
+<link rel="stylesheet" href="/css/orient.css">
+<script src="/js/orient.js"></script>
 </head>
 <body>
 <!-- v147 로그인 직후 인트로 (intro.js). 로그인하고 들어올 때만 보이고, 아니면 바로 지워진다 -->
@@ -77,7 +79,7 @@
 <aside id="logPanel"><h3>전투 기록<label class="log-opt" title="할 수 있는 행동이 남았는데 턴 종료를 누르면 한 번 더 묻습니다"><input type="checkbox" id="optEndConfirm" checked> 턴 종료 확인</label></h3><div id="logList"></div></aside>
 <div id="overlay"><div id="overlayArt"></div><h2 id="overlayText"></h2><p id="overlayReward"></p><button class="end-turn" id="pvpAgainBtn" style="display:none">한 판 더</button><button class="end-turn sub" id="pvpReplayBtn" style="display:none">🎞 리플레이</button><button class="end-turn" onclick="goToMenu()">처음 화면으로</button></div>
 
-<div id="mulliganModal"><h3 id="mulliganTitle"></h3><p>바꾸고 싶은 카드를 클릭하면 ✕ 표시가 뜹니다. 다시 클릭하면 취소됩니다.</p><div id="mulliganGrid"></div><button class="end-turn" id="mulliganOk"></button></div>
+<div id="mulliganModal"><h3 id="mulliganTitle"></h3><p>바꾸고 싶은 카드를 누르면 ✕ 표시가 뜹니다. 다시 누르면 취소됩니다. (길게 누르면 카드 설명)</p><div id="mulliganGrid"></div><button class="end-turn" id="mulliganOk"></button></div>
 <div id="discoverModal"><div class="deck-panel"><div class="deck-head"><h3 id="discoverTitle">발견 — 한 장을 고르세요</h3></div><p class="note" id="discoverNote">고른 카드의 비용이 줄어든 채로 손패에 들어옵니다.</p><div class="deck-grid" id="discoverGrid"></div></div></div>
 <div id="deckModal" onclick="if(event.target===this) closeDeck()">
   <div class="deck-panel">
@@ -363,7 +365,7 @@
     <button class="menu-btn back" onclick="showScreen('playmode')">뒤로</button>
   </div>
 </div>
-<div id="rotateHint" role="alertdialog" aria-label="가로 화면 안내"><div class="rh-icon">📱</div><p>가로로 돌려서 플레이해 주세요</p><button type="button" class="end-turn" id="rotateFsBtn">전체화면으로 보기</button><small>안드로이드는 전체화면으로 들어가면 자동으로 가로가 됩니다. 아이폰은 기기를 직접 돌려 주세요 (화면 회전 잠금이 켜져 있으면 꺼 주세요).</small></div>
+<div id="rotateHint" role="alertdialog" aria-label="가로 화면 안내"><div class="rh-icon">📱</div><p>가로로 돌려서 플레이해 주세요</p><button type="button" id="rotateFsBtn">전체화면 · 가로로 보기</button><small></small></div>
 <button type="button" id="logToggle" aria-label="전투 기록">📜</button>
 
 

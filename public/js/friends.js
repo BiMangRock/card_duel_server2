@@ -114,7 +114,7 @@ const Friends = (() => {
   $id('frNick').oninput = () => { nickArmed = ''; $id('frNickSave').textContent = '닉네임 정하기'; };
 
   function open() {
-    showScreen('friends'); msg(''); render(); load(); PvpClient.open();
+    showScreen('friends'); msg(''); render(); load(); PvpClient.open(); connNotice();
     clearInterval(S.poll); S.poll = setInterval(() => { if (shown()) load(); else { clearInterval(S.poll); S.poll = null; } }, 8000);
   }
   function close() { clearInterval(S.poll); S.poll = null; showScreen('main'); }
@@ -266,7 +266,7 @@ const Friends = (() => {
     return t;
   }
   // 지금 AI 대전·모험 판을 하는 중인지 (그 판을 버리고 친구 대전을 시작하지 않도록)
-  const busyInGame = () => typeof game !== 'undefined' && game && game.mode !== 'pvp' && typeof view !== 'undefined' && view && !view.over && $id('menu').classList.contains('hidden');
+  const busyInGame = () => typeof game !== 'undefined' && game && game.mode !== 'pvp' && !game.replay && typeof view !== 'undefined' && view && !view.over && $id('menu').classList.contains('hidden');
   function showInvite(m) {
     if (S.invites.has(m.id)) S.invites.get(m.id).el.remove();
     const until = Date.now() + (m.remainMs || 0);
@@ -275,11 +275,14 @@ const Friends = (() => {
     el.classList.add('invite');
     const iv = { id: m.id, until, el, from: m.from };
     S.invites.set(m.id, iv);
+    try { Preload.warmup(); } catch (_) {}                               // v153 수락하기 전에 그림을 뒤에서 미리 받아 둔다
+    try { if (navigator.vibrate) navigator.vibrate(120); } catch (_) {}
     el.querySelectorAll('button').forEach(b => b.onclick = async () => {
       const accept = b.dataset.v === '1';
       if (accept && busyInGame()) { iv.note = '지금 하는 판을 끝낸 뒤에 수락할 수 있어요.'; tickInvites(); return; }
       el.querySelectorAll('button').forEach(x => { x.disabled = true; });
-      const e = await PvpClient.respondInvite(m.id, accept);
+      if (accept) { iv.note = '준비하는 중…'; tickInvites(); }
+      const e = await PvpClient.respondInvite(m.id, accept, iv.until);
       if (e) { iv.note = e; tickInvites(); el.querySelectorAll('button').forEach(x => { x.disabled = false; }); }
     });
     tickInvites();
@@ -298,6 +301,18 @@ const Friends = (() => {
     }
   }
   setInterval(tickInvites, 500);
+  // v153 친구 화면 위쪽: 서버와 연결이 끊겼거나 다른 탭(기기)이 자리를 가져갔으면 알려 준다 (그동안은 대전 신청을 주고받을 수 없다)
+  function connNotice() {
+    const scr = $id('screen-friends'); if (!scr) return;
+    let n = $id('frConn');
+    if (!n) { n = document.createElement('p'); n.id = 'frConn'; n.className = 'fr-conn'; n.hidden = true; scr.insertBefore(n, scr.children[1] || null);
+      n.addEventListener('click', e => { if (e.target.closest('button')) { PvpClient.open(); connNotice(); } }); }
+    const P = PvpClient._state || {};
+    const txt = P.replaced ? '⚠ 같은 계정이 다른 탭(기기)에서 열려 있어서, 친구 대전 신청은 그쪽으로 가요. <button type="button" class="end-turn sub">여기서 받기</button>'
+      : !P.esOpen ? '서버에 다시 연결하는 중… 연결되면 친구의 접속 상태와 대전 신청이 보여요.' : '';
+    if (n.dataset.t !== txt) { n.dataset.t = txt; n.innerHTML = txt; n.hidden = !txt; }
+  }
+  setInterval(() => { if (shown()) connNotice(); }, 1000);
   const GONE = { declined: '님이 대전 신청을 거절했어요.', expired: '님이 답하지 않아 신청이 끝났어요.', busy: '님이 다른 대전을 시작했어요.', offline: '님의 연결이 끊겼어요.', cancelled: '' };
   function onMsg(m) {
     if (m.t === 'chat') return onChat(m);

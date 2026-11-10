@@ -1,7 +1,7 @@
 // preload.js — v138 게임 이미지 미리 불러오기 (프리로딩)
 //
 //   카드를 낼 때마다 그림을 그때그때 받아 오면 첫 등장 때 멈칫한다(다운로드 + 디코딩).
-//   그래서 판을 시작하기 전에 게임에 나올 수 있는 그림을 전부 new Image() 로 받아 두고(Promise.all),
+//   그래서 판을 시작하기 전에 게임에 나올 수 있는 그림을 전부 new Image() 로 받아 두고(v148 한 번에 8장씩),
 //   100% 끝나야 게임 화면을 연다. 받은 Image 객체는 여기 붙잡아 두므로 브라우저 메모리 캐시에 그대로 남는다
 //   → 판 안에서는 같은 주소를 쓰는 <img>/background-image 가 네트워크 없이 바로 뜬다.
 //
@@ -20,6 +20,13 @@ const Preload = (() => {
   const ok = new Set();            // 다 받아진 절대 URL
   const keep = [];                 // Image 객체를 붙잡아 둬서 메모리 캐시에서 밀려나지 않게
   let busy = null;                 // 진행 중인 ensure() (여러 번 눌러도 한 번만)
+  // v148 동시에 받는 그림 수 제한. 수백 장을 한꺼번에 요청하면 Cloudflare Quick Tunnel(동시 처리 200건 제한)이
+  //      429 로 튕겨 낸다. 브라우저도 어차피 한 서버에 몇 개씩만 받으므로 느려지지 않는다.
+  const MAX_PARALLEL = 8;
+  const RETRY_MS = 1500;           // 429 등으로 실패하면 이만큼 쉬었다가 한 번 더
+  let running = 0; const waiting = [];
+  const slot = () => new Promise(res => { if (running < MAX_PARALLEL) { running++; res(); } else waiting.push(res); });
+  const release = () => { const next = waiting.shift(); if (next) next(); else running--; };
 
   const abs = u => { try { return new URL(u, location.href).href; } catch (_) { return null; } };
   const isImg = s => typeof s === 'string' && /\.(png|jpe?g|webp|gif|svg)(\?|$)/i.test(s);
@@ -44,12 +51,12 @@ const Preload = (() => {
   function loadOne(url) {
     const key = abs(url); if (!key) return Promise.resolve(false);
     if (done.has(key)) return done.get(key);
-    const p = new Promise(resolve => {
+    const once = () => slot().then(() => new Promise(resolve => {   // 자리가 나면 받기 시작 (제한 시간도 이때부터)
       const im = new Image();
       let finished = false;
       const end = good => {
-        if (finished) return; finished = true; clearTimeout(t);
-        if (good) ok.add(key); else done.delete(key);          // 실패한 그림은 다음 판 때 다시 시도
+        if (finished) return; finished = true; clearTimeout(t); release();
+        if (good) keep.push(im);
         resolve(good);
       };
       const t = setTimeout(() => end(false), TIMEOUT_MS);
@@ -59,10 +66,16 @@ const Preload = (() => {
         const d = im.decode ? im.decode().catch(() => {}) : Promise.resolve();
         d.then(() => end(true));
       };
-      im.onerror = () => { console.warn('[preload] 그림을 못 불러왔어요:', url); end(false); };
+      im.onerror = () => end(false);
       im.src = url;
-      keep.push(im);
-    });
+    }));
+    const p = once()
+      .then(good => good ? true : new Promise(r => setTimeout(r, RETRY_MS)).then(once))   // 한 번 더
+      .then(good => {
+        if (good) ok.add(key);
+        else { done.delete(key); console.warn('[preload] 그림을 못 불러왔어요:', url); }   // 실패한 그림은 다음 판 때 다시 시도
+        return good;
+      });
     done.set(key, p);
     return p;
   }

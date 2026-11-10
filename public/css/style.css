@@ -33,11 +33,15 @@ h1{font-family:var(--font-d); font-weight:600; font-size:1.4rem; margin:.6rem 1r
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2C8.8 2 4 6.9 4 13.2c0 4 2 6.7 4.6 8.3V26c0 1.1.9 2 2 2h10.8c1.1 0 2-.9 2-2v-4.5c2.6-1.6 4.6-4.3 4.6-8.3C28 6.9 23.2 2 16 2z' fill='%23d9d3e8' stroke='%23463d5c' stroke-width='1.5'/%3E%3Ccircle cx='11' cy='13' r='3.4' fill='%232a2338'/%3E%3Ccircle cx='21' cy='13' r='3.4' fill='%232a2338'/%3E%3Cpath d='M16 16.5l-2 3.5h4z' fill='%232a2338'/%3E%3C/svg%3E") center/contain no-repeat;
   color:#fff; font-weight:800; font-size:.95rem; line-height:1.1; text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000; filter:drop-shadow(0 0 3px rgba(185,167,214,.7));}
 .corpse-skull.show{display:inline-flex;}
-#mulliganModal{position:fixed; inset:0; z-index:65; background:rgba(10,8,18,.9); display:none; flex-direction:column; align-items:center; justify-content:center; padding:1rem; gap:.6rem;}
+#mulliganModal{position:fixed; inset:0; z-index:65; background:rgba(10,8,18,.9); display:none; flex-direction:column; align-items:center; justify-content:flex-start; padding:1rem; gap:.6rem;
+  overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; text-align:center;}   /* v153 화면이 낮으면 스크롤 (위·아래가 잘리지 않게) */
+#mulliganModal > :first-child{margin-top:auto;} #mulliganModal > :last-child{margin-bottom:auto;}   /* 내용이 짧으면 가운데, 길면 위에서부터 */
 #mulliganModal.show{display:flex;}
-#mulliganGrid{display:flex; gap:2.2rem; flex-wrap:wrap; justify-content:center; margin:1.8rem 0;}
-#mulliganGrid .card{cursor:pointer; transform:scale(1.5); transition:transform .12s ease, filter .12s ease;}
-#mulliganGrid .card:hover{transform:scale(1.58);}
+#mulliganGrid{display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; margin:.6rem 0;}
+#mulliganGrid .card{cursor:pointer; zoom:1.5; transition:filter .12s ease, box-shadow .12s ease; touch-action:manipulation;}   /* v153 크기는 ui.js fitMulligan 이 화면에 맞춰 zoom 으로 정한다 (scale 은 겹침) */
+@media (hover:hover){ #mulliganGrid .card:hover{box-shadow:0 0 0 2px var(--gold), 0 0 14px rgba(201,162,39,.6);} }
+#mulliganGrid .card:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+#mulliganOk{flex:none; min-width:12rem; min-height:2.6rem; font-size:1rem;}
 #mulliganGrid .card.mull-out{filter:grayscale(.8) brightness(.55);}
 #mulliganGrid .card.mull-out::after{content:'✕'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:3.4rem; font-weight:900; color:#ff4a3d; text-shadow:0 0 6px #000,0 0 10px #000; border-radius:8px;}
 #mulliganModal h3{margin:0; color:var(--gold); font-family:var(--font-d);}
@@ -294,8 +298,9 @@ button.end-turn.sub.armed{background:var(--ember); color:#fff; border-color:var(
 #deckModal.show{display:flex;}
 #discoverModal{position:fixed; inset:0; z-index:60; background:rgba(10,8,18,.88); display:none; align-items:center; justify-content:center; padding:1rem;}
 #discoverModal.show{display:flex;}
-#discoverModal .card{cursor:pointer; transform:scale(1.5); margin:1.4rem;}
-#discoverModal .card:hover{transform:scale(1.6);}
+#discoverModal .card{cursor:pointer; zoom:1.5; margin:.3rem; touch-action:manipulation;}   /* v153 크기는 ui.js fitDiscover 가 zoom 으로 (scale 은 옆 카드와 겹침) */
+@media (hover:hover){ #discoverModal .card:hover{box-shadow:0 0 0 2px var(--gold), 0 0 14px rgba(201,162,39,.6);} }
+#discoverModal .deck-grid{justify-content:center;}
 .card.lifecost .cost{color:#ffb3b3;} .card.lifecost .cost::after{content:'♥'; font-size:.6em; margin-left:1px; color:#ff8a8a;}
 .deck-panel{background:linear-gradient(180deg,#241f38,#181428); border:1px solid var(--gold-d); border-radius:10px;
   width:min(860px,100%); max-height:88vh; display:flex; flex-direction:column; padding:1rem;}
@@ -603,18 +608,7 @@ html,body{overscroll-behavior:none; -webkit-tap-highlight-color:transparent; tou
 .card,.hero,button,.menu-btn{-webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
 :root{padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px);}  /* 가로 모드에서 노치·제스처 바 피하기 */
 
-/* 세로로 든 터치 기기에서 전투 중이면 가로 안내를 덮어씌운다 (메뉴·상점·덱 편집은 세로 그대로 가능) */
-#rotateHint{display:none;}
-@media (orientation:portrait) and (pointer:coarse) and (max-width:900px){
-  #menu.hidden ~ #rotateHint{
-    position:fixed; inset:0; z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem;
-    background:radial-gradient(ellipse at center,#1c1930,#14121f 70%); color:var(--parch); text-align:center; padding:1.5rem;
-  }
-}
-#rotateHint .rh-icon{font-size:4rem; line-height:1; display:inline-block; animation:rhTurn 2.4s ease-in-out infinite;}
-#rotateHint p{margin:0; font-size:1.05rem; line-height:1.5;}
-#rotateHint small{color:var(--parch-d); font-size:.8rem; line-height:1.5; max-width:20rem;}
-@keyframes rhTurn{0%,15%{transform:rotate(0)} 55%,100%{transform:rotate(-90deg)}}
+/* v153 가로 안내 화면(#rotateHint)은 css/orient.css + js/orient.js 로 옮겼다 (휴대폰은 항상 가로, 태블릿은 게임 화면만) */
 
 /* 가로로 든 폰(화면 높이 낮음) — 하스스톤처럼: 왼쪽 영웅 / 가운데 필드 / 오른쪽 턴 종료 / 아래 손패 */
 @media (orientation:landscape) and (max-height:540px){
@@ -664,11 +658,10 @@ html,body{overscroll-behavior:none; -webkit-tap-highlight-color:transparent; tou
   #logList{max-height:55vh;}
 
   /* 멀리건·발견 등 큰 창 */
-  #mulliganModal{gap:.3rem; padding:.5rem;}
-  #mulliganGrid{margin:.9rem 0; gap:1.4rem;}
-  #mulliganGrid .card{transform:scale(1.15);}
-  #mulliganGrid .card:hover{transform:scale(1.2);}
-  #mulliganModal p{font-size:.78rem;}
+  #mulliganModal{gap:.3rem; padding:.5rem calc(.5rem + env(safe-area-inset-right,0px)) .5rem calc(.5rem + env(safe-area-inset-left,0px));}
+  #mulliganGrid{margin:.3rem 0;}
+  #mulliganModal h3{font-size:1rem;}
+  #mulliganModal p{font-size:.74rem;}
   #discoverModal .deck-panel, #deckModal .deck-panel{max-height:94vh;}
   #overlay h2{font-size:1.6rem;} #overlay{gap:.5rem;}
   #overlayArt img{max-height:6rem;}
@@ -679,10 +672,10 @@ html,body{overscroll-behavior:none; -webkit-tap-highlight-color:transparent; tou
 #logToggle{display:none; position:fixed; right:calc(.4rem + env(safe-area-inset-right,0px)); top:.4rem; z-index:41; width:2rem; height:2rem; align-items:center; justify-content:center;
   background:rgba(12,10,22,.7); border:1px solid rgba(201,162,39,.4); border-radius:50%; color:var(--gold); font-size:1rem; padding:0; cursor:pointer;}
 @media (orientation:landscape) and (max-height:540px){ #logToggle{display:flex;} }
+#menu:not(.hidden) ~ #logToggle{display:none !important;}   /* v153 메뉴 화면에서는 숨긴다 (오른쪽 위 골드 표시를 가렸다) */
 /* 전체화면 버튼 (메뉴 오른쪽 위) */
 #fsBtn{display:none; background:transparent; border:1px solid rgba(201,162,39,.5); color:var(--gold); border-radius:999px; padding:.15rem .6rem; font-size:.8rem; cursor:pointer;}
 @media (pointer:coarse){ #fsBtn.can{display:inline-block;} }
-#rotateHint button{margin-top:.4rem;}
 
 /* 메뉴·상점 등 낮은 가로 화면 */
 @media (orientation:landscape) and (max-height:540px){
@@ -1286,3 +1279,28 @@ button.end-turn.armed{background:var(--ember); color:#fff; border-color:var(--em
 /* v146 챕터 아이콘 그림 */
 .adv-ch .ic .ch-img{width:2.4rem; height:2.4rem; object-fit:cover; object-position:center 40%; border-radius:50%; border:2px solid var(--gold-d); display:block; margin:0 auto;}
 .ch-img.sm{width:1.4rem; height:1.4rem; object-fit:cover; object-position:center 40%; border-radius:50%; vertical-align:-.3em; border:1px solid var(--gold-d);}
+
+/* v153 친구 화면: 연결 상태 안내 */
+.fr-conn{margin:0; width:100%; box-sizing:border-box; padding:.5rem .7rem; border-radius:8px; background:#3a2a10; border:1px solid #8a6d00; color:#ffe2a0; font-size:.8rem; line-height:1.5; text-align:left;}
+.fr-conn button{margin-left:.4rem; padding:.2rem .6rem; font-size:.75rem;}
+
+/* ===== v153 폰 가로 화면(낮은 화면) 메뉴: 넓은 가로 폭을 쓰도록 첫 화면 버튼을 두 줄로, 다른 화면도 조금 넓게 ===== */
+@media (orientation:landscape) and (max-height:540px){
+  #menu{padding:.5rem calc(.8rem + env(safe-area-inset-right,0px)) .5rem calc(.8rem + env(safe-area-inset-left,0px)); -webkit-overflow-scrolling:touch; overscroll-behavior:contain;}
+  #menu .screen{max-width:min(640px, 100%); padding-top:2.6rem;}   /* 오른쪽 위 전체화면·계정·골드 줄에 제목이 가리지 않게 */
+  #menuTop{top:calc(.35rem + env(safe-area-inset-top,0px)); right:calc(.6rem + env(safe-area-inset-right,0px));}
+  #screen-power .power-grid{grid-template-columns:repeat(auto-fill, minmax(10.5rem, 1fr)) !important; width:100%;}
+  #screen-main.show{display:grid; grid-template-columns:1fr 1fr; gap:.5rem .6rem; max-width:min(720px, 100%); align-items:stretch;}
+  #screen-main.show > h2, #screen-main.show > .sub, #screen-main.show > .menu-btn.primary{grid-column:1 / -1;}
+  #screen-main .menu-btn{margin:0; width:100%; padding:.5rem .7rem;}
+  #screen-main .menu-btn .desc{font-size:.68rem; line-height:1.35;}
+  #screen-main > h2{margin:0;} #screen-main > .sub{margin:-.2rem 0 .1rem;}
+  /* 결과 · 확인 창 등도 낮은 화면에서 넘치면 스크롤 */
+  #overlay{overflow-y:auto; justify-content:flex-start; padding:.6rem;}
+  #overlay > :first-child{margin-top:auto;} #overlay > :last-child{margin-bottom:auto;}
+  #discoverModal{overflow-y:auto; align-items:flex-start;}
+  #discoverModal .deck-panel{margin:auto 0; max-height:none;}
+  #confirmBox, .rank-modal, #craftModal{overflow-y:auto;}
+}
+/* 태블릿(터치 · 짧은 변 600px 이상) 세로 메뉴는 그대로 · 큰 터치 영역 */
+html.dev-tablet .menu-btn{min-height:3rem;}

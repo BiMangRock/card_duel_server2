@@ -25,15 +25,70 @@ const DIFFICULTY = {
   normal2:{label:'중급2', desc:'한 수 앞을 보고 교환·마무리를 계산하는 AI (중급보다 강함)', bot:BotPlayers.rule2},
   hard:   {label:'상급', desc:'강화학습 기반 AI',               bot:null},   // TODO: 학습한 정책(BotPlayer)이 준비되면 연결
 };
+// v153 터치에서 확실히 눌리는 카드 선택 (멀리건 · 발견 공용)
+//  · 폰·태블릿에서 카드를 눌러도 선택이 안 되던 문제: 예전엔 click 이벤트에만 기대서, 길게 누르기(카드 설명) · 끌기 처리가
+//    뒤따르는 click 을 먹어 버리거나(조금만 오래 눌러도), iOS 가 첫 탭을 "마우스 올리기"로만 처리하면 선택이 안 됐다.
+//    → 손가락을 뗄 때(pointerup) 직접 처리한다. 0.43초 넘게 누르면 카드 설명(길게 누르기)으로 보고 고르지 않는다.
+function onCardTap(el, fn){
+  let down=null, tapAt=0;
+  el.tabIndex=0; el.setAttribute('role','button');
+  el.addEventListener('pointerdown', e=>{ if(e.pointerType==='mouse' && e.button!==0) return; down={x:e.clientX, y:e.clientY, t:Date.now(), id:e.pointerId}; });
+  el.addEventListener('pointerup', e=>{
+    const d=down; down=null; if(!d || d.id!==e.pointerId) return;
+    if(Math.hypot(e.clientX-d.x, e.clientY-d.y)>14) return;            // 끌거나 스크롤했다
+    if(e.pointerType!=='mouse' && Date.now()-d.t>=430) return;         // 길게 누르기 = 카드 설명 보기
+    tapAt=Date.now(); fn();
+  });
+  el.addEventListener('pointercancel', ()=>{ down=null; });
+  el.addEventListener('click', e=>{ e.stopPropagation(); if(Date.now()-tapAt<800) return; tapAt=Date.now(); fn(); });   // 포인터 이벤트가 없는 옛 브라우저 · 화면 읽기 프로그램
+  el.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); fn(); } });
+}
+//  · 카드를 transform:scale 로 키우면 옆 카드와 겹쳐서 가장자리를 누르면 옆 카드가 골라졌다 → 화면 크기에 맞춰 zoom 으로 키운다
+//    (zoom 은 실제 크기가 커지므로 겹치지 않고, 폰 가로처럼 낮은 화면에서는 작게 줄어 한 화면에 들어온다)
+function fitCardRow(g, reserveH, maxZ){
+  const cs=[...g.children].filter(x=>x.classList.contains('card')); if(!cs.length) return;
+  cs.forEach(c=>{ c.style.zoom='1'; });
+  const w=Math.max(...cs.map(c=>c.offsetWidth))||90, h=Math.max(...cs.map(c=>c.offsetHeight))||128, n=cs.length;
+  const gap=Math.max(8, Math.min(24, innerWidth*.02));
+  g.style.gap=gap+'px';
+  const availW=innerWidth-40, availH=Math.max(110, innerHeight-reserveH);
+  let z=Math.min(maxZ||1.5, (availW-gap*(n-1))/(w*n), availH/h);
+  if(z<.72 && n>2){                                               // 한 줄에 다 안 들어가면 두 줄로
+    const half=Math.ceil(n/2), zz=Math.min(maxZ||1.5, (availW-gap*(half-1))/(w*half), (availH-gap)/(h*2));
+    if(zz>z) z=zz;
+  }
+  z=Math.max(.55, z);
+  cs.forEach(c=>{ c.style.zoom=z.toFixed(3); });
+}
+function mullCards(cards, out, onChange){                          // 멀리건 (AI 대전·모험·유저 대전 공용)
+  const g=$('mulliganGrid'); g.innerHTML='';
+  cards.forEach(c=>{
+    const el=cardEl(c,{}); el.classList.add('mull-card'); el.setAttribute('aria-pressed','false');
+    onCardTap(el, ()=>{ const on=!out.has(c.id); if(on) out.add(c.id); else out.delete(c.id); el.classList.toggle('mull-out', on); el.setAttribute('aria-pressed', String(on)); onChange(); });
+    g.appendChild(el);
+  });
+  fitMulligan();
+}
+function fitMulligan(){
+  const m=$('mulliganModal'), g=$('mulliganGrid'); if(!m || !g || !g.children.length) return;
+  const other=[...m.children].filter(x=>x!==g).reduce((a,x)=>a+x.offsetHeight, 0)+56;   // 제목·설명·버튼·여백
+  fitCardRow(g, other, 1.5);
+}
+function fitDiscover(){
+  const dm=$('discoverModal'), g=$('discoverGrid'); if(!dm || !g || !g.children.length) return;
+  const head=[...dm.querySelectorAll('.deck-head, .note')].reduce((a,x)=>a+x.offsetHeight, 0)+90;
+  fitCardRow(g, head, 1.5);
+}
+addEventListener('resize', ()=>{ const m=$('mulliganModal'); if(m && m.classList.contains('show')) fitMulligan(); const d=$('discoverModal'); if(d && d.classList.contains('show')) fitDiscover(); });
 function showMulligan(done){                                  // v77 멀리건: 시작 카드를 클릭해 ✕ 표시 → 확정하면 그 카드만 덱에 섞고 새로 뽑는다
   const P=Host.state.seats[MY], cards=P.hand.filter(c=>(P.startIds||[]).includes(c.id)), out=new Set();
-  const m=$('mulliganModal'), g=$('mulliganGrid'), ok=$('mulliganOk');
+  const m=$('mulliganModal'), ok=$('mulliganOk');
   $('mulliganTitle').textContent=`멀리건 — 시작 카드 ${cards.length}장`;
   const upd=()=>{ ok.textContent = out.size ? `${out.size}장 바꾸고 시작` : '바꾸지 않고 시작'; };
-  g.innerHTML='';
-  cards.forEach(c=>{ const el=cardEl(c,{}); el.onclick=()=>{ if(out.has(c.id)){ out.delete(c.id); el.classList.remove('mull-out'); } else { out.add(c.id); el.classList.add('mull-out'); } upd(); }; g.appendChild(el); });
-  upd(); m.classList.add('show');
-  ok.onclick=()=>{ m.classList.remove('show'); const n=mulliganHand(Host.state, MY, [...out]); view=Host.view(MY); if(n) logLine(`멀리건: 시작 카드 ${n}장을 바꿨습니다.`); done(); };
+  upd(); m.classList.add('show'); m.scrollTop=0;
+  mullCards(cards, out, upd);
+  ok.disabled=false;
+  ok.onclick=()=>{ if(ok.disabled) return; ok.disabled=true; m.classList.remove('show'); const n=mulliganHand(Host.state, MY, [...out]); view=Host.view(MY); if(n) logLine(`멀리건: 시작 카드 ${n}장을 바꿨습니다.`); done(); };
 }
 function controlTipOnce(){                                        // v139 바뀐 조작을 한 번만 알려 준다 (기기마다)
   const K='cardDuel.ctrlTip.v139'; try{ if(localStorage.getItem(K)) return; localStorage.setItem(K,'1'); }catch(_){ return; }
@@ -1455,10 +1510,13 @@ function render(){
   { const dm=$('discoverModal'), pd=v.pending;                                      // 발견: 내가 고를 차례면 3장 선택 창을 띄운다
     if(pd && pd.seat===MY && pd.options){
       const fruit=pd.kind==='fruit', choice=pd.kind==='choice', pocket=pd.kind==='pocketDimension'; $('discoverTitle').textContent=fruit?'금단의 과일 — 하나를 고르세요':choice?'선택 — 둘 중 하나를 고르세요':pocket?'주머니 차원 — 주문 발견':'발견 — 한 장을 고르세요'; $('discoverNote').textContent=fruit?'마나를 모두 소모했습니다. 공격력을 고르면 이어서 아군 하수인 1기를 선택합니다.':choice?'원하는 효과 하나를 선택합니다.':pocket?`선택한 주문의 비용이 4 감소합니다. 이미 발견한 주문이 다시 나올 때까지 반복합니다. (현재 ${(pd.seen||[]).length}장 선택함)`:'고른 카드의 비용이 줄어든 채로 손패에 들어옵니다.';
-      const g=$('discoverGrid'); g.innerHTML='';
-      pd.options.forEach((c,i)=>{ const el=cardEl(c,{}); el.onclick=()=>{ dm.classList.remove('show'); playerAction({type:'CHOOSE', index:i}); }; g.appendChild(el); });
+      const g=$('discoverGrid'), key=JSON.stringify([pd.kind, pd.options.map(c=>[c.id, c.name, c.cost])]);
+      if(g.dataset.key!==key || !dm.classList.contains('show')){            // v153 같은 후보면 다시 그리지 않는다 (누르는 도중에 화면이 갱신되면 터치가 사라졌다)
+        g.dataset.key=key; g.innerHTML='';
+        pd.options.forEach((c,i)=>{ const el=cardEl(c,{}); onCardTap(el, ()=>{ if(!dm.classList.contains('show')) return; dm.classList.remove('show'); g.dataset.key=''; playerAction({type:'CHOOSE', index:i}); }); g.appendChild(el); });   // v153 터치에서도 확실히
+      }
       if(!dm.classList.contains('show')) fxSprite('discover',innerWidth/2,innerHeight/2,Math.min(innerWidth*.7,460),{dur:1100,z:70});   // v89
-      dm.classList.add('show');
+      dm.classList.add('show'); fitDiscover();
     } else dm.classList.remove('show'); }
   if(game && game.replay && Array.isArray(op.hand)) renderOppHandOpen(op.hand); else   // v137 리플레이: 상대 손패도 앞면으로
   renderOppHand(op.handCount+(ui.drawGhosts[OPP]||0));

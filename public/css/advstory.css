@@ -97,3 +97,11 @@
 #advStory .as-choice button:disabled:not(.picked){ opacity:.35; }
 @keyframes asOpt{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
 @keyframes asFade{ from{ opacity:0; } to{ opacity:1; } }
+
+/* v153 휴대폰 가로(낮은 화면): 대사 상자를 낮추고, 선택지가 넘치면 스크롤 */
+@media (max-height:500px){
+  #advStory .as-box{ min-height:0; padding:14px 18px 34px; bottom:max(2vh, 8px, env(safe-area-inset-bottom)); }
+  #advStory .as-choice{ overflow-y:auto; -webkit-overflow-scrolling:touch; justify-content:flex-start; gap:8px; padding:12px 0; }
+  #advStory .as-choice > :first-child{ margin-top:auto; } #advStory .as-choice > :last-child{ margin-bottom:auto; }
+  #advStory .as-choice button{ padding:8px 14px; }
+}

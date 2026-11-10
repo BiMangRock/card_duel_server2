@@ -401,3 +401,13 @@ button.end-turn.sub.dev-skip:hover:not(:disabled){background:rgba(58,143,168,.25
 #cutscene .cs-gletter .g-lines button.on::before{content:'✎ ';}
 #cutscene .cs-gletter .g-seal{width:100%; padding:.7rem; border-radius:10px; border:none; background:#a8322a; color:#fff; font-weight:900; font-size:1.05rem;}
 #cutscene .cs-gletter .g-seal:disabled{opacity:.4;}
+
+/* v153 휴대폰 가로(주소창 때문에 더 낮은 화면 포함): 선택지 · 생활기록부가 넘치면 스크롤, 춤 이름이 화면 밖으로 나가지 않게 */
+@media (max-height:500px){
+  #cutscene .cs-choice{justify-content:flex-start; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:3.2rem calc(1rem + env(safe-area-inset-right,0px)) 1rem calc(1rem + env(safe-area-inset-left,0px)); gap:.6rem;}
+  #cutscene .cs-choice > :first-child{margin-top:auto;} #cutscene .cs-choice > :last-child{margin-bottom:auto;}
+  #cutscene .cs-report{overflow-y:auto; align-items:flex-start; padding:1rem 0;}
+  #cutscene .cs-report .rp-paper{margin:auto 0;}
+  #cutscene .cs-dance .nm{white-space:normal; width:92vw; text-align:center; font-size:clamp(1rem, 4.2vw, 1.8rem); bottom:3vh;}
+  #cutscene .cs-dance .frame{height:min(84vh, 720px);}
+}

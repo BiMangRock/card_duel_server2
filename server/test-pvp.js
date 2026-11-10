@@ -167,6 +167,7 @@ const turnClient = cs => cs.find(c => c.last.turnSeat === c.last.seat);
   const app = express(); app.use(express.json());
   app.use('/api', auth.router); app.use('/api', saves.router); app.use('/api', pvpMod.router);
   const server = http.createServer(app);
+  pvpMod.attachWs(server);                                   // v148 웹소켓 통로
   await new Promise(r => server.listen(0, r));
   const base = `http://127.0.0.1:${server.address().port}`;
   const mkUser = name => {
@@ -186,14 +187,34 @@ const turnClient = cs => cs.find(c => c.last.turnSeat === c.last.seat);
           while ((i = buf.indexOf('\n\n')) >= 0) { const chunk = buf.slice(0, i); buf = buf.slice(i + 2); const line = chunk.split('\n').find(l => l.startsWith('data: ')); if (line) { const m = JSON.parse(line.slice(6)); u.msgs.push(m); if (m.t === 'match') u.last = m; } } } } catch (_) {}
       })();
     };
+    // v148 웹소켓으로 받기 (화면이 실제로 쓰는 통로)
+    u.ws = (extraHeaders = {}) => new Promise((resolve, reject) => {
+      const WS = require('ws');
+      const ws = new WS(base.replace('http', 'ws') + '/api/pvp/ws', { headers: { cookie, ...extraHeaders } });
+      ws.on('message', d => { const m = JSON.parse(String(d)); u.msgs.push(m); if (m.t === 'match') u.last = m; });
+      ws.on('open', () => { u.sock = ws; resolve(ws); });
+      ws.on('unexpected-response', (req, res) => reject(Object.assign(new Error('거부'), { status: res.statusCode })));
+      ws.on('error', reject);
+    });
     return u;
+  };
+  const wsStatus = async (cookieHdr, headers = {}) => {        // 웹소켓 접속을 거부하면 상태 코드, 받아 주면 101
+    const WS = require('ws');
+    return new Promise(res => {
+      const ws = new WS(base.replace('http', 'ws') + '/api/pvp/ws', { headers: { ...(cookieHdr ? { cookie: cookieHdr } : {}), ...headers } });
+      ws.on('open', () => { ws.close(); res(101); });
+      ws.on('unexpected-response', (req, r) => res(r.statusCode));
+      ws.on('error', () => res(0));
+    });
   };
   try {
     const A = mkUser('pvpalice'), B = mkUser('pvpbob');
     const nostream = await fetch(base + '/api/pvp/stream'); assert.strictEqual(nostream.status, 401, '로그인 전엔 스트림 거부');
     await A.signup(); await B.signup();
     assert.strictEqual((await A.call('GET', '/api/pvp/status')).data.state, 'idle');
-    await A.stream(); await B.stream();
+    assert.strictEqual(await wsStatus(null), 401, '로그인 전엔 웹소켓 거부');
+    assert.strictEqual(await wsStatus(A.cookie(), { origin: 'https://evil.example' }), 403, '다른 사이트에서 온 웹소켓 거부');
+    await A.ws(); await B.stream();                           // A 는 웹소켓, B 는 SSE → 두 통로가 한 판에서 같이 동작
     await until(() => A.msgs.some(m => m.t === 'status') && B.msgs.some(m => m.t === 'status'), 2000, '첫 상태');
     assert.strictEqual(A.msgs.find(m => m.t === 'status').winGold, PVP.WIN_GOLD);
     assert.strictEqual((await A.call('POST', '/api/pvp/queue')).status, 200);
@@ -216,11 +237,24 @@ const turnClient = cs => cs.find(c => c.last.turnSeat === c.last.seat);
     await until(() => A.last.result && B.last.result, 2000, 'HTTP 결과');
     assert.strictEqual(p.last.result.youWon, true); assert.strictEqual(p.last.result.reward, PVP.WIN_GOLD); assert.strictEqual(p.last.result.why, undefined);
     const st = [...p.msgs].reverse().find(m => m.t === 'status'); assert.strictEqual(st.state, 'idle'); assert.strictEqual(st.record.wins, 1);
-    // 한 계정이 열 수 있는 스트림은 4개까지 → 5번째는 429
-    const acs = []; let code = 0;
-    for (let i = 0; i < 4; i++) { const ac = new AbortController(); acs.push(ac); const rs = await fetch(base + '/api/pvp/stream', { headers: { cookie: p.cookie() }, signal: ac.signal }); code = rs.status; if (i < 3) assert.strictEqual(code, 200); }
-    assert.strictEqual(code, 429, '탭이 너무 많으면 거부'); acs.forEach(a => a.abort());
-    console.log('✔ HTTP(SSE) 통신: 매칭 · 멀리건 · 행동 · 거부 코드 · 결과');
+    // v148 한 계정의 스트림은 4개까지 → 5번째가 오면 거부하지 않고 가장 오래된 연결(p 의 첫 스트림)을 끊는다
+    const acs = [];
+    for (let i = 0; i < 4; i++) { const ac = new AbortController(); acs.push(ac); const rs = await fetch(base + '/api/pvp/stream', { headers: { cookie: p.cookie() }, signal: ac.signal }); assert.strictEqual(rs.status, 200, '새 탭은 항상 받아 준다'); }
+    await until(() => p.msgs.some(m => m.t === 'replaced'), 2000, '가장 오래된 탭에 자리 넘김 알림');
+    assert.ok([...pvpMod.core._users.values()].some(x => x.conns.size === 4), '연결 수는 4개 그대로 (끊긴 탭은 빠짐)');
+    acs.forEach(a => a.abort());
+    // v148 웹소켓도 같은 규칙: 4개를 넘으면 가장 오래된 연결이 {t:'replaced'} 를 받고 닫힌다
+    //  (새 연결 first 를 열고, 그 뒤에 4개를 더 열면 first 는 반드시 밀려난다 — 앞 단계에서 남은 연결이 있어도)
+    const W = A; const before = W.msgs.length;
+    const first = await W.ws(); const firstMsgs = []; first.on('message', d => firstMsgs.push(JSON.parse(String(d))));
+    let kicked = false; first.on('close', () => { kicked = true; });
+    const socks = [];
+    for (let i = 0; i < 4; i++) socks.push(await W.ws());
+    await until(() => kicked, 2000, '웹소켓: 가장 오래된 연결이 닫힘');
+    assert.ok(firstMsgs.some(m => m.t === 'replaced'), '웹소켓: 자리 넘김 알림');
+    assert.ok(W.msgs.slice(before).filter(m => m.t === 'status').length >= 4, '웹소켓: 새 연결마다 현재 상태를 받음');
+    socks.forEach(x => x.close());
+    console.log('✔ HTTP(SSE·웹소켓) 통신: 매칭 · 멀리건 · 행동 · 거부 코드 · 결과 · 자리 넘김');
   } finally {
     server.closeAllConnections && server.closeAllConnections(); server.close(); pvpMod.core.shutdown();
   }
