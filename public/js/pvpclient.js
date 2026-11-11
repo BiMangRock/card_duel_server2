@@ -260,6 +260,7 @@ const PvpClient = (() => {
     render();
   }
   async function handleMatch(m) {
+    if (S.mullAnim) { try { await S.mullAnim; } catch (_) {} }          // v158 멀리건 연출(덱으로 들어가고 새 카드 나오기)이 끝난 뒤에
     if (m.matchId !== S.matchId) {
       await Preload.ensure();                                            // v138 보통은 이미 받아 둔 상태 (새로고침해서 판에 다시 들어올 때만 로딩 화면)
       const left = (m.introMs || 0) - (Date.now() - (m._at || Date.now()));
@@ -303,8 +304,17 @@ const PvpClient = (() => {
     mullCards(cards, out, upd);                                          // v153 ui.js 공용 (터치에서 확실히 골라지게 · 화면 크기에 맞춤)
     ok.onclick = async () => {
       ok.disabled = true;
-      const r = await post('/api/pvp/mulligan', { matchId: m.matchId, ids: [...out] });
-      if (r.ok) modal.classList.remove('show'); else { ok.disabled = false; if (r.data && r.data.error) logLine('⚠ ' + r.data.error); }
+      const ids = [...out], before = m.view.me.hand.slice();
+      let release; S.mullAnim = new Promise(res => { release = res; });                   // v158 연출이 끝날 때까지 다음 서버 메시지는 기다린다
+      try {
+        const r = await post('/api/pvp/mulligan', { matchId: m.matchId, ids });
+        if (r.ok) {
+          const after = (r.data && r.data.hand) || [], pairs = [];
+          before.forEach((c, i) => { if (ids.includes(c.id) && after[i] && after[i].id !== c.id) pairs.push({ oldId: c.id, card: after[i] }); });
+          try { await mullAnimate(pairs); } catch (e) { console.error(e); }
+          modal.classList.remove('show');
+        } else { ok.disabled = false; if (r.data && r.data.error) logLine('⚠ ' + r.data.error); }
+      } finally { S.mullAnim = null; release(); }
     };
   }
 

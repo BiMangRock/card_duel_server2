@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="/css/vnbox.css">
 <link rel="stylesheet" href="/css/orient.css">
 <script src="/js/orient.js"></script>
+<script src="/js/fullscreen.js"></script>
 </head>
 <body>
 <!-- v147 로그인 직후 인트로 (intro.js). 로그인하고 들어올 때만 보이고, 아니면 바로 지워진다 -->
@@ -147,6 +148,7 @@
       <button type="button" class="mm-item" onclick="Friends.open()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14c3 0 5 2.2 5 5"/></svg><span class="mm-label">친구</span><b class="fr-badge" id="friendBadge" hidden></b><span class="desc" id="friendMenuDesc">친구 추가 · 채팅 · 친구와 대전 · 친구 판 관전</span></button>
       <span class="mm-gap"></span>
       <button type="button" class="mm-item mm-sub" onclick="openTutorials()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></svg><span class="mm-label">튜토리얼</span><b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc">처음이라면 여기부터 · 첫 완료 보상 1,000골드 + 전설 카드 · 📖 가이드는 맨 밑</span></button>
+      <button type="button" class="mm-item mm-sub" onclick="openSettings()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="mm-label">설정</span><span class="desc">전체 화면</span></button>
     </nav>
     <div class="mm-body">
       <header class="mm-head">
@@ -284,6 +286,18 @@
     <p class="sub" id="questSub">매일 새벽 5시에 새 퀘스트 3개가 나옵니다. 끝내면 골드가 바로 들어옵니다. (AI 대전·모험·유저 대전 모두 진행)</p>
     <div class="quest-list" id="questList"></div>
     <p class="note" id="questNote"></p>
+    <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
+  </div>
+  <div class="screen" id="screen-settings">
+    <h3>⚙ 설정</h3>
+    <div class="set-list">
+      <label class="set-row" id="setFsRow">
+        <span class="set-txt"><b>전체 화면으로 시작</b><small>게임을 켜고 처음 누를 때 자동으로 전체 화면이 됩니다. 언제든 Esc 로 나갈 수 있어요.</small></span>
+        <input type="checkbox" id="setAutoFs" class="set-switch" role="switch">
+      </label>
+      <button type="button" class="menu-btn" id="setFsNow">전체 화면 켜기</button>
+      <p class="sub" id="setFsNone" hidden>이 브라우저는 전체 화면을 지원하지 않아요. (아이폰은 공유 → 홈 화면에 추가로 앱처럼 쓸 수 있어요)</p>
+    </div>
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
   </div>
   <div class="screen" id="screen-power">

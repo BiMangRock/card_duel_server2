@@ -63,11 +63,51 @@ function fitCardRow(g, reserveH, maxZ){
 function mullCards(cards, out, onChange){                          // 멀리건 (AI 대전·모험·유저 대전 공용)
   const g=$('mulliganGrid'); g.innerHTML='';
   cards.forEach(c=>{
-    const el=cardEl(c,{}); el.classList.add('mull-card'); el.setAttribute('aria-pressed','false');
+    const el=cardEl(c,{}); el.classList.add('mull-card'); el.setAttribute('aria-pressed','false'); el.dataset.mid=c.id;
     onCardTap(el, ()=>{ const on=!out.has(c.id); if(on) out.add(c.id); else out.delete(c.id); el.classList.toggle('mull-out', on); el.setAttribute('aria-pressed', String(on)); onChange(); });
     g.appendChild(el);
   });
   fitMulligan();
+}
+// v158 멀리건 연출: 바꾸기로 고른 카드는 덱(왼쪽 아래 덱 더미)으로 날아 들어가고, 새 카드는 덱에서 나와 그 자리로 온다.
+//   pairs: [{oldId, card}]  (card = 그 자리에 새로 들어온 카드)
+async function mullAnimate(pairs){
+  const g=$('mulliganGrid'); if(!g || !pairs.length) return;
+  const deck=$('myDeckPile'), m=$('mulliganModal');
+  if(m) m.classList.add('mull-anim');
+  const dr=deck && deck.offsetParent ? deck.getBoundingClientRect() : {left:30, top:innerHeight-150, width:90, height:120};
+  const dc={x:dr.left+dr.width/2, y:dr.top+dr.height/2};
+  const slot=[];
+  pairs.forEach(({oldId})=>{ const e=g.querySelector(`.mull-card[data-mid="${oldId}"]`); if(e) slot.push(e); });
+  // 1) 바꾼 카드: 덱으로 빨려 들어간다
+  slot.forEach((e,i)=>{
+    const r=e.getBoundingClientRect(), z=parseFloat(getComputedStyle(e).zoom)||1;
+    e.classList.remove('tilt'); e.style.pointerEvents='none';
+    e.style.transition=`transform .55s cubic-bezier(.55,0,.8,.3) ${i*0.08}s, opacity .3s ease-in ${0.3+i*0.08}s`;
+    e.style.transform=`translate(${(dc.x-(r.left+r.width/2))/z}px,${(dc.y-(r.top+r.height/2))/z}px) scale(.22) rotate(-18deg)`;
+    e.style.opacity='0';
+  });
+  await sleep(650+slot.length*80);
+  // 2) 새 카드: 덱에서 나와 빈자리로 (뒤집히며)
+  const news=[];
+  slot.forEach((e,i)=>{
+    const pr=pairs[i]; if(!pr || !pr.card) return;
+    const n=cardEl(pr.card,{}); n.classList.add('mull-card','mull-new'); n.dataset.mid=pr.card.id;
+    n.style.zoom=e.style.zoom || '';
+    e.replaceWith(n); news.push(n);
+  });
+  news.forEach(n=>{ n.style.transition='none'; n.style.opacity='0'; });
+  void g.offsetWidth;
+  news.forEach((n,i)=>{
+    const r=n.getBoundingClientRect(), z=parseFloat(getComputedStyle(n).zoom)||1;
+    n.style.transform=`translate(${(dc.x-(r.left+r.width/2))/z}px,${(dc.y-(r.top+r.height/2))/z}px) scale(.22) rotateY(180deg)`;
+    void n.offsetWidth;
+    n.style.transition=`transform .6s cubic-bezier(.2,.75,.3,1) ${i*0.12}s, opacity .2s ease-out ${i*0.12}s`;
+    n.style.opacity='1'; n.style.transform='translate(0,0) scale(1) rotateY(0deg)';
+  });
+  await sleep(750+news.length*120);
+  await sleep(450);                       // 새 카드를 잠깐 보여 준다
+  if(m) m.classList.remove('mull-anim');
 }
 function fitMulligan(){
   const m=$('mulliganModal'), g=$('mulliganGrid'); if(!m || !g || !g.children.length) return;
@@ -88,7 +128,14 @@ function showMulligan(done){                                  // v77 멀리건: 
   upd(); m.classList.add('show'); m.scrollTop=0;
   mullCards(cards, out, upd);
   ok.disabled=false;
-  ok.onclick=()=>{ if(ok.disabled) return; ok.disabled=true; m.classList.remove('show'); const n=mulliganHand(Host.state, MY, [...out]); view=Host.view(MY); if(n) logLine(`멀리건: 시작 카드 ${n}장을 바꿨습니다.`); done(); };
+  ok.onclick=async ()=>{ if(ok.disabled) return; ok.disabled=true;
+    const before=P.hand.slice(), ids=[...out];
+    const n=mulliganHand(Host.state, MY, ids); view=Host.view(MY);
+    if(n){ logLine(`멀리건: 시작 카드 ${n}장을 바꿨습니다.`);
+      const after=Host.state.seats[MY].hand, pairs=[];                                     // v158 제자리 교체: 같은 칸의 새 카드
+      before.forEach((c,i)=>{ if(ids.includes(c.id) && after[i] && after[i].id!==c.id) pairs.push({oldId:c.id, card:after[i]}); });
+      try{ await mullAnimate(pairs); }catch(e){ console.error(e); } }
+    m.classList.remove('show'); done(); };
 }
 function controlTipOnce(){                                        // v139 바뀐 조작을 한 번만 알려 준다 (기기마다)
   const K='cardDuel.ctrlTip.v139'; try{ if(localStorage.getItem(K)) return; localStorage.setItem(K,'1'); }catch(_){ return; }
@@ -283,6 +330,41 @@ function showEffect(ev){
   else if(ev.type==='deckCopy'){ floatOn(ev.target||heroT(ev.seat!=null?ev.seat:ev.src.seat),'×'+ev.count+' 복사','buff'); }
 }
 const attackerElOf = ev => ev.attackerId==='hero' ? heroEl(ev.seat) : elOf(minionT(ev.seat, ev.attackerId));   // v80: 영웅도 공격자
+// v158 영웅 능력 투사체: 영웅 능력 버튼에서 대상(하수인·영웅)으로 날아가 부딪힌다
+const HP_SHOT={
+  fireblast:{cls:'fire', ms:380},  steadyShot:{cls:'arrow', ms:330}, frostTouch:{cls:'frost', ms:380},
+  lesserHeal:{cls:'holy', ms:420}, inspire:{cls:'gold', ms:400},     nag:{cls:'rage', ms:360},
+};
+function heroPowerShot(ev, evs, i){
+  const sp=HP_SHOT[ev.id]; if(!sp) return null;
+  let t=ev.target;
+  if(!t && ev.id==='steadyShot') t={kind:'hero', seat:1-ev.seat};
+  if(!t && ev.id==='nag'){ for(let k=i+1;k<evs.length && k<i+6;k++){ const e=evs[k]; if(e && e.type==='damage' && e.target){ t=e.target; break; } } }
+  if(!t) return null;
+  const from=$(ev.seat===MY?'myPower':'aiPower'), to=elOf(t);
+  if(!from || !to) return null;
+  const a=from.getBoundingClientRect(), b=to.getBoundingClientRect();
+  const x0=a.left+a.width/2, y0=a.top+a.height/2, x1=b.left+b.width/2, y1=b.top+b.height/2;
+  const ang=Math.atan2(y1-y0, x1-x0)*180/Math.PI;
+  const p=document.createElement('div'); p.className='hp-shot '+sp.cls;
+  if(sp.cls!=='arrow'){ const art=hpArtOf(ev.id); if(art) p.style.setProperty('--art', `url('${art}')`); }
+  p.style.left=x0+'px'; p.style.top=y0+'px'; document.body.appendChild(p);
+  const dx=x1-x0, dy=y1-y0;
+  const anim=p.animate([
+    {transform:`translate(-50%,-50%) rotate(${ang}deg) scale(.5)`, opacity:0},
+    {transform:`translate(calc(-50% + ${dx*0.12}px), calc(-50% + ${dy*0.12}px)) rotate(${ang}deg) scale(1)`, opacity:1, offset:.18},
+    {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${ang}deg) scale(1.05)`, opacity:1},
+  ], {duration:sp.ms, easing:'cubic-bezier(.45,0,.85,.55)', fill:'forwards'});
+  return new Promise(res=>{
+    anim.onfinish=()=>{
+      p.remove();
+      const boom=document.createElement('div'); boom.className='hp-boom '+sp.cls; boom.style.left=x1+'px'; boom.style.top=y1+'px'; document.body.appendChild(boom);
+      setTimeout(()=>boom.remove(), 520);
+      if(sp.cls!=='holy' && sp.cls!=='gold') knockTarget(to, dx/(Math.hypot(dx,dy)||1), dy/(Math.hypot(dx,dy)||1));
+      setTimeout(res, 120);
+    };
+  });
+}
 async function lungeApproach(ev){
   const a=attackerElOf(ev), t=elOf(ev.target);
   if(!a||!t) return;
@@ -532,7 +614,7 @@ function fxAura(ov, card){                            // 주문 시전 카드 �
     // v157 연출(공격·소환·주문 등) 중에는 바깥에서 온 다시 그리기를 미뤘다가, 연출이 끝나면 한 번만 그린다.
     // 연출 자신이 부르는 다시 그리기는 render(true) 로 바로 그린다. (움직이던 하수인이 중간에 사라지는 문제를 한 곳에서 막음)
     if(ui.anim && force!==true){ ui.renderLater=true; return; }
-    const r=_render.call(this); try{ fxFlush(); }catch(e){} return r; }; }   // 화면이 다시 그려질 때마다 대기 중인 소환 연출 재생
+    const r=_render.call(this); try{ fitBoardZoom(); }catch(e){} try{ fxFlush(); }catch(e){} return r; }; }   // 화면이 다시 그려질 때마다 대기 중인 소환 연출 재생
 async function playEvents(evs){ ui.anim=(ui.anim||0)+1; try{ return await playEvents0(evs); } finally { ui.anim--; ui.drawGhosts=[0,0]; if(!ui.anim && ui.renderLater){ ui.renderLater=false; render(); } } }   // v156 ui.anim: 연출 중 (이때 바깥에서 render 하면 움직이던 하수인이 사라진다)   // v129 끝나면 임시 뒷면 카드는 치운다 (곧 새 화면으로 그린다)
 async function playEvents0(evs){
   for(const e of evs) QStats.event(e);   // v132 퀘스트용 기록 (적 영웅에게 준 피해)
@@ -598,7 +680,7 @@ async function playEvents0(evs){
     }
     const t=eventText(ev); if(t) logLine(t);
     if(ev.type==='draw' && ev.count>0) await flyDraw(ev.seat, ev.count);
-    if(ev.type==='heroPower'){ const b=$(ev.seat===MY?'myPower':'aiPower'); if(b){ b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); } await sleep(380); }   // v131   // v129 하스스톤처럼: 덱(왼쪽)에서 손패로 날아온다
+    if(ev.type==='heroPower'){ const b=$(ev.seat===MY?'myPower':'aiPower'); if(b){ b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); } { const pj=heroPowerShot(ev, evs, i); if(pj) await pj; else await sleep(380); } }   // v131 · v158 투사체 영웅 능력은 버튼에서 대상으로 날아간다   // v129 하스스톤처럼: 덱(왼쪽)에서 손패로 날아온다
     await fxPlay(ev, fxc);          // v88
     if(window.Juice && ev.type==='damage') Juice.shakeFor([ev]);   // v154 주문·탈진 피해도 흔들림
     showEffect(ev);
@@ -1494,15 +1576,17 @@ function cardEl(c, opts={}){
   if(c.pfTurn) tags+='<span class="tag" style="background:#2a4a2a;color:#d0ffd0">P/F</span>';   // v121
   if(c.obese) tags+='<span class="tag" style="background:#5a4a1a;color:#fff0c0">🍗 비만</span>';
   const fullEff=effectText(c), eff=frontText(c, fullEff), art=cardArt(c);                    // v120 앞면은 짧은 문구 (전체 문구는 상세 창)
+  const effH=kwHtml(eff);                                                                          // v158 키워드 굵게
+  { const sc=effSizeClass((eff||'').length + (tags ? 8 : 0)); if(sc) el.classList.add(sc); }       // v158 긴 문장은 글씨를 조금 줄여 칸에 맞춘다
   const det=cardDetailOf(c);                                                                       // v118 자세한 설명이 있는 카드: 누르면 상세 창 (앞면은 짧게)
   if(det) el.classList.add('has-detail');
   else if(c.flavor || (cardByName(c.name)||{}).flavor) el.title=c.flavor || cardByName(c.name).flavor;   // v117 카드 설명(분위기 글): 마우스를 올리면 보인다
   if(c.type==='spell'){
     el.classList.add('spell');
     if(c.fatigue) el.classList.add('fatigue');
-    el.innerHTML=`${c.fatigue?'':`<div class="cost">${c.cost}</div>`}<div class="cname">${c.name}</div>${art?`<div class="card-art"><img src="${art}" alt="${c.name}" loading="lazy"></div>`:''}<div class="effect">${eff}</div><div class="stats spelltype"><span>✦ ${c.fatigue?'탈진':((c.school&&c.school.length?c.school.join('·'):'')+'주문')} ✦</span>${runeOf(c).length?`<small class="rn">${runeOf(c).join('·')} 룬</small>`:''}</div>`;
+    el.innerHTML=`${c.fatigue?'':`<div class="cost">${c.cost}</div>`}<div class="cname">${c.name}</div>${art?`<div class="card-art"><img src="${art}" alt="${c.name}" loading="lazy"></div>`:''}<div class="effect">${effH?`<span class="et">${effH}</span>`:''}</div><div class="stats spelltype"><span>✦ ${c.fatigue?'탈진':((c.school&&c.school.length?c.school.join('·'):'')+'주문')} ✦</span>${runeOf(c).length?`<small class="rn">${runeOf(c).join('·')} 룬</small>`:''}</div>`;
   } else {
-    el.innerHTML=`<div class="cost">${c.cost}</div><div class="cname">${c.name}</div>${art?`<div class="card-art"><img src="${art}" alt="${c.name}" loading="lazy"></div>`:''}<div class="effect">${tags}${tags&&eff?'<br>':''}${eff}</div><div class="stats"><span class="atk">${c.atk}</span>${(c.tribe||runeOf(c).length)?`<span class="race">${c.tribe?c.tribe.replace(/ \/ /g,'·'):''}${runeOf(c).length?`<small class="rn">${runeOf(c).join('·')} 룬</small>`:''}</span>`:''}<span class="life">${c.hp}</span></div>`;
+    el.innerHTML=`<div class="cost">${c.cost}</div><div class="cname">${c.name}</div>${art?`<div class="card-art"><img src="${art}" alt="${c.name}" loading="lazy"></div>`:''}<div class="effect">${tags?`<span class="tg">${tags}</span>`:''}${effH?`<span class="et">${effH}</span>`:''}</div><div class="stats"><span class="atk">${c.atk}</span>${(c.tribe||runeOf(c).length)?`<span class="race">${c.tribe?c.tribe.replace(/ \/ /g,'·'):''}${runeOf(c).length?`<small class="rn">${runeOf(c).join('·')} 룬</small>`:''}</span>`:''}<span class="life">${c.hp}</span></div>`;
   }
   { // v154 하스스톤식 카드 틀(.hs): 등급 보석(이름 띠 아래 가운데, 색은 상점·덱 편집의 등급 표시와 같다) · 전설이면 용 장식
     el.classList.add('hs');
@@ -1542,6 +1626,21 @@ function renderCheats(){
 }
 // ---------- v155 손패: 하스스톤처럼 아래에 부채꼴로 겹쳐 놓기 · 터치 기기는 눌러서 크게 펼치기 ----------
 const COARSE=!!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
+// v161 전장 하수인 크기: 전장 칸(가로·세로)에 하수인 7마리가 들어가는 한 가장 크게. 화면 크기·전체 화면이 바뀔 때마다 다시 잰다
+var boardZoomKey='';
+function fitBoardZoom(){
+  const z=$('aiZone'); if(!z || !z.offsetParent) return;
+  const cs=getComputedStyle(z), w=z.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight), h=z.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+  const key=Math.round(w)+'x'+Math.round(h); if(key===boardZoomKey) return; boardZoomKey=key;
+  if(w<50 || h<40) return;
+  const gap=parseFloat(cs.columnGap)||8;
+  const phone=innerHeight<=540 && innerWidth>innerHeight;
+  const byW=(w-6*gap-24)/(7*112), byH=phone ? (h-2)/134 : (h-14)/(134+12);   // 카드 100×134 (+양옆 여유 · 아래 보석·도발 방패 여유)
+  const zz=Math.max(.5, Math.min(1.9, byW, byH));
+  document.documentElement.style.setProperty('--zz', zz.toFixed(3));
+}
+addEventListener('resize', ()=>{ boardZoomKey=''; requestAnimationFrame(fitBoardZoom); });
+document.addEventListener('fullscreenchange', ()=>{ boardZoomKey=''; setTimeout(fitBoardZoom, 150); });
 function layoutHand(animate){
   const hand=$('hand'); if(!hand) return;
   const cards=[...hand.children].filter(e=>e.classList.contains('card'));
@@ -1570,6 +1669,7 @@ function setHandOpen(on, hover){
   hand.classList.toggle('open', !!on); document.body.classList.toggle('hand-open', !!on);
   document.body.classList.toggle('hand-hover', !!on && !!hover);   // v157 PC 마우스로 올린 손패는 판을 어둡게 하지 않는다
   hand.querySelectorAll('.card.tilt').forEach(c=>c.classList.remove('tilt'));
+  setTimeout(()=>hand.querySelectorAll('.card.tilt').forEach(c=>{ if(!c.matches(':hover')) c.classList.remove('tilt'); }), 260);
   layoutHand(true);
 }
 // v157 하스스톤식: PC 는 손패(오른쪽 아래 구석)에 마우스를 가져가면 올라오고, 떠나면 내려간다. 카드를 끌기 시작하면 내려간다
@@ -3340,10 +3440,15 @@ function keywordNotes(text){ const out=[]; for(const [k,d] of KEYWORD_HELP){ if(
 //  (카드를 고르거나 내는 동작은 그대로 되고, 창은 옆에 떠 있다가 다른 곳을 누르면 닫힌다)
 // v120: 모든 카드 — 따로 적은 설명(desc)이 없으면 키워드 + 원래의 긴 효과 문구로 설명을 만든다 (능력 없는 카드는 null)
 const KW_FLAGS=[['taunt','도발'],['charge','돌진'],['rush','속공'],['shield','보호막'],['windfury','질풍'],['lifesteal','생명력 흡수'],['poison','독성'],['stealth','은신'],['revive','환생'],['elusive','모면'],['echo','잔상']];
-function frontText(c, full){                                                     // 카드 앞면 문구: 짧은 문구 표(cardtext.js)에 있고 효과가 원래 그대로일 때만 줄인다
-  const sh=(typeof CARD_SHORT!=='undefined') && CARD_SHORT[c.name]; if(!sh) return full;
-  const b=cardByName(c.name); return (b && effectText(b)===full) ? sh : full;
+function frontText(c, full){                                                     // v158 카드가 커져서 앞면도 줄임말 없이 전체 문장 (cardtext.js 의 짧은 문구는 더 쓰지 않는다)
+  return full;
 }
+// v158 카드 문구의 키워드는 굵게 (전투의 함성 · 죽음의 메아리 · 도발 …)
+function kwHtml(t){                                                          // (함수 안에서 만들어 둔다: 스크립트를 읽는 도중에 불려도 안전하게)
+  const re=kwHtml.re || (kwHtml.re=new RegExp('('+['전투의 함성','죽음의 메아리','생명력 흡수','주문 공격력','도발','돌진','속공','독성','보호막','은신','빙결','침묵','과부하','발견','질풍','환생','모면','잔상','면역'].join('|')+')','g'));
+  return String(t||'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])).replace(re, '<b class="kw">$1</b>');
+}
+function effSizeClass(len){ return len>86 ? 'eff-5' : len>68 ? 'eff-4' : len>50 ? 'eff-3' : len>32 ? 'eff-2' : ''; }
 function cardDetailOf(c){
   if(!c || !c.name || c.fatigue) return null;
   const b=(typeof cardByName==='function' && cardByName(c.name)) || {};
@@ -3390,4 +3495,67 @@ const cardDetail=(function(){
   ['mousedown','touchstart'].forEach(t=>document.addEventListener(t, e=>{ if(box.style.display==='block' && !(e.target.closest && e.target.closest('#cardDetail'))) hide(); }, {capture:true, passive:true}));
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') hide(); });
   return {show, hide, cardOf:cardOfEl};
+})();
+
+// ---------- v160 설정 화면 (전체 화면으로 시작 켜기/끄기) — fullscreen.js 의 FullscreenPref ----------
+function openSettings(){ renderSettings(); showScreen('settings'); }
+function renderSettings(){
+  const F=window.FullscreenPref, cb=$('setAutoFs'), now=$('setFsNow'), none=$('setFsNone'), row=$('setFsRow');
+  if(!cb) return;
+  const ok=!!(F && F.supported);
+  if(none) none.hidden=ok; if(row) row.classList.toggle('off', !ok); cb.disabled=!ok; if(now) now.style.display=ok?'':'none';
+  cb.checked=ok && F.auto;
+  if(now) now.textContent=(ok && F.isOn()) ? '전체 화면 끄기' : '전체 화면 켜기';
+}
+(function(){
+  const cb=document.getElementById('setAutoFs'), now=document.getElementById('setFsNow');
+  if(cb) cb.addEventListener('change', ()=>{ if(window.FullscreenPref) FullscreenPref.auto=cb.checked; setTimeout(renderSettings, 150); });
+  if(now) now.addEventListener('click', ()=>{ if(window.FullscreenPref) FullscreenPref.toggle(); setTimeout(renderSettings, 250); });
+  document.addEventListener('fullscreen-pref', ()=>{ if(document.getElementById('screen-settings')?.classList.contains('show')) renderSettings(); });
+})();
+
+// ---------- v158 카드 설명 글씨 자동 맞춤: 전체 문장이 설명 칸에 다 들어가도록, 넘칠 때만 글씨를 조금씩 줄인다 ----------
+(function(){
+  const MIN=4.6;                                                   // px (카드 확대 전 기준) — 이보다 작게는 줄이지 않는다
+  // v159 이름 띠: 한 줄에 들어가게 글씨를 줄이고, 그래도 너무 작아지면 두 줄로 나눠 띠 안에 맞춘다
+  function fitName(card){
+    const n=card.querySelector(':scope > .cname'); if(!n || !n.textContent || n.dataset.fit===n.textContent) return;
+    n.style.fontSize=''; n.style.whiteSpace='nowrap'; n.style.lineHeight='';
+    const base=parseFloat(getComputedStyle(n).fontSize)||9.6; let fs=base;
+    for(let k=0;k<20 && n.scrollWidth>n.clientWidth+1 && fs>6.4;k++){ fs=Math.max(6.4, fs*Math.min(.95, (n.clientWidth/n.scrollWidth)*1.01)); n.style.fontSize=fs.toFixed(2)+'px'; }
+    if(n.scrollWidth>n.clientWidth+1){
+      n.style.whiteSpace='normal'; n.style.lineHeight='1'; fs=Math.min(base, 8.4); n.style.fontSize=fs+'px';
+      for(let k=0;k<20 && (n.scrollHeight>n.clientHeight+1 || n.scrollWidth>n.clientWidth+1) && fs>4.6;k++){ fs=Math.max(4.6, fs*.93); n.style.fontSize=fs.toFixed(2)+'px'; }
+    }
+    n.dataset.fit=n.textContent;
+  }
+  function fit(card){
+    fitName(card);
+    const e=card.querySelector(':scope > .effect'); if(!e || !e.textContent) return;
+    if(e.dataset.fit===e.textContent) return;                      // 같은 문구는 다시 재지 않는다
+    const run=()=>{ e.style.fontSize='';
+      let fs=parseFloat(getComputedStyle(e).fontSize)||8;
+      for(let k=0;k<24 && e.scrollHeight>e.clientHeight+1 && fs>MIN;k++){
+        const r=e.clientHeight/e.scrollHeight;
+        fs=Math.max(MIN, fs*Math.min(.96, Math.sqrt(r)*.99)); e.style.fontSize=fs.toFixed(2)+'px';
+      }
+      return fs; };
+    e.style.wordBreak='';
+    const a=run();
+    if(a<6 || e.scrollHeight>e.clientHeight+1){                    // 띄어쓰기 없는 긴 낱말 때문에 안 들어가면: 낱말 중간에서도 줄을 바꿔 다시 맞춘다
+      e.style.wordBreak='break-all'; const b=run();
+      if(b<a && e.scrollHeight<=e.clientHeight+1 && a>=6){ e.style.wordBreak=''; run(); }
+    }
+    e.dataset.fit=e.textContent;
+  }
+  const pending=new Set(); let raf=0;
+  function queue(n){
+    if(!(n instanceof Element)) return;
+    if(n.matches && n.matches('.card.hs')) pending.add(n);
+    if(n.querySelectorAll) n.querySelectorAll('.card.hs').forEach(c=>pending.add(c));
+    if(!raf) raf=requestAnimationFrame(()=>{ raf=0; const L=[...pending]; pending.clear();
+      L.forEach(c=>{ if(c.isConnected && !c.closest('.zone') && c.offsetParent) fit(c); }); });
+  }
+  new MutationObserver(ms=>{ for(const m of ms) m.addedNodes.forEach(queue); }).observe(document.body, {childList:true, subtree:true});
+  window.fitCardText=c=>{ if(c && c.querySelectorAll){ if(c.matches('.card.hs')) fit(c); c.querySelectorAll('.card.hs').forEach(fit); } };
 })();

@@ -381,7 +381,7 @@ function createPvp(opts = {}) {
     if (m.mull[seat].done) return { ok: false, error: '이미 선택했어요.' };
     if (!Array.isArray(ids) || ids.length > 10 || !ids.every(Number.isInteger)) return { ok: false, error: '잘못된 선택이에요.' };
     doMulligan(m, seat, ids);
-    return { ok: true };
+    return { ok: true, hand: E.viewFor(m.state, seat).me.hand };   // v158 바뀐 손패 (멀리건 연출: 같은 칸의 새 카드가 덱에서 나온다)
   }
 
   // ---------- 행동 ----------

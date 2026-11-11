@@ -1723,3 +1723,121 @@ body.hand-open.hand-hover .hand::before{display:none;}
 @media (hover:hover) and (orientation:landscape) and (max-height:540px){
   .hand.open .card.hs:hover, .hand.open .card.hs.tilt{transform:perspective(900px) translateY(-6%) scale(1.1) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));}
 }
+
+/* =====================================================================
+   v158
+   ===================================================================== */
+/* 전체 화면 버튼: 왼쪽 위 (메뉴·전투 화면 모두) */
+#fsToggle{position:fixed; left:calc(.5rem + env(safe-area-inset-left,0px)); top:calc(.45rem + env(safe-area-inset-top,0px)); z-index:41; width:2.1rem; height:2.1rem; padding:0;
+  display:flex; align-items:center; justify-content:center; border-radius:8px; color:var(--parch); background:rgba(12,10,22,.7); border:1px solid rgba(201,162,39,.4); cursor:pointer; opacity:.75;}
+#fsToggle:hover{opacity:1; border-color:var(--gold);}
+#fsToggle.on{opacity:.55;}
+/* 멀리건 ✕: 카드의 다른 층(그림·이름 띠) 위로 */
+#mulliganGrid .card.mull-out::after{z-index:30; pointer-events:none; font-size:4.2rem; background:radial-gradient(circle, rgba(0,0,0,.25), rgba(0,0,0,0) 65%);}
+#mulliganGrid .card.mull-out{filter:none;}
+#mulliganGrid .card.mull-out > :not(.cost){filter:grayscale(.8) brightness(.55);}
+/* 멀리건 연출 중: 배경을 옅게 해 왼쪽 아래 덱이 보이게, 버튼·설명은 감춘다 */
+#mulliganModal{transition:background .35s ease;}
+#mulliganModal.mull-anim{background:rgba(10,8,18,.5);}
+#mulliganModal.mull-anim #mulliganOk, #mulliganModal.mull-anim p{visibility:hidden;}
+#mulliganGrid .card.mull-new{backface-visibility:hidden;}
+/* 영웅 능력 투사체 (영웅 능력 버튼 → 대상) */
+.hp-shot{position:fixed; z-index:70; pointer-events:none; width:44px; height:44px; border-radius:50%;}
+.hp-shot::before{content:''; position:absolute; inset:0; border-radius:50%; background:var(--art) center/cover no-repeat;}
+.hp-shot::after{content:''; position:absolute; top:50%; right:50%; width:90px; height:30px; transform:translateY(-50%); border-radius:50%; z-index:-1; filter:blur(4px);}
+.hp-shot.fire{box-shadow:0 0 14px 6px rgba(255,140,40,.9), 0 0 32px 12px rgba(255,80,0,.55);}
+.hp-shot.fire::after{background:linear-gradient(90deg, rgba(255,60,0,0), rgba(255,150,40,.85));}
+.hp-shot.frost{box-shadow:0 0 14px 6px rgba(150,220,255,.9), 0 0 30px 12px rgba(80,170,255,.5);}
+.hp-shot.frost::after{background:linear-gradient(90deg, rgba(120,200,255,0), rgba(200,240,255,.85));}
+.hp-shot.holy, .hp-shot.gold{box-shadow:0 0 14px 6px rgba(255,236,150,.95), 0 0 32px 12px rgba(255,210,90,.55);}
+.hp-shot.holy::after, .hp-shot.gold::after{background:linear-gradient(90deg, rgba(255,230,140,0), rgba(255,245,200,.85));}
+.hp-shot.rage{box-shadow:0 0 14px 6px rgba(255,70,70,.9), 0 0 30px 12px rgba(200,0,40,.5);}
+.hp-shot.rage::after{background:linear-gradient(90deg, rgba(255,40,60,0), rgba(255,110,110,.85));}
+/* 고정 사격: 빛나는 화살 */
+.hp-shot.arrow{width:74px; height:8px; border-radius:2px; box-shadow:none;
+  background:linear-gradient(90deg, rgba(255,230,140,0) 0%, #8a6a3a 20%, #c9a46a 78%, #fff1b8 100%);
+  filter:drop-shadow(0 0 6px rgba(255,220,120,.95));}
+.hp-shot.arrow::before{content:''; inset:auto; right:-10px; top:50%; width:0; height:0; border-radius:0; transform:translateY(-50%); background:none;
+  border-left:16px solid #fff1b8; border-top:9px solid transparent; border-bottom:9px solid transparent;}
+.hp-shot.arrow::after{right:auto; left:-8px; width:18px; height:16px; filter:none; border-radius:2px; background:linear-gradient(90deg,#d9d2c0,#8f8676); clip-path:polygon(0 0,100% 35%,100% 65%,0 100%,30% 50%);}
+/* 부딪힘 */
+.hp-boom{position:fixed; z-index:70; pointer-events:none; width:30px; height:30px; margin:-15px 0 0 -15px; border-radius:50%; animation:hpBoom .5s ease-out forwards;}
+.hp-boom.fire{background:radial-gradient(circle, #fff6c8 0%, #ffb340 35%, rgba(255,70,0,.6) 60%, rgba(255,40,0,0) 72%);}
+.hp-boom.frost{background:radial-gradient(circle, #fff 0%, #bfe8ff 35%, rgba(90,170,255,.55) 60%, rgba(90,170,255,0) 72%);}
+.hp-boom.holy, .hp-boom.gold{background:radial-gradient(circle, #fff 0%, #ffeaa0 38%, rgba(255,210,90,.5) 60%, rgba(255,210,90,0) 72%);}
+.hp-boom.rage{background:radial-gradient(circle, #ffe0e0 0%, #ff6a6a 38%, rgba(200,0,40,.55) 60%, rgba(200,0,40,0) 72%);}
+.hp-boom.arrow{background:radial-gradient(circle, #fff7d0 0%, #ffd36a 35%, rgba(255,200,80,.4) 60%, rgba(255,200,80,0) 72%);}
+@keyframes hpBoom{0%{transform:scale(.4); opacity:1} 60%{opacity:1} 100%{transform:scale(4.2); opacity:0}}
+@media (prefers-reduced-motion:reduce){ .hp-boom{animation-duration:.2s} }
+/* 이름판: 더 크게, 줄마다 따로 (시체 해골이 손패·덱 글씨를 덮지 않게) */
+.board .hero .hinfo{display:flex; flex-direction:column; align-items:flex-end; gap:.25rem; padding:.5rem .85rem; border-radius:11px; min-width:6.5rem;}
+.board .hero .hinfo .name{font-size:clamp(.82rem, calc(var(--hero-w) * .135), 1.3rem); line-height:1.15;}
+.board .hero .hinfo .pile{font-size:clamp(.66rem, calc(var(--hero-w) * .095), .95rem); line-height:1.2; font-weight:600;}
+.board .hero .hinfo .hp{display:flex; align-items:center; justify-content:flex-end; gap:.35rem; line-height:1; min-height:0; margin:0;}
+.board .hero .hinfo .hp:not(:has(.corpse-skull.show)):not(:has(.armor-next:not(:empty))){display:none;}
+.board .hero .hinfo .corpse-skull{margin:0; width:clamp(1.6rem, calc(var(--hero-w) * .24), 2.3rem); height:clamp(1.6rem, calc(var(--hero-w) * .24), 2.3rem);
+  font-size:clamp(.7rem, calc(var(--hero-w) * .1), 1rem);}
+.board .hero .hinfo .armor-next{margin:0; font-size:clamp(.66rem, calc(var(--hero-w) * .09), .9rem);}
+@media (orientation:landscape) and (max-height:540px){
+  .board .hero .hinfo{padding:.3rem .55rem; gap:.12rem; min-width:0;}
+  .board .hero .hinfo .name{font-size:.78rem;} .board .hero .hinfo .pile{font-size:.62rem;}
+  .board .hero .hinfo .corpse-skull{width:1.35rem; height:1.35rem; font-size:.62rem;}
+}
+/* 카드: 줄임말 없이 전체 문장 → 카드를 조금 키우고(세로 128→142) 설명 칸을 넓힌다. 키워드는 더 굵고 진하게 */
+:not(.zone) > .card.hs{height:142px;}
+#discoverModal .card.hs,#mulliganModal .card.hs,#spellCast .card.hs,#burnCast .card.hs,.deck-grid .card.hs,.pk-front .card.hs{min-height:142px;}
+:not(.zone) > .card.hs .effect{left:5px; right:5px; top:71px; bottom:12px; padding:8px 4px 4px; font-weight:600; font-size:.56rem; line-height:1.16; letter-spacing:-.01em; word-break:keep-all; overflow-wrap:anywhere;}
+:not(.zone) > .card.hs.eff-2 .effect{font-size:.5rem;}
+:not(.zone) > .card.hs.eff-3 .effect{font-size:.45rem; line-height:1.14;}
+:not(.zone) > .card.hs.eff-4 .effect{font-size:.41rem; line-height:1.12;}
+:not(.zone) > .card.hs.eff-5 .effect{font-size:.38rem; line-height:1.1; padding-top:7px;}
+.card .effect b.kw{font-weight:900; color:#5a1606;}
+:not(.zone) > .card.hs.spell .effect b.kw{color:#3a0f5e;}
+/* 손패를 올렸을 때 카드도 더 크게 */
+:root{--hz-open:1.5;}
+@media (orientation:landscape) and (max-height:540px){ :root{--hz-open:1.62;} }
+:not(.zone) > .card.hs .effect .et{display:block; width:100%; text-align:center;}
+:not(.zone) > .card.hs .effect .tg{display:flex; flex-wrap:wrap; justify-content:center; gap:1px 2px; margin-bottom:2px;} :not(.zone) > .card.hs .effect .tg .tag{margin:0;}
+:not(.zone) > .card.hs .cname{word-break:keep-all; text-align:center;}
+
+/* v160 설정 화면 */
+#screen-settings .set-list{display:flex; flex-direction:column; gap:.8rem; width:min(32rem, 92vw); margin:.6rem auto 1rem;}
+#screen-settings .set-row{display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.9rem 1.1rem; border-radius:12px; cursor:pointer;
+  background:rgba(12,10,22,.72); border:1px solid rgba(201,162,39,.35); text-align:left;}
+#screen-settings .set-row.off{opacity:.5; cursor:default;}
+#screen-settings .set-txt{display:flex; flex-direction:column; gap:.25rem;}
+#screen-settings .set-txt b{font-size:1rem; color:var(--parch);}
+#screen-settings .set-txt small{font-size:.78rem; color:var(--parch-d); line-height:1.4;}
+.set-switch{appearance:none; -webkit-appearance:none; flex:none; position:relative; width:3.2rem; height:1.75rem; border-radius:999px; margin:0; cursor:pointer;
+  background:#3a3550; border:1px solid rgba(201,162,39,.4); transition:background .2s;}
+.set-switch::after{content:''; position:absolute; top:2px; left:2px; width:calc(1.75rem - 6px); height:calc(1.75rem - 6px); border-radius:50%; background:#d9d3e8; box-shadow:0 1px 3px rgba(0,0,0,.5); transition:transform .2s;}
+.set-switch:checked{background:linear-gradient(180deg,#e8c95a,#b8901c);}
+.set-switch:checked::after{transform:translateX(1.45rem); background:#fff;}
+.set-switch:focus-visible{outline:2px solid var(--gold); outline-offset:3px;}
+
+/* =====================================================================
+   v161 전장 하수인을 하스스톤처럼: 세로로 긴 큰 타원에 그림이 꽉 차게, 공격력·체력 보석은 작게 타원 아래 모서리에 겹쳐서.
+   크기(--zz)는 ui.js fitBoardZoom 이 전장 칸의 가로·세로에 맞춰 정한다 (하수인 7마리가 들어가는 한 최대로)
+   ===================================================================== */
+.zone .card{width:100px; height:134px;}
+.zone .card .card-art{left:3px; right:3px; top:0; bottom:6px; border-width:3px;}
+.zone .card .card-art img{object-position:center 26%; transform:none;}
+.zone .card:not(:has(.card-art)) .cname{left:3px; right:3px; bottom:6px;}
+.zone .card .stats{left:-4px; right:-4px; bottom:-7px;}
+.zone .card .stats .atk, .zone .card .stats .life{font-size:1.02rem;}
+.zone .card .stats .atk{width:31px; height:36px; padding:7px 0 0 4px;}
+.zone .card .stats .life{width:27px; height:35px; padding:8px 0 0;}
+.zone .card .kw{bottom:3px;}
+.zone .card.sick::after{top:10px; right:12px;}
+.zone .card.hs .ldragon{left:-14%; right:-14%; top:-16px; height:46px;}
+.zone{gap:.5rem;}
+/* 도발 방패도 새 타원에 맞춰 */
+.zone .card.taunt::before{inset:-14px -17px -20px -17px;
+  background-size:70% 76%,84% 84%,57% 66%,100% 100%; background-position:50% 35%,50% 28%,50% 39%,0 0;}
+@media (orientation:landscape) and (max-height:540px){
+  .zone .card .stats{left:-9px; right:-9px; bottom:-9px;}
+  .zone .card .stats .atk, .zone .card .stats .life{font-size:1.45rem;}
+  .zone .card .stats .atk{width:42px; height:48px; padding:9px 0 0 5px;}
+  .zone .card .stats .life{width:37px; height:47px; padding:11px 0 0;}
+  .zone .card .kw span{min-width:24px; height:24px; font-size:14px; line-height:22px;}
+}

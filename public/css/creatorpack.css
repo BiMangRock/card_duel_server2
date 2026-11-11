@@ -91,3 +91,43 @@
   #cpShow .cp-slot:nth-child(n){transform:none;}
 }
 @media (prefers-reduced-motion:reduce){ .cp-btn, #cpShow .cp-rays{animation:none;} }
+
+/* ===== v159 직접 여는 연출 ===== */
+/* 안내 문구 (팩 아래 · 카드 아래) */
+#cpShow .cp-step{position:absolute; left:0; right:0; bottom:calc(9vh + env(safe-area-inset-bottom,0px)); margin:0; text-align:center; pointer-events:none;
+  font:400 clamp(1rem, 2.2vw, 1.35rem) var(--font-d); letter-spacing:.08em; color:#f3dc8a; text-shadow:0 0 14px rgba(240,207,98,.55), 0 2px 6px #000;
+  opacity:0; transform:translateY(6px); transition:opacity .35s, transform .35s;}
+#cpShow .cp-step.on{opacity:1; transform:none; animation:cpStepBlink 1.8s ease-in-out infinite;}
+@keyframes cpStepBlink{50%{opacity:.6;}}
+/* 팩: 누르기를 기다릴 때 숨쉬듯 빛난다 */
+#cpShow .cp-pack{pointer-events:none;}
+#cpShow.packready .cp-pack{pointer-events:auto; cursor:pointer; animation:cpPackPulse 1.5s ease-in-out infinite;}
+#cpShow.packready .cp-pack:hover{border-color:#fff1b8; filter:brightness(1.15);}
+@keyframes cpPackPulse{50%{box-shadow:0 0 0 2px rgba(0,0,0,.4), 0 0 90px 18px rgba(190,150,255,.85), 0 0 30px rgba(255,220,130,.6), 0 20px 50px rgba(0,0,0,.7);}}
+#cpShow .cp-spark.in{background:#e6d8ff; box-shadow:0 0 12px 4px rgba(170,130,255,.9);}
+/* 뒷면 카드: 전설 카드처럼 주황빛이 넘실거리며 기다린다. 마우스를 올리면 더 밝게 */
+#cpShow .cp-card.await .cp-back{animation:cpAura 1.6s ease-in-out infinite;}
+#cpShow .cp-card.await:hover .cp-back{box-shadow:0 12px 24px rgba(0,0,0,.6), 0 0 34px 12px rgba(255,170,60,.95), 0 0 70px 20px rgba(255,120,30,.5); border-color:#ffd36a;}
+#cpShow .cp-card.await:hover{transform:translateY(-10px) scale(1.04); transition:transform .15s ease;}
+@keyframes cpAura{0%,100%{box-shadow:0 12px 24px rgba(0,0,0,.6), 0 0 16px 4px rgba(255,170,60,.55);} 50%{box-shadow:0 12px 24px rgba(0,0,0,.6), 0 0 30px 10px rgba(255,170,60,.85), 0 0 60px 16px rgba(255,120,30,.35);}}
+/* 뒤집힐 때: 빛 고리 + 빛 기둥 */
+#cpShow .cp-burst{position:absolute; width:20px; height:20px; margin:-10px 0 0 -10px; pointer-events:none; z-index:3;}
+#cpShow .cp-burst::before{content:''; position:absolute; inset:0; border-radius:50%; border:3px solid #ffe08a; box-shadow:0 0 18px 6px rgba(255,200,80,.85), inset 0 0 12px rgba(255,240,200,.8);
+  animation:cpRing .8s cubic-bezier(.2,.8,.3,1) forwards;}
+#cpShow .cp-burst::after{content:''; position:absolute; left:50%; top:50%; width:46vmin; height:46vmin; margin:-23vmin 0 0 -23vmin; border-radius:50%;
+  background:repeating-conic-gradient(from 0deg, rgba(255,230,150,.55) 0deg 4deg, rgba(255,230,150,0) 4deg 22deg);
+  -webkit-mask:radial-gradient(circle, #000 0, rgba(0,0,0,.5) 30%, transparent 62%); mask:radial-gradient(circle, #000 0, rgba(0,0,0,.5) 30%, transparent 62%);
+  animation:cpBeams 1.05s ease-out forwards;}
+@keyframes cpRing{0%{transform:scale(.3); opacity:1;} 100%{transform:scale(13); opacity:0;}}
+@keyframes cpBeams{0%{transform:scale(.3) rotate(0); opacity:0;} 20%{opacity:1;} 100%{transform:scale(1.15) rotate(40deg); opacity:0;}}
+/* 모두 뒤집기 */
+#cpShow .cp-all{position:absolute; left:50%; bottom:calc(9vh + 2.6rem + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:none; min-height:40px; padding:.45rem 1.2rem; border-radius:9px; cursor:pointer;
+  background:rgba(74,52,130,.85); color:#f3e3b0; border:1px solid #e8c95a; font:500 .9rem var(--font-u);}
+#cpShow.choosing .cp-all{display:block;}
+#cpShow.choosing .cp-step{bottom:calc(9vh - 1.4rem + env(safe-area-inset-bottom,0px));}
+@media (orientation:landscape) and (max-height:540px){
+  #cpShow .cp-step{bottom:.6rem; font-size:.95rem;}
+  #cpShow .cp-all{bottom:2.4rem;}
+  #cpShow.choosing .cp-step{bottom:.4rem;}
+}
+@media (prefers-reduced-motion:reduce){ #cpShow.packready .cp-pack, #cpShow .cp-card.await .cp-back, #cpShow .cp-step.on{animation:none;} }

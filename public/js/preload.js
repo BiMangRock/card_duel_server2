@@ -97,7 +97,7 @@ const Preload = (() => {
     if (box) return box;
     box = document.createElement('div'); box.id = 'loadScreen';
     box.innerHTML = '<div class="ld-card"><div class="ld-title">게임 로딩 중</div>'
-      + '<div class="ld-bar"><i></i></div><div class="ld-pct">0%</div><div class="ld-sub">카드 그림을 미리 불러오고 있어요. 첫 판만 조금 기다리면 다음 판부터는 바로 시작돼요.</div></div>';
+      + '<div class="ld-bar"><i></i></div><div class="ld-pct">0%</div></div>';
     document.body.appendChild(box);
     return box;
   }

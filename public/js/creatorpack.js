@@ -1,12 +1,13 @@
-// creatorpack.js — v154 로그인 화면 「제작자 팩」
-//   [제작자 팩 열기] → 팩이 떨어져 흔들리다 번쩍! 터지고, 제작자 카드 4장이 튀어나와 날아가 자리를 잡은 뒤 한 장씩 뒤집힌다.
+// creatorpack.js — v154 로그인 화면 「제작자 팩」 · v159 하스스톤처럼 직접 여는 연출
+//   [제작자 팩 열기] → 팩이 떨어진다 → 팩을 누르면 빛이 모이며 흔들리다 번쩍! 터진다 → 카드 4장이 뒷면으로 날아와 빛나며 기다린다
+//   → 카드를 하나씩 눌러 뒤집는다 (빛 기둥 · 불꽃 · 화면 흔들림). [모두 뒤집기] 로 한꺼번에도.
 //   카드를 누르면 크게 보기, 마우스를 올리면 기울고 빛이 맺힌다. [다시 열기] · [닫기] · Esc
 (() => {
   const CARDS = ['creator_1', 'creator_2', 'creator_3', 'creator_4'].map(n => `/images/creators/${n}.webp`);
   const LOGO = '/images/intro/logo.webp';
   const reduced = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; } };
   const wait = ms => new Promise(r => setTimeout(r, reduced() ? Math.min(ms, 60) : ms));
-  let root = null, busy = false, lastFocus = null;
+  let root = null, busy = false, lastFocus = null, run = 0, packGo = null, allDone = null;
 
   CARDS.concat(LOGO).forEach(src => { const i = new Image(); i.src = src; });   // 미리 받아 둔다
 
@@ -23,17 +24,27 @@
           <span class="cp-shine" aria-hidden="true"></span>
         </button></div>`).join('')}
       </div>
+      <button type="button" class="cp-all">모두 뒤집기</button>
       <p class="cp-hint">카드를 누르면 크게 볼 수 있어요</p>
       <div class="cp-btns"><button type="button" class="cp-again">다시 열기</button><button type="button" class="cp-close">닫기</button></div>
       <div class="cp-pack" aria-hidden="true"><img src="${LOGO}" alt=""><b>제작자 팩</b><small>4장</small></div>
       <div class="cp-flash" aria-hidden="true"></div>
+      <p class="cp-step" aria-live="polite"></p>
       <button type="button" class="cp-x" aria-label="닫기">✕</button>`;
     document.body.appendChild(root);
     root.querySelector('.cp-close').onclick = close;
     root.querySelector('.cp-x').onclick = close;
     root.querySelector('.cp-again').onclick = () => { if (!busy) open(); };
+    root.querySelector('.cp-pack').onclick = () => { if (packGo) packGo(); };
+    root.querySelector('.cp-all').onclick = async () => {
+      const L = [...root.querySelectorAll('.cp-card:not(.flipped)')];
+      for (const c of L) { reveal(c); await wait(230); }
+    };
     root.querySelectorAll('.cp-card').forEach(c => {
-      c.onclick = () => { if (c.classList.contains('flipped') && !busy) zoom(CARDS[+c.dataset.i]); };
+      c.onclick = () => {
+        if (root.classList.contains('choosing') && !c.classList.contains('flipped')) { reveal(c); return; }   // v159 직접 뒤집기
+        if (c.classList.contains('flipped') && !busy) zoom(CARDS[+c.dataset.i]);
+      };
       c.addEventListener('pointermove', e => {                                  // 기울기 + 빛
         if (!c.classList.contains('flipped') || busy || e.pointerType === 'touch' || reduced()) return;
         const r = c.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
@@ -55,13 +66,58 @@
     }
   }
 
+  // v159 원하는 자리에서 튀는 불꽃 / 바깥에서 가운데로 모이는 빛
+  function sparksAt(x, y, n, spread) {
+    for (let k = 0; k < n; k++) {
+      const s = document.createElement('i'); s.className = 'cp-spark'; s.style.left = x + 'px'; s.style.top = y + 'px'; root.appendChild(s);
+      const a = Math.random() * Math.PI * 2, d = (spread || 120) * (.4 + Math.random() * .8), sz = .4 + Math.random() * .9;
+      const an = s.animate([{ transform: `translate(0,0) scale(${sz})`, opacity: 1 },
+        { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d + 30}px) scale(0)`, opacity: 0 }],
+        { duration: 500 + Math.random() * 500, easing: 'cubic-bezier(.15,.8,.3,1)', fill: 'forwards' });
+      an.onfinish = () => s.remove();
+    }
+  }
+  function gather(n, ms) {
+    for (let k = 0; k < n; k++) {
+      const s = document.createElement('i'); s.className = 'cp-spark in'; root.appendChild(s);
+      const a = Math.random() * Math.PI * 2, d = 160 + Math.random() * Math.min(innerWidth, innerHeight) * .45;
+      const an = s.animate([{ transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d}px) scale(1.2)`, opacity: 0 },
+        { opacity: 1, offset: .3 }, { transform: 'translate(0,0) scale(.2)', opacity: .9 }],
+        { duration: ms * (.5 + Math.random() * .5), delay: Math.random() * ms * .45, easing: 'cubic-bezier(.5,0,.9,.4)', fill: 'forwards' });
+      an.onfinish = () => s.remove();
+    }
+  }
+  function shake(el, amp) {
+    if (reduced()) return;
+    const kf = []; for (let k = 0; k <= 8; k++) { const f = (1 - k / 8) * amp; kf.push({ transform: `translate(${(Math.random() - .5) * 2 * f}px, ${(Math.random() - .5) * 2 * f}px)` }); }
+    el.animate(kf, { duration: 360, easing: 'linear' });
+  }
+  function step(t) { const e = root.querySelector('.cp-step'); e.textContent = t || ''; e.classList.toggle('on', !!t); }
+  // v159 카드 한 장 뒤집기: 들어 올렸다가 휙 뒤집히며 빛 기둥 · 불꽃 · 흔들림
+  function reveal(c) {
+    if (!c || c.classList.contains('flipped')) return;
+    c.classList.remove('await');
+    const inner = c.querySelector('.cp-inner'), r = c.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    if (!reduced()) inner.animate([{ transform: 'rotateY(180deg) scale(1)' }, { transform: 'rotateY(180deg) scale(1.1) translateY(-10px)', offset: .25 },
+      { transform: 'rotateY(90deg) scale(1.22) translateY(-14px)', offset: .55 }, { transform: 'rotateY(0) scale(1)' }],
+      { duration: 620, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    setTimeout(() => {
+      c.classList.add('flipped');
+      const b = document.createElement('i'); b.className = 'cp-burst'; b.style.left = x + 'px'; b.style.top = y + 'px'; root.appendChild(b);
+      setTimeout(() => b.remove(), 1100);
+      if (!reduced()) { sparksAt(x, y, 26, r.width * .9); shake(root.querySelector('.cp-row'), 7); }
+      if (![...root.querySelectorAll('.cp-card')].some(k => !k.classList.contains('flipped')) && allDone) setTimeout(allDone, 650);
+    }, reduced() ? 0 : 300);
+  }
+
   async function open() {
     if (busy) return; busy = true;
     if (!root) build();
     lastFocus = document.activeElement;
     const pack = root.querySelector('.cp-pack'), flash = root.querySelector('.cp-flash'), cards = [...root.querySelectorAll('.cp-card')];
-    root.classList.remove('revealed', 'burst');
-    cards.forEach(c => { c.classList.remove('live', 'flipped'); c.style.transform = ''; c.getAnimations().forEach(a => a.cancel()); });
+    const my = ++run;
+    root.classList.remove('revealed', 'burst', 'packready', 'choosing'); step('');
+    cards.forEach(c => { c.classList.remove('live', 'flipped', 'await'); c.style.transform = ''; c.getAnimations().forEach(a => a.cancel()); c.querySelector('.cp-inner').getAnimations().forEach(a => a.cancel()); });
     pack.style.display = ''; pack.getAnimations().forEach(a => a.cancel());
     root.style.display = ''; requestAnimationFrame(() => root.classList.add('on'));
     document.addEventListener('keydown', onKey);
@@ -72,6 +128,13 @@
       await pack.animate([{ transform: `${T} translateY(-60vh) rotate(-12deg) scale(.7)`, opacity: 0 },
         { transform: `${T} translateY(0) rotate(3deg) scale(1.04)`, opacity: 1, offset: .75 }, { transform: `${T} rotate(0) scale(1)` }],
         { duration: 520, easing: 'cubic-bezier(.3,.8,.4,1)' }).finished;
+      if (my !== run) return;
+      // v159 팩을 눌러야 열린다 (하스스톤처럼)
+      root.classList.add('packready'); step('팩을 눌러 열어 보세요');
+      await new Promise(res => { packGo = res; });
+      packGo = null; if (my !== run) return;
+      root.classList.remove('packready'); step('');
+      gather(34, 900);
       const kf = []; for (let k = 0; k <= 14; k++) { const p = k / 14, amp = 1 + p * 6; kf.push({ transform: `${T} rotate(${(k % 2 ? -1 : 1) * amp}deg) scale(${1 + p * .08})`, filter: `brightness(${1 + p * .7})` }); }
       await pack.animate(kf, { duration: 900, easing: 'ease-in' }).finished;
     }
@@ -95,16 +158,15 @@
         { duration: 760, delay: 90 + i * 110, easing: 'cubic-bezier(.2,.85,.3,1.15)', fill: 'backwards' }).finished;
     });
     await Promise.all(flights);
+    if (my !== run) return;
+    // v159 카드는 뒷면으로 빛나며 기다린다 → 하나씩 눌러 뒤집기
+    cards.forEach(c => c.classList.add('await'));
+    root.classList.add('choosing'); step('카드를 눌러 한 장씩 뒤집어 보세요');
+    busy = false;
+    await new Promise(res => { allDone = res; });
+    allDone = null; if (my !== run) return;
+    root.classList.remove('choosing'); step('');
     root.classList.add('revealed');
-
-    // 5) 한 장씩 뒤집기
-    for (const c of cards) {
-      const inner = c.querySelector('.cp-inner');
-      if (!reduced()) inner.animate([{ transform: 'rotateY(180deg) scale(1)' }, { transform: 'rotateY(90deg) scale(1.12)' }, { transform: 'rotateY(0) scale(1)' }],
-        { duration: 520, easing: 'cubic-bezier(.3,.7,.3,1)' });
-      c.classList.add('flipped');
-      await wait(260);
-    }
     busy = false;
     root.querySelector('.cp-close').focus({ preventScroll: true });
   }
@@ -118,10 +180,14 @@
     document.body.appendChild(z); requestAnimationFrame(() => z.classList.add('on'));
   }
 
-  function onKey(e) { if (e.key === 'Escape' && !document.getElementById('cpZoom')) close(); }
+  function onKey(e) {
+    if (e.key === 'Escape' && !document.getElementById('cpZoom')) close();
+    else if ((e.key === 'Enter' || e.key === ' ') && packGo) { e.preventDefault(); packGo(); }
+  }
   function close() {
     if (!root) return;
-    busy = false; document.removeEventListener('keydown', onKey);
+    busy = false; run++; document.removeEventListener('keydown', onKey);
+    if (packGo) { const f = packGo; packGo = null; f(); } if (allDone) { const f = allDone; allDone = null; f(); }   // 기다리던 단계를 풀어 둔다
     root.classList.remove('on');
     setTimeout(() => { if (!root.classList.contains('on')) root.style.display = 'none'; }, 260);
     if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
