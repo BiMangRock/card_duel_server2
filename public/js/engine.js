@@ -271,9 +271,12 @@ const HERO_POWERS = {
 const HERO_POWER_IDS = Object.keys(HERO_POWERS);
 const randomHeroPower = (rng=Math.random) => HERO_POWER_IDS[Math.floor(rng()*HERO_POWER_IDS.length)];
 const heroPowerInfo = id => { const h=HERO_POWERS[id]; return h ? {id, name:h.name, icon:h.icon, text:h.text, cost:HP_COST} : null; };
+const bossPowerInfo = bp => ({id:'boss_'+bp.id, name:bp.name, icon:bp.icon, text:bp.text, cost:bp.active ? bp.cost : 0, boss:true, passive:!bp.active});   // v162
+const seatPowerInfo = P => P.bossPower ? bossPowerInfo(P.bossPower) : (P.heroPower ? heroPowerInfo(P.heroPower) : null);
 function heroPowerTargets(s, seat){ const h=HERO_POWERS[s.seats[seat].heroPower]; return h && h.targets ? h.targets(s, seat) : []; }
 function heroPowerChoice(view){                    // 봇: 영웅 능력을 쓸지, 쓴다면 어떤 대상에
   const acts=(view.legal||[]).filter(a=>a.type==='HERO_POWER'); if(!acts.length || !view.me.heroPower) return null;
+  if(view.me.heroPower.boss) return acts[0];   // v162 보스 사용형 능력: 쓸 수 있으면 쓴다 (못 쓰는 경우는 합법 행동에서 이미 빠짐)
   const h=HERO_POWERS[view.me.heroPower.id]; if(!h) return null;
   try{ return h.bot ? h.bot(view, acts) : acts[0]; }catch(e){ return null; }
 }
@@ -290,6 +293,48 @@ function cheatMinion(P, m){                                  // v98 소환되는
   if(md.chargeAll) m.charge=true;
   if(md.shieldAll) m.shield=true;
   if(md.atkUp) m.atk+=md.atkUp;
+  if(md.ironLegion) m.taunt=true;                            // v162 철벽 군단
+}
+// ---- v162 보스 치트 도우미 ----
+const GLOBAL_MODS=['youMe','spellFive','bloodToll'];   // 양쪽 모두에게 적용되는 규칙 치트 (한쪽에만 걸려도 두 좌석 mods 에 똑같이 넣는다)
+const isDrMinion = m => !!m && m.type==='minion' && (hasDeathFx(m) || /죽음의 메아리/.test(effectText(m)||''));   // 죽음의 메아리 하수인
+function miniCopy(s, c){                                      // 1/1 · 비용 1 복사본 (능력 유지). origName = 그림용 원래 이름
+  const mc=structuredClone(c); for(const k of ['id','inDeck','auto','lifeCost','mini','echoTemp']) delete mc[k];
+  mc.id=s.nextId++; mc.cost=1; mc.atk=1; mc.hp=1; mc.maxHp=1; mc.isMini=true; mc.origName=c.origName||c.name; if(!/\(미니\)$/.test(mc.name)) mc.name=c.name+' (미니)';
+  delete mc.tempAtk; return mc;
+}
+const randomPoolCard = (s, type) => { const pool=GEN_POOL.filter(c=>c.type===type && !c.generatedOnly); if(!pool.length) return null; const b=pool[Math.floor(nextRand(s)*pool.length)], c=structuredClone(b); delete c.lifeCost; return c; };
+function graveRaise(s, seat, n, ev, src){                    // 무덤지기: 이번 게임에 죽은 내 하수인 중 무작위 n기를 되살린다 (전투의 함성 없음)
+  const P=s.seats[seat], g=(P.grave||[]).filter(x=>CARD_POOL.some(c=>c.type==='minion' && c.name===x.name)); let k=0;
+  for(let i=0;i<n && P.board.length<CONFIG.MAX_BOARD && g.length;i++){
+    const pick=g.splice(Math.floor(nextRand(s)*g.length),1)[0], base=CARD_POOL.find(c=>c.type==='minion' && c.name===pick.name), bf=(P.mods&&P.mods.buff)||0;
+    const m={...structuredClone(base), id:s.nextId++, maxHp:base.hp+bf, hp:base.hp+bf, attacked:false, summoned:true}; cheatMinion(P, m);
+    P.board.push(m); ev.push({type:'summon', seat, id:m.id, name:m.name, src}); k++; }
+  if(k) logNote(ev, seat, src, `무덤에서 하수인 ${k}기가 일어났습니다`); else ev.push({type:'ignored', seat, src});
+  return k;
+}
+function gamblerHand(s, seat, n, ev, src){                   // 도박사의 손: 손패의 무작위 카드 n장(비용 1 이상) 비용 0
+  const P=s.seats[seat], c=P.hand.filter(x=>x.cost>0 && !(x.effect && x.effect.type==='mana')); let k=0;
+  for(let i=0;i<n && c.length;i++){ const x=c.splice(Math.floor(nextRand(s)*c.length),1)[0]; x.cost=0; k++; }
+  if(k) logNote(ev, seat, src, `손패 ${k}장의 비용이 0이 되었습니다`); else ev.push({type:'ignored', seat, src});
+  return k;
+}
+function legionTaunt(s, seat, ev, src){                      // 철벽 군단 (사용형): 지금 내 하수인 모두 도발
+  const P=s.seats[seat]; let k=0;
+  for(const m of P.board) if(m.hp>0 && !m.taunt){ m.taunt=true; k++; ev.push({type:'grant', target:minionT(seat, m.id), name:m.name, kws:['도발'], src}); }
+  if(!k) ev.push({type:'ignored', seat, src});
+}
+// 보스 영웅 능력 중 '사용형' (나머지 치트는 지속형 영웅 능력 = 항상 켜진 치트와 같다). use(s, seat, value, ev, src), blocked(s, seat) = 못 쓰는 이유
+const BOSS_ACTIVE={
+  graveKeeper:{ use:(s,seat,v,ev,src)=>graveRaise(s, seat, Number(v)||1, ev, src),
+    blocked:(s,seat)=> s.seats[seat].board.length>=CONFIG.MAX_BOARD ? '전장이 가득 찼습니다.' : !(s.seats[seat].grave||[]).length ? '되살릴 하수인이 없습니다.' : null },
+  gambler:    { use:(s,seat,v,ev,src)=>gamblerHand(s, seat, Number(v)||1, ev, src),
+    blocked:(s,seat)=> s.seats[seat].hand.some(x=>x.cost>0 && !(x.effect && x.effect.type==='mana')) ? null : '비용을 0으로 만들 카드가 없습니다.' },
+  ironLegion: { use:(s,seat,v,ev,src)=>legionTaunt(s, seat, ev, src),
+    blocked:(s,seat)=> s.seats[seat].board.some(m=>m.hp>0 && !m.taunt) ? null : '도발을 줄 하수인이 없습니다.' },
+};
+function cheatAuras(s){                                        // 항상 켜진 치트: 철벽 군단 (내 하수인 모두 도발 — 토큰·되살아난 하수인 포함)
+  for(const P of s.seats) if(P.mods && P.mods.ironLegion) for(const m of P.board) if(m.hp>0 && !m.taunt) m.taunt=true;
 }
 function applyTotemAtk(P, m){ if(P.totemAtk && (m.tribe||'').includes('토템')){ m.atk+=P.totemAtk-(m.tb||0); m.tb=P.totemAtk; } }   // v113 돌장인: 이번 게임 내 토템 공격력 보너스 (중복 적용 방지용 m.tb)
 function summonTokens(s, seat, n, tok, ev){                    // tok: {name, atk, hp}. 빈 자리만큼만 소환한다 (속공)
@@ -435,6 +480,8 @@ function effCost(P, c){                                      // v74 태양샘(�
   let k=c.cost;
   if(c.dynCost===true) k-=P.hand.length-1; else if(c.dynCost==='cast') k-=(P.castTotal||0);
   k=Math.max(0, k);
+  const md0=P.mods||{}, coin=!!(c.effect && c.effect.type==='mana');
+  if(md0.rommath && !c.inDeck && !coin) k=Math.max(0, k-md0.rommath);   // v162 학자 롬메스의 두루마리: 처음 덱에 없던 카드 비용 -N
   if(c.type==='spell'){
     k+=(P.spellTax||0)+(P.auraTax||0);   // v79 타락심장 심문관
     if(P.wanderTax && !(c.effect && c.effect.type==='mana')) k+=P.wanderTax;   // v119 심각한 진로 방황
@@ -444,6 +491,10 @@ function effCost(P, c){                                      // v74 태양샘(�
   else if(c.type==='minion'){
     if(P.board.some(m=>m.costOne && m.hp>0)) k=1;   // v81 아비아나: 내 하수인 카드의 비용이 1
     if(P.freeMinion) k=Math.max(0, k-P.freeMinion);   // v98 치트 무료 첫 하수인: 매 턴 처음 내는 하수인 비용 -N
+  }
+  if(c.type==='spell' && !coin){
+    if(md0.spellFive!=null && md0.spellFive!==false) k=Number(md0.spellFive);            // v162 양쪽 규칙: 모든 주문의 비용이 N
+    if(md0.spellOverload!=null && md0.spellOverload!==false) k=Number(md0.spellOverload);  // v162 주문 과부하: 내 주문 비용 N (시전하면 과부하 1)
   }
   return k;
 }
@@ -1431,6 +1482,11 @@ Object.assign(SPELL_FX, {
 const DRUNK={name:'만취한 손님', atk:0, hp:2, rush:false, extra:{cantAttack:true, adjAtkAura:-1}};   // 야간 편의점 근무자: 상대 전장에 소환되는 방해 하수인
 const PC_OWL={name:'PC방 올빼미', atk:4, hp:4};                                                      // PC방 올나잇: 속공 4/4
 const carrotCoin=()=>({...makeCoin(), name:'당근마켓 정산금'});                                       // 방구석 통기타 · 카페 알바생: 동전
+function youMeGive(s, actor, options, picked, ev){             // v162 너도? 나도? (양쪽 규칙): 발견하고 남은 카드들은 상대 손으로
+  const P=s.seats[actor]; if(!(P.mods && P.mods.youMe)) return;
+  const rest=(options||[]).filter((o,i)=>i!==picked && o).map(o=>{ const c=structuredClone(o); for(const k of ['fromDeckId','inDeck','auto','id']) delete c[k]; return c; });
+  if(rest.length) giveCards(s, other(actor), rest, ev, {seat:actor, name:'너도? 나도?'});
+}
 function giveCards(s, seat, cards, ev, src){                     // 카드 여러 장을 손으로 (가득이면 소각)
   const P=s.seats[seat];
   for(const c0 of cards){ const c={...c0, id:s.nextId++}, burned=P.hand.length>=handMax(P); if(!burned) P.hand.push(c);
@@ -2047,8 +2103,13 @@ function newGame(rng=Math.random, opts={}){
     shuffle(deck, rng);
     const maxHp=CONFIG.HERO_HP+(mods.hp||0);
     const hpId=opts.heroPowers && opts.heroPowers[seat];   // v131 영웅 능력 (없으면 영웅 능력 없음 — 예전 테스트·자체 대전과 같게)
-    s.seats.push({hp:maxHp, maxHp, armor:mods.startArmor||0, mana:0, maxMana:mods.startMana?Math.max(0, mods.startMana-1):0, deck, hand:[], board:[], mods, heroPower:HERO_POWERS[hpId]?hpId:null, powerUsed:false});
+    const bp=opts.bossPowers && opts.bossPowers[seat];   // v162 보스 영웅 능력: {id, value, active, cost, name, icon, text}. 지속형이면 같은 이름의 치트가 켜진다
+    const bossPower=bp && bp.id ? {id:String(bp.id), value:bp.value, active:!!(bp.active && BOSS_ACTIVE[bp.id]), cost:Math.max(0, Math.min(10, Math.floor(Number(bp.cost)||0))), name:String(bp.name||bp.id), icon:String(bp.icon||'✦'), text:String(bp.text||'')} : null;
+    if(bossPower && !bossPower.active) mods[bossPower.id]=bossPower.value===undefined ? true : bossPower.value;
+    s.seats.push({hp:maxHp, maxHp, armor:mods.startArmor||0, mana:0, maxMana:mods.startMana?Math.max(0, mods.startMana-1):0, deck, hand:[], board:[], mods, heroPower:bossPower ? null : (HERO_POWERS[hpId]?hpId:null), powerUsed:false, ...(bossPower?{bossPower}:{})});
   }
+  for(const k of GLOBAL_MODS){ const a=s.seats[0].mods[k], b=s.seats[1].mods[k], v=(a!=null && a!==false) ? a : b;   // v162 양쪽 규칙 치트
+    if(v!=null && v!==false){ s.seats[0].mods[k]=v; s.seats[1].mods[k]=v; } }
   for(let seat=0; seat<2; seat++){
     const P=s.seats[seat];
     drawCards(s, seat, Math.min(CONFIG.START_HAND_MAX, CONFIG.START_HAND+(seat===first ? 0 : CONFIG.SECOND_HAND)+(P.mods.startHand||0)), null);
@@ -2058,13 +2119,13 @@ function newGame(rng=Math.random, opts={}){
       P.board.push({id:s.nextId++, name:'보초병', cost:1, atk:1, hp:2, maxHp:2, attacked:false, summoned:false});
   }
   startTurn(s, first, []);      // 선공도 정상적으로 턴 시작 처리(마나 1)
-  refreshAura(s);
+  refreshAura(s); cheatAuras(s);
   return s;
 }
 
 // ---- 내부 변경 함수 (복제본 s 에만 사용) ----
 function drawCards(s, seat, n, ev, src){
-  const P=s.seats[seat]; let drawn=0, burned=0; const bcards=[];
+  const P=s.seats[seat]; let drawn=0, burned=0; const bcards=[], minis=[];
   for(let i=0;i<n;i++){
     if(!P.deck.length){      // 탈진: 덱이 빈 채로 카드를 뽑아야 할 때마다 영웅이 피해를 입는다. 1, 2, 3, ... 으로 계속 늘어난다 (좌석별)
       if(P.mods && P.mods.noFatigue) continue;   // v98 치트 피로 면역
@@ -2075,9 +2136,11 @@ function drawCards(s, seat, n, ev, src){
       continue;
     }
     const c=P.deck.pop();
-    if(P.hand.length<handMax(P)){ P.hand.push(c); drawn++; } else { burned++; bcards.push(c); }
+    if(P.hand.length<handMax(P)){ P.hand.push(c); drawn++; if(ev && P.mods && P.mods.bcDrawCopy && c.type==='minion' && c.effect && !c.isMini) minis.push(c); } else { burned++; bcards.push(c); }
   }
   if(ev && (drawn||burned)) ev.push({type:'draw', seat, count:drawn, burned, src:src||null, ...(burned?{burnedCards:bcards}:{})});
+  for(const c of minis) for(let i=0;i<(Number(P.mods.bcDrawCopy)||1) && P.hand.length<handMax(P);i++){   // v162 전투의 함성 하수인을 뽑으면 1/1 복사본 (손이 가득이면 생략)
+    const mc=miniCopy(s, c); P.hand.push(mc); ev.push({type:'generated', seat, name:mc.name, burned:false, src:{seat, name:'함성의 잔향'}}); }
 }
 function mulliganHand(s, seat, ids){                            // v77 멀리건: 고른 시작 카드만 새로 뽑고, 버린 카드는 덱에 섞는다 (제자리 교체). 바꾼 장수를 돌려줌
   const P=s.seats[seat], ok=new Set(P.startIds||[]);
@@ -2155,6 +2218,8 @@ function startTurn(s, seat, ev){
       if(card) ev.push({type:'spell', seat, name:card.name, gain:0, tag:'쇼츠 알고리즘', card:{type:'spell', name:card.name, cost:card.cost, school:card.school, effect:card.effect}});
       if(nextRand(s)<0.3){ logNote(ev, fo, src, '딱 하나만 더… 어? 해가 떴다! 이번 턴을 통째로 날렸습니다'); s.endNow=seat; break; }
       logNote(ev, fo, src, '3초만 보고 겨우 폰을 내려놨다 (턴 유지)'); } }
+  if(md.graveKeeper && (P.grave||[]).length && P.hp>0) graveRaise(s, seat, Number(md.graveKeeper)||1, ev, {seat, name:'무덤지기'});   // v162
+  if(md.gambler && P.hp>0) gamblerHand(s, seat, Number(md.gambler)||1, ev, {seat, name:'도박사의 손'});                        // v162
 }
 function lifestealHeal(s, seat, m, amount, ev){                    // v62 하수인의 생명력 흡수: 준 피해만큼 주인 영웅 회복 (최대 체력까지)
   if(!m.lifesteal || amount<=0) return;
@@ -2542,6 +2607,9 @@ function sweepDead(s, ev){
       if(m.hp>0) return true;
       for(const sd of [0,1]) for(const hc of s.seats[sd].hand) if(hc.infuse && !hc.infused){ hc.infuseN=(hc.infuseN||0)+1; if(hc.infuseN>=hc.infuse) hc.infused=true; }   // v112 주입: 내 손에 있는 동안 하수인이 (양쪽 합쳐) n마리 죽으면 발동
       P.corpses=(P.corpses||0)+1;   // v76 시체: 내 하수인이 죽을 때마다 +1 (환생으로 되살아나도 죽은 것으로 센다)
+      if(P.mods && P.mods.recycle){ const n=Number(P.mods.recycle)||1; P.armor=(P.armor||0)+n; ev.push({type:'armor', seat, amount:n, src:{seat, name:'재사용하기'}}); }   // v162 아군 하수인이 죽으면 방어도
+      for(const sd of [0,1]){ const Q=s.seats[sd]; if(!(Q.mods && Q.mods.recycle2)) continue;   // v162 재사용하기·상급: 어느 쪽 하수인이든 죽으면 방어도, 죽을 때마다 +1
+        const n=Q.recycleN || (Number(Q.mods.recycle2)||1); Q.recycleN=n+1; Q.armor=(Q.armor||0)+n; ev.push({type:'armor', seat:sd, amount:n, src:{seat:sd, name:'재사용하기'}}); }
       runDeath(s, seat, m, ev, sm);   // v96: 죽음의 메아리 (소리치는 요들러도 이 함수를 다시 부른다)
       if(m.revive){ m.revive=false; m.hp=m.reviveFull ? m.maxHp : 1; m.shield=false; delete m.shieldHits; ev.push({type:'revive', seat, id:m.id, name:m.name}); return true; }   // 환생: 1회, 체력 1로 (돌진은 유지)
       if(CARD_POOL.some(c=>c.type==='minion' && c.name===m.name)) (P.grave=P.grave||[]).push({name:m.name, taunt:!!m.taunt});   // v63 물 공급지용 무덤
@@ -2988,6 +3056,24 @@ function battlecry(s, seat, m, target, ev){
 
 // ---- 주문 ----
 // 피해·회복·드로우는 전투의 함성과 같은 처리를 쓰고(이름만 주문 이름), 침묵·보호막 부여는 여기서 직접 처리한다.
+function afterHandSpell(s, actor, c, ev){                       // v162 손에서 주문을 낸 뒤 (동전 제외)
+  const P=s.seats[actor], O=s.seats[other(actor)], md=P.mods||{};
+  if(md.infiniteLoop){ const cards=[]; for(let i=0;i<(Number(md.infiniteLoop)||1);i++){ const x=randomPoolCard(s,'minion'); if(x) cards.push(x); } giveCards(s, actor, cards, ev, {seat:actor, name:'무한 굴레'}); }
+  if(O.mods && O.mods.mirror){ const pb=CARD_POOL.find(x=>x.type==='spell' && x.name===c.name), cp=structuredClone(pb||c); for(const k of ['inDeck','auto','sub','echoTemp','id']) delete cp[k];
+    giveCards(s, other(actor), [cp], ev, {seat:other(actor), name:'거울의 방'}); }
+  if(md.spellOverload!=null && md.spellOverload!==false){ P.overloadNext=(P.overloadNext||0)+1; ev.push({type:'overload', seat:actor, name:'주문 과부하', amount:1}); }
+}
+function afterHandMinion(s, actor, m, paid, ev){                // v162 손에서 하수인을 낸 뒤
+  const P=s.seats[actor], md=P.mods||{}, onBoard=P.board.includes(m) && m.hp>0;
+  if(onBoard && isDrMinion(m)){
+    if(md.drRevive && !m.revive){ m.revive=true; ev.push({type:'grant', target:minionT(actor, m.id), name:m.name, kws:['환생'], src:{seat:actor, name:'죽지 않는 자의 무덤'}}); }
+    for(let i=0;i<(Number(md.drCopy)||0) && P.board.length<CONFIG.MAX_BOARD;i++){
+      const cp=miniCopy(s, m); cp.attacked=false; cp.summoned=true; delete cp.frozen; delete cp.auraGiven;
+      P.board.splice(P.board.indexOf(m)+1, 0, cp); ev.push({type:'summon', seat:actor, id:cp.id, name:cp.name, src:{seat:actor, name:'메아리 군단'}}); }
+  }
+  if(md.infiniteLoop){ const cards=[]; for(let i=0;i<(Number(md.infiniteLoop)||1);i++){ const x=randomPoolCard(s,'spell'); if(x) cards.push(x); } giveCards(s, actor, cards, ev, {seat:actor, name:'무한 굴레'}); }
+  if(md.bloodToll && paid>0 && P.hp>0) hurtHero(s, actor, paid, ev, 'battlecry', {seat:actor, name:'피의 통행료'});   // 양쪽 규칙: 낸 비용만큼 내 영웅 피해 (방어도가 먼저 막는다)
+}
 function castSpell(s, seat, c, target, ev){
   const fx=SPELL_FX[c.effect.type];
   if(fx && fx.cast) fx.cast(s, seat, c, target, ev, {seat, name:c.name, spell:true, school:c.school});   // v105: spell 표시 → 성게 가시(독성) 판정
@@ -3042,7 +3128,9 @@ function validate(s, a, actor){
         if(P.noSpell && c.type==='spell') return '듣기평가 비행기 소음! 이번 턴에는 주문을 쓸 수 없습니다.';
         const lim=enemyPlayLimit(s, actor); if(lim!=null && playsThisTurn(P)>=lim) return `감독관이 지켜보고 있어요. 이번 턴에는 카드를 ${lim}장까지만 낼 수 있습니다.`;
       }
-      if(c.lifeCost ? P.hp<=effCost(P,c) : effCost(P,c)>P.mana) return c.lifeCost ? '체력이 부족합니다.' : '마나가 부족합니다.';   // 생명력 비용은 죽을 만큼은 낼 수 없다
+      { const k=effCost(P,c);
+        if(c.lifeCost){ if(P.hp<=k) return '체력이 부족합니다.'; }
+        else if(k>P.mana && !(P.mods && P.mods.bloodPact && P.hp>k-P.mana)) return '마나가 부족합니다.'; }   // v162 피의 계약: 모자란 마나는 생명력으로 (죽을 만큼은 안 됨)   // 생명력 비용은 죽을 만큼은 낼 수 없다
       if(c.type!=='spell' && P.board.length>=CONFIG.MAX_BOARD) return '전장이 가득 찼습니다.';   // 하수인만 전장 자리 필요
       if(a.pos!==undefined && a.pos!==null && !(Number.isInteger(a.pos) && a.pos>=0 && a.pos<=P.board.length)) return '놓을 자리가 올바르지 않습니다.';   // v129 하수인 자리 선택 (없으면 맨 오른쪽)
       const ts=cardTargets(s, actor, c);
@@ -3083,6 +3171,13 @@ function validate(s, a, actor){
       return '공격 대상이 올바르지 않습니다.';
     }
     case 'HERO_POWER': {                                   // v131 영웅 능력
+      if(P.bossPower){ const bp=P.bossPower, b=BOSS_ACTIVE[bp.id];   // v162 보스 영웅 능력
+        if(!bp.active || !b) return '항상 켜져 있는 영웅 능력입니다.';
+        if(P.powerUsed) return '영웅 능력은 이번 턴에 이미 사용했습니다.';
+        if(P.heroFrozen) return '영웅이 이번 턴에는 행동할 수 없습니다. (근육통·우주공강)';
+        if(bp.cost>P.mana) return '마나가 부족합니다.';
+        if(a.target) return '대상이 필요 없는 영웅 능력입니다.';
+        return (b.blocked && b.blocked(s, actor)) || null; }
       const h=HERO_POWERS[P.heroPower];
       if(!h) return '영웅 능력이 없습니다.';
       if(P.powerUsed) return '영웅 능력은 이번 턴에 이미 사용했습니다.';
@@ -3134,6 +3229,7 @@ function legalActions(s, actor){
     if(!validate(s,a,actor)) out.push(a);
   }
   if(P.heroAtk>0 && !P.heroAttacked) for(const t of targets){ const a={type:'HERO_ATTACK', target:t}; if(!validate(s,a,actor)) out.push(a); }   // v80
+  if(P.bossPower && P.bossPower.active && !P.powerUsed){ const a={type:'HERO_POWER', target:null}; if(!validate(s,a,actor)) out.push(a); }   // v162
   if(P.heroPower && !P.powerUsed){ const h=HERO_POWERS[P.heroPower];                                   // v131 영웅 능력
     for(const t of (h && h.targets ? heroPowerTargets(s, actor) : [null])){ const a={type:'HERO_POWER', target:t}; if(!validate(s,a,actor)) out.push(a); } }
   out.push({type:'END_TURN'});
@@ -3171,8 +3267,10 @@ function apply(state, a, actor){
     const c=P.hand.find(x=>x.id===a.cardId);
     const baseCost=c.cost; c.cost=effCost(P,c);   // v74·v75: 지금 기준의 실제 비용을 확정 (하수인은 필드에 올릴 때 원래 비용으로 되돌림)
     if(c.type==='spell' && P.spellDisc && !(c.effect && c.effect.type==='mana')) P.spellDisc=0;   // v121 자비 할인은 주문 한 장에만
+    { const pc=structuredClone(c); for(const k of ['inDeck','auto']) delete pc[k]; ev.push({type:'play', seat:actor, id:c.id, name:c.name, card:pc}); }   // v160 손에서 낸 카드 (화면의 기록 막대용 · 상태는 바꾸지 않음)
     if(c.lifeCost){ P.hp-=c.cost; ev.push({type:'damage', target:heroT(actor), name:null, amount:c.cost, absorbed:false, cause:'lifecost', src:{seat:actor, name:c.name}}); }   // 마나 대신 생명력 (방어 효과 무시)
-    else P.mana-=c.cost;
+    else { const short=Math.max(0, c.cost-P.mana); P.mana-=c.cost-short;   // v162 피의 계약: 모자란 만큼 생명력 (방어도 무시)
+      if(short){ P.hp-=short; ev.push({type:'damage', target:heroT(actor), name:null, amount:short, absorbed:false, cause:'lifecost', src:{seat:actor, name:'피의 계약'}}); } }
     P.hand=P.hand.filter(x=>x.id!==c.id);
     if(P.hangover && c.cost>0) hurtHero(s, actor, c.cost, ev, 'battlecry', {seat:other(actor), name:'숙취 속 월요일 아침 9시 출석 체크'});   // v117 숙취: 낸 카드 비용만큼 내 영웅 피해
     { const pl=structuredClone(c); for(const k of ['id','inDeck','auto','lifeCost']) delete pl[k]; pl.cost=baseCost; (P.turnPlays=P.turnPlays||[]).push(pl); }   // v105 사스퀙: 이번 턴에 손에서 낸 카드 기록
@@ -3206,6 +3304,7 @@ function apply(state, a, actor){
       }
       const sonyaN=(c.cost===1 && c.effect.type!=='mana') ? P.board.filter(x=>x.sonya && x.hp>0).length : 0;   // v112 소냐 워터댄서: 현재 비용이 1인 주문 (시전 전에 있던 소냐만)
       castSpell(s, actor, c, a.target, ev);
+      if(c.effect.type!=='mana') afterHandSpell(s, actor, c, ev);   // v162 무한 굴레 · 거울의 방 · 주문 과부하
       if(c.echo){                                         // v112 주문의 잔상: 이번 턴에 같은 주문(원래 비용)을 한 장 더 낼 수 있다. 내 턴이 끝나면 사라진다
         const ec=structuredClone(c); for(const k of ['inDeck','auto','lifeCost','sub']) delete ec[k];
         ec.id=s.nextId++; ec.cost=baseCost; ec.echoTemp=true;
@@ -3236,6 +3335,7 @@ function apply(state, a, actor){
     if(P.mods && P.mods.legion && P.board.length<CONFIG.MAX_BOARD) summonTokens(s, actor, P.mods.legion, {name:'병사', atk:1, hp:1, rush:false}, ev);   // v98 군단: 하수인을 낼 때 1/1 병사 추가 (빈 자리가 있을 때)
     if(c.quote) logNote(ev, actor, {seat:actor, name:c.name}, c.quote);   // v118 등장 대사
     battlecry(s, actor, m, a.target, ev);
+    afterHandMinion(s, actor, m, c.cost, ev);   // v162 죽음의 메아리 복사·환생 · 무한 굴레 · 피의 통행료 (c.cost = 실제로 낸 비용)
     if(m.effect && m.effect.type!=='repeatAll' && m.effect.type!=='repeatLast') (P.bcLog=P.bcLog||[]).push(structuredClone(m.effect));   // v116 두억시니: 이번 게임에 낸 전투의 함성 기록
     if(P.mods && P.mods.doubleBattlecry && m.effect){
       const t=a.target, alive = !t || t.kind==='hero' || (findMinion(s, t.seat, t.id)?.hp>0);
@@ -3268,10 +3368,15 @@ function apply(state, a, actor){
     } }   // end 하수인
     if(momN && runeOf(c).includes('혈기') && s.seats[0].hp>0 && s.seats[1].hp>0) summonTokens(s, actor, momN, LEECH, ev);   // v97 발토라
   } else if(a.type==='HERO_POWER'){                                  // v131 영웅 능력: 비용 1, 턴마다 한 번
+    if(P.bossPower){ const bp=P.bossPower, src={seat:actor, name:bp.name};   // v162 보스 사용형 능력
+      P.mana-=bp.cost; P.powerUsed=true;
+      ev.push({type:'heroPower', seat:actor, id:'boss_'+bp.id, name:bp.name, icon:bp.icon, text:bp.text, target:null});
+      BOSS_ACTIVE[bp.id].use(s, actor, bp.value, ev, src);
+    } else {
     const h=HERO_POWERS[P.heroPower], src={seat:actor, name:h.name};
     P.mana-=HP_COST; P.powerUsed=true;
     ev.push({type:'heroPower', seat:actor, id:P.heroPower, name:h.name, icon:h.icon, text:h.text, target:a.target||null});
-    h.use(s, actor, a.target||null, ev, src);
+    h.use(s, actor, a.target||null, ev, src); }
   } else if(a.type==='ATTACK'){
     const m=P.board.find(x=>x.id===a.attackerId); let t=a.target;
     if(m.mutiny){ const al=P.board.filter(x=>x!==m && x.hp>0);                                          // v119 조별과제 내부분열: 원래 대상 대신 무작위 아군
@@ -3332,6 +3437,7 @@ function apply(state, a, actor){
     s.pending=null;
     const burned=P.hand.length>=handMax(P); if(!burned) P.hand.push(card);
     ev.push({type:'discoverPick', seat:actor, name:card.name, cost:card.cost, burned, pocketDimension:true, repeated,...(burned?{card:card}:{})});
+    youMeGive(s, actor, pd.options, a.index, ev);   // v162
     // 손패가 가득 차면 더 이상 발견을 진행하지 않는다. 방금 손패가 10장이 된 경우도 포함.
     if(!repeated && P.hand.length<handMax(P)){ startDiscover(s,actor,{value:4},ev,pd.src||'주머니 차원',false); if(s.pending && s.pending.kind==='discover'){s.pending.kind='pocketDimension';s.pending.seen=seen;s.pending.src=pd.src||'주머니 차원';} }
   } else if(a.type==='CHOOSE'){
@@ -3341,6 +3447,7 @@ function apply(state, a, actor){
     const burned=P.hand.length>=handMax(P); if(!burned) P.hand.push(card);
     if(pd.e && pd.e.swap && pd.e.prevId!==undefined){ const pc=P.hand.find(x=>x.id===pd.e.prevId), mine=card.cost; card.cost=pd.e.prevCost; if(pc) pc.cost=mine; }   // v67 박학다식: 두 발견 카드의 비용을 서로 바꿈
     ev.push({type:'discoverPick', seat:actor, name:card.name, cost:card.cost, burned,...(burned?{card:card}:{})});
+    youMeGive(s, actor, pd.options, a.index, ev);   // v162
     if(pd.again>0) startDiscover(s, actor, {...pd.e, again:pd.again-1, prevId:card.id, prevCost:card.cost}, ev, pd.src, false);   // v66 박학다식: 두 번째 발견   // name: 상대에게는 화면에서 숨긴다 (서버로 옮길 때는 name 을 빼고 보낼 것)
   } else if(a.type==='TARGET'){                     // v28 일식의 두 번째 시전 대상 선택
     const pd=s.pending; s.pending=null;
@@ -3477,7 +3584,7 @@ function apply(state, a, actor){
   sweepDead(s, ev);
   checkGlide(s, ev);
   checkEnd(s, ev);
-  refreshAura(s, ev);
+  refreshAura(s, ev); cheatAuras(s);   // v162
   guardStatuses(state, s, actor, a, ev);           // v118 출석 안 부르는 천사 교수님 · 에어팟: 적이 건 상태이상 되돌리기
   if(s.endNow!==undefined){ const who=s.endNow; delete s.endNow;                     // v117 21학점의 무리수: 내 턴 즉시 종료
     if(!s.over && !s.pending && s.turn===who){ const r2=apply(s, {type:'END_TURN'}, who); if(r2.ok) return {ok:true, state:r2.state, events:ev.concat(r2.events)}; } }
@@ -3490,9 +3597,9 @@ function viewFor(s, seat){
   return structuredClone({
     seat, turn:s.turn, turnNo:s.turnNo, first:s.first, over:s.over, winner:s.winner,
     // deckCards: 내 남은 덱 구성. 뽑는 순서가 드러나지 않도록 id 를 빼고 코스트·이름순으로 정렬해서 보낸다.
-    me:{heroPower:me.heroPower?{...heroPowerInfo(me.heroPower), used:!!me.powerUsed}:null, maxHp:me.maxHp, dormant:(me.dormant||[]).map(d=>({name:d.m.name, left:d.left})), hangover:!!me.hangover, heroFrozen:!!me.heroFrozen, noSpell:!!me.noSpell, playLimit:enemyPlayLimit(s, seat), plays:playsThisTurn(me), heroAtk:me.heroAtk||0, heroAttacked:!!me.heroAttacked, corpses:me.corpses||0, spellTax:(me.spellTax||0)+(me.auraTax||0), taxNext:me.taxNext||0, lastSpellCost:me.lastSpellCost ?? -1, hp:me.hp, maxHp:me.maxHp, nextMana:me.nextMana||0, ascendNext:me.ascendNext||0, armorNext:me.armorNext||0, armor:me.armor||0, locked:me.locked||0, overloadNext:me.overloadNext||0, ones:(me.playedOnes||[]).length, castN:(me.castAll||[]).length, grave:(me.grave||[]).map(g=>({...g})), mods:me.mods, eclipse:!!me.eclipse, fatigue:me.fatigue||0, spellCount:me.spellCount||0, recastCount:(me.castLog||[]).length, mana:me.mana, maxMana:me.maxMana, hand:me.hand.map(c=>({...c, cost:effCost(me,c)})), board:me.board, deckCount:me.deck.length,
+    me:{heroPower:seatPowerInfo(me)?{...seatPowerInfo(me), used:!!me.powerUsed}:null, maxHp:me.maxHp, dormant:(me.dormant||[]).map(d=>({name:d.m.name, left:d.left})), hangover:!!me.hangover, heroFrozen:!!me.heroFrozen, noSpell:!!me.noSpell, playLimit:enemyPlayLimit(s, seat), plays:playsThisTurn(me), heroAtk:me.heroAtk||0, heroAttacked:!!me.heroAttacked, corpses:me.corpses||0, spellTax:(me.spellTax||0)+(me.auraTax||0), taxNext:me.taxNext||0, lastSpellCost:me.lastSpellCost ?? -1, hp:me.hp, maxHp:me.maxHp, nextMana:me.nextMana||0, ascendNext:me.ascendNext||0, armorNext:me.armorNext||0, armor:me.armor||0, locked:me.locked||0, overloadNext:me.overloadNext||0, ones:(me.playedOnes||[]).length, castN:(me.castAll||[]).length, grave:(me.grave||[]).map(g=>({...g})), mods:me.mods, eclipse:!!me.eclipse, fatigue:me.fatigue||0, spellCount:me.spellCount||0, recastCount:(me.castLog||[]).length, mana:me.mana, maxMana:me.maxMana, hand:me.hand.map(c=>({...c, cost:effCost(me,c)})), board:me.board, deckCount:me.deck.length,
         deckCards:me.deck.map(({id, ...rest})=>rest).sort((a,b)=>a.cost-b.cost || (a.name<b.name?-1:a.name>b.name?1:0))},
-    opp:{heroPower:op.heroPower?{...heroPowerInfo(op.heroPower), used:!!op.powerUsed}:null, maxHp:op.maxHp, dormant:(op.dormant||[]).map(d=>({name:d.m.name, left:d.left})), hangover:!!op.hangover, heroFrozen:!!op.heroFrozen, noSpell:!!op.noSpell, heroAtk:op.heroAtk||0, heroAttacked:!!op.heroAttacked, corpses:op.corpses||0, spellTax:(op.spellTax||0)+(op.auraTax||0), taxNext:op.taxNext||0, hp:op.hp, maxHp:op.maxHp, nextMana:op.nextMana||0, armorNext:op.armorNext||0, armor:op.armor||0, locked:op.locked||0, overloadNext:op.overloadNext||0, mods:op.mods, eclipse:!!op.eclipse, fatigue:op.fatigue||0, mana:op.mana, maxMana:op.maxMana, handCount:op.hand.length, board:op.board, deckCount:op.deck.length},
+    opp:{heroPower:seatPowerInfo(op)?{...seatPowerInfo(op), used:!!op.powerUsed}:null, maxHp:op.maxHp, dormant:(op.dormant||[]).map(d=>({name:d.m.name, left:d.left})), hangover:!!op.hangover, heroFrozen:!!op.heroFrozen, noSpell:!!op.noSpell, heroAtk:op.heroAtk||0, heroAttacked:!!op.heroAttacked, corpses:op.corpses||0, spellTax:(op.spellTax||0)+(op.auraTax||0), taxNext:op.taxNext||0, hp:op.hp, maxHp:op.maxHp, nextMana:op.nextMana||0, armorNext:op.armorNext||0, armor:op.armor||0, locked:op.locked||0, overloadNext:op.overloadNext||0, mods:op.mods, eclipse:!!op.eclipse, fatigue:op.fatigue||0, mana:op.mana, maxMana:op.maxMana, handCount:op.hand.length, board:op.board, deckCount:op.deck.length},
     pending: s.pending ? (s.pending.seat===seat
       ? (s.pending.kind==='target'
           ? {kind:'target', seat, card:{name:s.pending.card.name, cost:s.pending.card.cost, effect:s.pending.card.effect, school:s.pending.card.school, twin:s.pending.card.twin}, targets:s.pending.targets}
@@ -3922,7 +4029,7 @@ const Rule2 = (()=>{
     }
 
     // 3-1) 금단의 과일: 남은 마나로 더 낼 카드가 없고, 마무리가 보이거나 체력이 낮을 때
-    { const fr=plays.find(a=>me.hand.find(c=>c.id===a.cardId).effect.type==='fruit'); if(fr && fruitOk(view)) return fr; }
+    { const fr=plays.find(a=>{ const c=me.hand.find(c=>c.id===a.cardId); return !!(c && c.effect && c.effect.type==='fruit'); }); if(fr && fruitOk(view)) return fr; }   // v162 효과 없는 하수인이 남아 있어도 안전하게 (피의 계약)
 
     // 4) 공격 (가장 점수 높은 한 건. 손해만 보는 공격은 하지 않는다)
     if(atks.length){

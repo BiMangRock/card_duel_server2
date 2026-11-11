@@ -252,7 +252,13 @@
       <label>첫 클리어 보상 골드 <span class="hint">(0 = 등급 기본값. 재도전은 10%)</span></label><input id="bfReward" type="number" min="0" step="10">
       <label>등급</label>
       <select id="bfTier"><option value="mid">중급 보스 (규칙 AI)</option><option value="high">상급 보스 (학습 모델 AI)</option></select>
-      <label>영웅 능력 <span class="hint">(무작위면 판마다 바뀜)</span></label><select id="bfPower"></select>
+      <label>영웅 능력 <span class="hint">(무작위면 판마다 바뀜 · 아래쪽 「보스 능력」은 치트를 영웅 능력 자리에 넣습니다)</span></label><select id="bfPower"></select>
+      <div id="bfPowerOpts" class="bf-power-opts" style="display:none">
+        <label>방식</label><select id="bfPowerMode"><option value="passive">지속 — 항상 켜져 있음 (누를 수 없음)</option><option value="active">사용 — 버튼을 눌러 씀 (턴마다 한 번)</option></select>
+        <div id="bfPowerCostRow"><label>사용 비용 (마나)</label><input id="bfPowerCost" type="number" min="0" max="10" step="1"></div>
+        <div id="bfPowerValRow"><label>수치</label><span class="cv" id="bfPowerVal"></span></div>
+        <div class="bf-stat" id="bfPowerDesc"></div>
+      </div>
       <div id="bfMidBox"><label>규칙 AI 종류</label>
         <select id="bfBot"><option value="rule">중급 (규칙)</option><option value="rule2">중급2 (규칙, 더 강함)</option></select></div>
       <div id="bfHighBox"><label>학습 모델 파일 <span class="hint">(학습이 저장한 model.json / best.json. .pt 는 안 됩니다)</span></label>
@@ -416,6 +422,7 @@
 <script src="/js/auth.js"></script>
 <script src="/js/cards.js"></script>
 <script src="/js/engine.js"></script>
+<script src="/js/policy_v3.js"></script>
 <script src="/js/cheats.js"></script>
 <script src="/js/economy.js"></script>
 <script src="/js/collection.js"></script>
