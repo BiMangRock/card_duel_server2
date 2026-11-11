@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>카드 결투 v116</title>
+<title>카드 결투</title>
 <meta name="theme-color" content="#14121f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,10 +11,12 @@
 <meta name="apple-mobile-web-app-title" content="카드 결투">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/css/style.css">
 <link rel="stylesheet" href="/css/intro.css">
 <link rel="stylesheet" href="/css/cutscene.css">
 <link rel="stylesheet" href="/css/advstory.css">
+<link rel="stylesheet" href="/css/vnbox.css">
 <link rel="stylesheet" href="/css/orient.css">
 <script src="/js/orient.js"></script>
 </head>
@@ -29,7 +31,6 @@
     <div class="is-sword"><img alt=""></div>
   </div>
   <div class="is-flash"></div>
-  <div class="is-credit"><small>제작</small>소프트웨어 프로젝트 2부 8조</div>
   <div class="is-skip">눌러서 건너뛰기</div>
 </div>
 <script src="/js/intro.js"></script>
@@ -45,8 +46,6 @@
       <div class="hinfo">
         <div class="name">상대</div>
         <div class="hp"><span class="armor-next" id="aiArmorNext"></span><span class="corpse-skull" id="aiCorpse" title="시체"></span></div>
-        <div class="mana"><span id="aiManaText"></span></div>
-        <div class="crystals" id="aiCrystals"></div>
         <div class="pile">손패 <span id="aiHandCnt"></span> · 덱 <span id="aiDeckCnt"></span></div>
       </div>
     </div>
@@ -63,8 +62,6 @@
       <div class="hinfo">
         <div class="name">나</div>
         <div class="hp"><span class="armor-next" id="playerArmorNext"></span><span class="corpse-skull" id="playerCorpse" title="시체"></span></div>
-        <div class="mana"><span id="manaText"></span></div>
-        <div class="crystals" id="crystals"></div>
         <div class="pile">덱 <span id="myDeckCnt"></span></div>
       </div>
     </div>
@@ -73,10 +70,13 @@
   </div>
 </div>
 <div class="controls"><div id="pvpTimer" class="pvp-timer" style="display:none"></div><div id="pvpRope" class="pvp-rope" style="display:none"><img class="rope-head" src="/images/pvp/rope.webp" alt=""><div class="rope-body" id="pvpRopeBody"></div></div><button class="end-turn sub" id="specLeaveBtn" style="display:none">관전 나가기</button><button class="end-turn sub" id="deckBtn" onclick="openDeck()">덱 보기</button><button class="end-turn sub dev-skip" id="devSkipBtn" style="display:none" title="개발자 전용: 이 보스전을 바로 승리로 끝냅니다">⏭ 보스 건너뛰기</button><button class="end-turn sub" id="surrenderBtn">항복</button><button class="end-turn" id="endTurnBtn">턴 종료</button></div>
+<!-- v155 마나: 하스스톤처럼 오른쪽 위(상대) · 오른쪽 아래(나)에 수정으로 -->
+<div class="mana-bar opp" title="상대 마나"><div class="crystals" id="aiCrystals"></div><div class="mana"><span id="aiManaText"></span></div></div>
+<div class="mana-bar me" title="내 마나"><div class="mana"><span id="manaText"></span></div><div class="crystals" id="crystals"></div></div>
 <div class="deck-pile" id="myDeckPile" onclick="openDeck()"><img src="/images/deck_pile.webp" alt="내 덱" draggable="false"><span class="deck-cnt" id="myDeckPileCnt"></span></div>
 <div class="hand" id="hand"></div>
 </div>
-<aside id="logPanel"><h3>전투 기록<label class="log-opt" title="할 수 있는 행동이 남았는데 턴 종료를 누르면 한 번 더 묻습니다"><input type="checkbox" id="optEndConfirm" checked> 턴 종료 확인</label></h3><div id="logList"></div></aside>
+<aside id="logPanel"><h3>전투 기록<label class="log-opt" title="큰 피해를 받으면 화면이 흔들립니다"><input type="checkbox" id="optShake" checked> 화면 흔들림</label></h3><div id="logList"></div></aside>
 <div id="overlay"><div id="overlayArt"></div><h2 id="overlayText"></h2><p id="overlayReward"></p><button class="end-turn" id="pvpAgainBtn" style="display:none">한 판 더</button><button class="end-turn sub" id="pvpReplayBtn" style="display:none">🎞 리플레이</button><button class="end-turn" onclick="goToMenu()">처음 화면으로</button></div>
 
 <div id="mulliganModal"><h3 id="mulliganTitle"></h3><p>바꾸고 싶은 카드를 누르면 ✕ 표시가 뜹니다. 다시 누르면 취소됩니다. (길게 누르면 카드 설명)</p><div id="mulliganGrid"></div><button class="end-turn" id="mulliganOk"></button></div>
@@ -135,19 +135,37 @@
 
 <div id="menu">
   <div id="menuTop"><button type="button" id="fsBtn">⛶ 전체화면</button><div id="userBar" hidden></div><span class="wallet walletView" id="menuWallet"></span></div>
+  <!-- v154 메인 화면: 왼쪽 메뉴 줄 + 가운데 모드 카드 3장 (예전 「게임 시작 → 모드 선택」 한 단계를 줄임). 버튼의 onclick · id 는 메뉴 둘러보기·배지 코드가 쓰므로 그대로 -->
   <div class="screen show" id="screen-main">
-    <h2>카드 결투</h2>
-    <p class="sub">턴제 카드 대전</p>
-    <button class="menu-btn primary" onclick="showScreen('mode')">게임 시작</button>
-    <button class="menu-btn" onclick="openTutorials()">🎓 튜토리얼<b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc">처음이라면 여기부터 · 첫 완료 보상 1,000골드 + 전설 카드 · 📖 가이드는 맨 밑</span></button>
-    <button class="menu-btn" onclick="openShop()">🛒 상점<span class="desc" id="shopMenuDesc">카드 팩을 열어 새 카드를 모읍니다 · 남는 카드는 분해해 가루로</span></button>
-    <button class="menu-btn" onclick="openDeckList()">📚 내 덱<span class="desc" id="deckMenuDesc"></span></button>
-    <button class="menu-btn" onclick="Friends.open()">👥 친구<b class="fr-badge" id="friendBadge" hidden></b><span class="desc" id="friendMenuDesc">친구 추가 · 채팅 · 친구와 대전 · 친구 판 관전</span></button>
-    <button class="menu-btn" onclick="showScreen('power')">🔮 영웅 능력<span class="desc" id="powerMenuDesc"></span></button>
-    <button class="menu-btn" onclick="openQuests()">📜 퀘스트<b class="fr-badge" id="questBadge" hidden></b><span class="desc" id="questMenuDesc">매일 새 퀘스트 · 끝내면 골드</span></button>
-    <button class="menu-btn" onclick="openCraft()">🔨 카드 제작<span class="desc" id="craftMenuDesc">카드를 분해해 가루를 모으고, 원하는 카드를 만듭니다</span></button>
-    <button class="menu-btn dev" id="btnTest" style="display:none" onclick="openTestScreen()">🛠 테스트<span class="desc">개발자 전용 · 중급2 AI와 연습 · 내 영웅 체력·시작 마나·덱 장수를 직접 설정 (보상·골드 없음)</span></button>
-    <button class="menu-btn dev" id="btnBossEdit" style="display:none" onclick="openBossEdit()">🛠 보스 덱 편집<span class="desc">개발자 전용 · 보스 목록·덱·AI 모델 설정</span></button>
+    <nav class="mm-rail" aria-label="메뉴">
+      <img class="mm-logo" src="/images/intro/logo.webp" alt="카드 결투">
+      <button type="button" class="mm-item" onclick="openShop()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="mm-label">상점</span><span class="desc" id="shopMenuDesc">카드 팩을 열어 새 카드를 모읍니다 · 남는 카드는 분해해 가루로</span></button>
+      <button type="button" class="mm-item" onclick="openDeckList()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="11" height="15" rx="2"/><path d="M5 6v13a2 2 0 0 0 2 2h9"/></svg><span class="mm-label">내 덱</span><span class="desc">덱을 여러 개 저장하고 골라 씁니다 · 덱 코드로 공유</span></button>
+      <button type="button" class="mm-item" onclick="openCraft()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 4l7 7-3 3-7-7z"/><path d="M10 9l-7 7 3 3 7-7"/></svg><span class="mm-label">카드 제작</span><span class="desc" id="craftMenuDesc">카드를 분해해 가루를 모으고, 원하는 카드를 만듭니다</span></button>
+      <button type="button" class="mm-item" onclick="showScreen('power')"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg><span class="mm-label">영웅 능력</span><span class="desc">비용 1 · 턴마다 한 번 쓰는 기본 능력을 고릅니다</span></button>
+      <button type="button" class="mm-item" onclick="openQuests()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span class="mm-label">퀘스트</span><b class="fr-badge" id="questBadge" hidden></b><span class="desc" id="questMenuDesc">매일 새 퀘스트 · 끝내면 골드</span></button>
+      <button type="button" class="mm-item" onclick="Friends.open()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14c3 0 5 2.2 5 5"/></svg><span class="mm-label">친구</span><b class="fr-badge" id="friendBadge" hidden></b><span class="desc" id="friendMenuDesc">친구 추가 · 채팅 · 친구와 대전 · 친구 판 관전</span></button>
+      <span class="mm-gap"></span>
+      <button type="button" class="mm-item mm-sub" onclick="openTutorials()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></svg><span class="mm-label">튜토리얼</span><b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc">처음이라면 여기부터 · 첫 완료 보상 1,000골드 + 전설 카드 · 📖 가이드는 맨 밑</span></button>
+    </nav>
+    <div class="mm-body">
+      <header class="mm-head">
+        <h2>어떤 전투를 할까요?</h2>
+        <div class="mm-loadout">
+          <button type="button" class="mm-chip" onclick="openDeckList()" aria-label="내 덱 열기"><span class="desc" id="deckMenuDesc"></span></button>
+          <button type="button" class="mm-chip" onclick="showScreen('power')" aria-label="영웅 능력 고르기"><span class="desc" id="powerMenuDesc"></span></button>
+        </div>
+      </header>
+      <div class="mm-modes">
+        <button type="button" class="mm-mode ai" onclick="showScreen('difficulty')"><span class="mm-art"></span><span class="mm-txt"><span class="mm-tag">혼자서</span><b>AI 대전</b><span class="mm-desc">컴퓨터와 1대1로 대전합니다. 초급 · 중급 · 중급2 중에서 고릅니다.</span><span class="mm-gold">이기면 골드 · 중급부터 배팅 모드</span></span></button>
+        <button type="button" class="mm-mode pvp" onclick="PvpClient.openScreen()"><span class="mm-art"></span><span class="mm-txt"><span class="mm-tag">실시간</span><b>유저 대전</b><span class="mm-desc">다른 사람과 실시간으로 대전합니다. 일반전 · 랭크전</span><span class="mm-gold">이기면 <span class="pvpWinGold">50</span>골드!</span></span></button>
+        <button type="button" class="mm-mode adv" onclick="openAdventure()"><span class="mm-art"></span><span class="mm-txt"><span class="mm-tag">스토리</span><b>모험 모드</b><span class="mm-desc">정해진 덱으로 싸우는 보스에게 도전합니다. 수능부터 졸업까지.</span><span class="mm-gold">첫 클리어 보상 카드 · 골드 변동 없음</span></span></button>
+      </div>
+      <div class="mm-dev">
+        <button class="menu-btn dev" id="btnTest" style="display:none" onclick="openTestScreen()">🛠 테스트<span class="desc">개발자 전용 · 중급2 AI와 연습 · 내 영웅 체력·시작 마나·덱 장수를 직접 설정 (보상·골드 없음)</span></button>
+        <button class="menu-btn dev" id="btnBossEdit" style="display:none" onclick="openBossEdit()">🛠 보스 덱 편집<span class="desc">개발자 전용 · 보스 목록·덱·AI 모델 설정</span></button>
+      </div>
+    </div>
   </div>
   <div class="screen" id="screen-shop">
     <h3>🛒 상점</h3>
@@ -197,7 +215,7 @@
     <button class="menu-btn primary" id="advOfferBtn" style="display:none" onclick="showOffer(ServerStore.offers[0])"></button>
     <button class="menu-btn" id="advDeckBtn" onclick="openAdvDeckEditor()">🎒 모험 덱 편집<span class="desc" id="advDeckDesc"></span></button>
     <p class="sub" id="advFreeNote" style="display:none">자유 보스전은 '덱 편집'에서 만든 일반 덱으로 싸웁니다. (모험 전용 카드는 영남대 입학에서만 쓸 수 있어요)</p>
-    <button class="menu-btn back" onclick="showScreen('mode')">뒤로</button>
+    <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
   </div>
   <div class="screen" id="screen-bossedit">
     <h3>🛠 보스 덱 편집</h3>
@@ -337,7 +355,7 @@
   <div class="screen" id="screen-difficulty">
     <h3>난이도 선택</h3>
     <div id="difficultyList" style="display:flex; flex-direction:column; gap:.9rem; width:100%;"></div>
-    <button class="menu-btn back" onclick="showScreen('mode')">뒤로</button>
+    <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
   </div>
   <div class="screen" id="screen-playmode">
     <h3 id="playmodeTitle">중급 AI — 방식 선택</h3>
@@ -399,6 +417,7 @@
 <script src="/js/preload.js"></script>
 <script src="/js/cardart.js"></script>
 <script src="/js/cutscene.js"></script>
+<script src="/js/juice.js"></script>
 <script src="/js/ui.js"></script>
 <script src="/js/menutour.js"></script>
 <script src="/js/pvpclient.js"></script>

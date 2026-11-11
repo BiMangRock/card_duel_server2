@@ -40,8 +40,9 @@ const Preload = (() => {
     try { if (typeof FX_DIM !== 'undefined') Object.keys(FX_DIM).forEach(n => add('images/fx_' + n + '.png')); } catch (_) {}
     try { if (typeof FX_ANIM !== 'undefined') Object.keys(FX_ANIM).forEach(n => add('images/fx_a_' + n + '.png')); } catch (_) {}
     try { if (typeof BossBook !== 'undefined') (BossBook.get() || []).forEach(b => { add(b && b.icon); (b && b.deck || []).forEach(n => { const c = typeof cardByName === 'function' && cardByName(n); if (c) add(c.art); }); }); } catch (_) {}
+    try { if (typeof HERO_POWER_ART !== 'undefined') Object.values(HERO_POWER_ART).forEach(add); } catch (_) {}   // v156 영웅 능력 그림
     // 판 화면에서 CSS·HTML 로 쓰는 그림 (style.css · index.html)
-    ['fx_frozen.png', 'fx_holy_shield.png', 'fx_stealth.png', 'fx_taunt.png', 'stat_atk.webp', 'stat_hp.webp', 'deck_pile.webp',
+    ['fx_frozen.png', 'fx_holy_shield.png', 'fx_stealth.png', 'fx_taunt.png', 'fx_taunt_gray.webp', 'stat_atk.webp', 'stat_hp.webp', 'deck_pile.webp',
      'pvp/pvp_table.webp', 'pvp/avatar_frame.webp', 'pvp/timer_opp.webp', 'pvp/timer_mine.webp', 'pvp/timer_low.webp', 'pvp/rope.webp', 'pvp/rope_tile.webp', 'intro/tavern.webp', 'intro/slash.webp']
       .forEach(n => add('images/' + n));
     return [...s];

@@ -1,0 +1,98 @@
+/* vnbox.css — v154 컷신(cutscene.js) · 수능 스토리(advstory.js) 대사창을 비주얼 노벨식으로
+ *   · 테두리 있는 상자 대신 화면 아래가 검게 번지는 띠 + 금색 가는 선
+ *   · 이름은 알약 모양 대신 금색 제목 글꼴
+ *   · 초록 [다음 ▶] 버튼 대신 오른쪽 아래에서 깜빡이는 ▼ (화면 아무 데나 눌러도 넘어간다. 버튼은 그대로 남아 있어 키보드로도 누를 수 있다)
+ *   · 위아래 검은 시네마 띠
+ * cutscene.css · advstory.css 뒤에 불러온다 (같은 선택자를 덮어쓴다) */
+
+/* ---------- 시네마 띠 ---------- */
+#cutscene::before, #cutscene::after, #advStory::before, #advStory::after{
+  content:''; position:absolute; left:0; right:0; height:clamp(18px, 6vh, 56px); background:#000; z-index:8; pointer-events:none;
+  transition:transform .9s cubic-bezier(.2,.8,.2,1) .15s;}
+#cutscene::before, #advStory::before{top:0; transform:translateY(-100%);}
+#cutscene::after, #advStory::after{bottom:0; transform:translateY(100%);}
+#cutscene.on::before, #cutscene.on::after, #advStory.on::before, #advStory.on::after{transform:none;}
+#advStory::before, #advStory::after{z-index:2;}   /* 수능 스토리는 대사창(4)·초상화(3)가 띠 위에 오게 */
+
+/* ---------- 대사창 ---------- */
+#cutscene .cs-box, #advStory .as-box{
+  left:0; right:0; width:auto; bottom:0; transform:translateY(18px); border:0; border-radius:0; box-shadow:none;
+  min-height:clamp(150px, 30vh, 250px); display:flex; flex-direction:column; justify-content:flex-end;
+  padding:clamp(40px, 8vh, 72px) max(7vw, 28px) calc(clamp(18px, 6vh, 56px) + clamp(14px, 3vh, 26px) + env(safe-area-inset-bottom, 0px));
+  background:linear-gradient(to top, rgba(6,5,10,.96) 0%, rgba(6,5,10,.9) 45%, rgba(6,5,10,.62) 75%, rgba(6,5,10,0) 100%);}
+#cutscene .cs-box.show, #advStory .as-box.show{transform:none;}
+#cutscene .cs-box.has-face, #advStory .as-box.has-face{padding-right:calc(min(34vw, 400px) + 10px);}
+/* 대사 위 금색 가는 선 */
+#cutscene .cs-box::before, #advStory .as-box::before{content:''; display:block; order:-2; height:1px; margin:0 0 .7rem; width:min(560px, 70%);
+  background:linear-gradient(90deg, rgba(232,201,90,.85), rgba(232,201,90,0));}
+
+/* 이름: 알약 대신 금색 제목 글꼴 */
+#cutscene .cs-name, #advStory .as-name{
+  position:static; order:-1; align-self:flex-start; padding:0; margin:0 0 .35rem; border:0; border-radius:0; background:none; box-shadow:none;
+  font-family:var(--font-d, sans-serif); font-weight:400; font-size:clamp(1.05rem, 2.3vw, 1.45rem); letter-spacing:.06em; color:#f0cf62;
+  text-shadow:0 2px 8px rgba(0,0,0,.85);}
+#cutscene .cs-name:empty, #advStory .as-name:empty{display:none;}
+#cutscene .cs-box.mono .cs-name{background:none; color:#8fdcff;}
+#advStory .as-box.cast .as-name{background:none; color:#ffd77a;}
+#cutscene .cs-box.far .cs-name{background:none; color:#bbb;}
+
+#cutscene .cs-line, #advStory .as-text{text-shadow:0 2px 6px rgba(0,0,0,.9); letter-spacing:.01em;}
+#cutscene .cs-act{order:-1;}
+
+/* 해설(이름 없는 줄): 가운데 정렬, 선도 가운데 */
+#cutscene .cs-box.desc{text-align:center; align-items:center; min-height:clamp(120px, 24vh, 200px); padding-top:clamp(30px, 6vh, 56px);
+  background:linear-gradient(to top, rgba(6,5,10,.9) 0%, rgba(6,5,10,.7) 55%, rgba(6,5,10,0) 100%);}
+#cutscene .cs-box.desc::before{margin-left:auto; margin-right:auto; width:min(420px, 60%);
+  background:linear-gradient(90deg, rgba(232,201,90,0), rgba(232,201,90,.8), rgba(232,201,90,0));}
+
+/* ---------- 다음: 깜빡이는 ▼ ---------- */
+#cutscene .cs-next, #advStory .as-next{
+  position:absolute; right:max(4vw, 18px); bottom:calc(clamp(18px, 6vh, 56px) + clamp(8px, 2vh, 18px) + env(safe-area-inset-bottom, 0px));
+  width:44px; height:44px; padding:0; border:0; border-radius:50%; background:none; font-size:0; color:transparent; opacity:0;
+  display:flex; align-items:center; justify-content:center; transition:opacity .2s;}
+#cutscene .cs-next::after, #advStory .as-next::after{content:''; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent;
+  border-top:11px solid #f0cf62; filter:drop-shadow(0 0 6px rgba(240,207,98,.8));}
+#cutscene .cs-box.ready .cs-next, #advStory .as-box.ready .as-next{opacity:1; animation:vnNext 1s ease-in-out infinite;}
+#advStory .as-next:focus-visible{outline:2px solid #f0cf62; outline-offset:2px;}
+@keyframes vnNext{0%,100%{transform:translateY(0); opacity:1;} 50%{transform:translateY(5px); opacity:.55;}}
+
+/* ---------- 위 막대: 제목 · 자동 · 건너뛰기 ---------- */
+#cutscene .cs-top{z-index:31; top:calc(max(.6rem, env(safe-area-inset-top)) + clamp(0px, 1vh, 8px));}
+#cutscene .cs-title{font-family:var(--font-d, sans-serif); font-size:clamp(.8rem, 1.6vw, 1rem); letter-spacing:.05em; color:rgba(240,207,98,.85);}
+#cutscene .cs-top button, #advStory .as-skip{background:rgba(0,0,0,.35); border:1px solid rgba(240,207,98,.35); color:#f3ead2;
+  font-size:.8rem; letter-spacing:.06em; padding:.4rem .9rem; min-height:36px; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);}
+#cutscene .cs-top button:hover, #advStory .as-skip:hover{background:rgba(0,0,0,.6); border-color:rgba(240,207,98,.7);}
+#cutscene .cs-top button.on{background:rgba(201,162,39,.85); color:#1a1408; border-color:transparent;}
+#advStory .as-skip{z-index:9;}
+
+/* ---------- 낮은 화면(폰 가로) ---------- */
+@media (max-height:500px){
+  #cutscene .cs-box, #advStory .as-box{min-height:0; padding:28px max(5vw, 18px) calc(18px + env(safe-area-inset-bottom, 0px));}
+  #cutscene .cs-box.has-face, #advStory .as-box.has-face{padding-right:calc(min(30vw, 300px) + 6px);}
+  #cutscene .cs-box::before, #advStory .as-box::before{margin-bottom:.4rem;}
+  #cutscene .cs-next, #advStory .as-next{bottom:calc(10px + env(safe-area-inset-bottom, 0px));}
+  #cutscene::before, #cutscene::after, #advStory::before, #advStory::after{height:12px;}
+}
+/* 세로 화면: 초상화가 대사 위로 올라가므로 오른쪽 여백을 비운다 */
+@media (max-aspect-ratio:1/1){
+  #cutscene .cs-box.has-face, #advStory .as-box.has-face{padding-right:max(7vw, 28px);}
+}
+@media (max-width:700px){
+  #advStory .as-box.has-face{padding-right:max(5vw, 18px);}
+}
+@media (prefers-reduced-motion:reduce){
+  #cutscene .cs-box.ready .cs-next, #advStory .as-box.ready .as-next{animation:none;}
+  #cutscene::before, #cutscene::after, #advStory::before, #advStory::after{transition:none;}
+}
+
+/* ---------- 선택지: 파란 동그라미·갈색 상자 대신 금색 테두리 띠 ---------- */
+#cutscene .cs-choice:not(.kakao) .cs-opt, #advStory .as-choice button{
+  background:linear-gradient(90deg, rgba(10,8,16,.92), rgba(24,20,34,.86)); border:1px solid rgba(240,207,98,.4); border-radius:6px;
+  box-shadow:0 6px 18px rgba(0,0,0,.5); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);}
+#cutscene .cs-choice:not(.kakao) .cs-opt:hover:not(:disabled), #advStory .as-choice button:hover:not(:disabled){
+  background:linear-gradient(90deg, rgba(58,46,18,.95), rgba(30,24,40,.9)); border-color:#f0cf62;}
+#cutscene .cs-choice:not(.kakao) .cs-opt .n, #advStory .as-choice .n{position:relative; background:none; color:#f0cf62; font-size:.82rem;}
+#cutscene .cs-choice:not(.kakao) .cs-opt .n::before, #advStory .as-choice .n::before{content:''; position:absolute; inset:4px; border:1px solid rgba(240,207,98,.75); transform:rotate(45deg);}
+#cutscene .cs-choice:not(.kakao) .cs-opt.picked, #advStory .as-choice button.picked{background:linear-gradient(90deg, #e8c95a, #c9a227); color:#1a1408; border-color:#f3dc8a;}
+#cutscene .cs-choice:not(.kakao) .cs-opt.picked .n, #advStory .as-choice button.picked .n{color:#1a1408;}
+#cutscene .cs-choice:not(.kakao) .cs-opt.picked .n::before, #advStory .as-choice button.picked .n::before{border-color:#1a1408;}

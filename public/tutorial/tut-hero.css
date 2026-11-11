@@ -1,0 +1,107 @@
+/* tut-hero.css — v156 튜토리얼 4개 페이지 공용: 영웅 표시를 실제 게임(하스스톤 배치)과 똑같이
+   · 영웅 = 금테 둥근 초상화(게임과 같은 틀) + 오른쪽 아래 빨간 물방울 체력. 이름·방어도는 초상화 왼쪽 작은 판
+   · 상대 영웅은 위 가운데, 내 영웅은 손패 위 가운데. 영웅 능력은 내 영웅 오른쪽의 동그란 그림
+   · 상대 손패·덱 정보는 오른쪽, 내 마나·덱 정보는 오른쪽 아래
+   이 파일은 각 페이지의 다른 스타일보다 뒤에 불러야 한다 */
+:root{--thw:clamp(72px, 13vh, 124px)}
+@media (max-width:900px){ :root{--thw:min(100px, 13vh)} }
+@media (orientation:landscape) and (max-height:540px){ :root{--thw:84px} }
+@media (orientation:landscape) and (max-height:420px){ :root{--thw:72px} }
+@media (orientation:landscape) and (max-height:360px){ :root{--thw:62px} }
+
+/* ---- 영웅 초상화 ---- */
+.hero{position:relative;width:var(--thw);height:calc(var(--thw) * 272 / 256);padding:0;margin:0;border:0;border-radius:50%;background:none;box-shadow:none;flex:none;overflow:visible;text-align:right}
+.hero::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:url(/images/pvp/avatar_frame.webp) center/100% 100% no-repeat;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.hero .av{position:absolute;left:21.1%;top:25%;width:57.4% !important;height:53.3% !important;margin:0 !important;border:0 !important;border-radius:50%;object-fit:cover;display:block !important;z-index:1;background:#1b1730;transition:box-shadow .2s}
+.hero .hp{position:absolute;right:-4%;bottom:-2%;width:36%;aspect-ratio:95/128;margin:0 !important;z-index:3;display:flex;align-items:center;justify-content:center;padding-top:10%;box-sizing:border-box;
+  background:url(/images/stat_hp.webp) center/contain no-repeat;color:#fff !important;font:900 calc(var(--thw) * .19)/1 var(--font) !important;
+  text-shadow:0 0 3px #000,1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+.hero .hp small{display:none}
+/* 이름 · 방어도 · 주문 공격력: 초상화 왼쪽 작은 판 (게임의 이름판과 같은 모양) */
+.hero .nm,.hero .arm,.hero .sp{position:absolute;right:calc(100% + 8px);white-space:nowrap;overflow:visible;margin:0;padding:3px 9px;border-radius:8px;
+  background:rgba(12,10,22,.78);border:1px solid rgba(201,162,39,.35);z-index:3;line-height:1.25}
+.hero .nm{top:calc(50% - 1.6em);font-size:13px}
+.hero .arm{top:calc(50% + .25em);font-size:12px;color:#d6e6f2;border-color:rgba(180,200,220,.5)}
+.hero .sp{top:calc(50% + 2.1em);font-size:11px}
+/* 고를 수 있음 · 안내 강조 */
+.hero.t-ok{cursor:crosshair}
+.hero.t-ok .av{box-shadow:0 0 0 3px #e0484a,0 0 16px 4px rgba(224,72,74,.85)}
+.hero.hl{border-radius:50%}
+.hero.hl .av{box-shadow:0 0 0 3px #ffd36a,0 0 18px 5px rgba(255,211,106,.85)}
+
+/* ---- 배치: 상대 영웅은 위 가운데 ---- */
+#eRow{position:relative;justify-content:center;min-height:calc(var(--thw) * 272 / 256);margin-bottom:-10px;z-index:4}
+#eRow > div[style*="flex:1"]{display:none}
+#eSide{width:auto}
+#eInfo{position:absolute;right:0;top:50%;transform:translateY(-50%);width:auto}
+/* 내 영웅은 손패 위 가운데, 영웅 능력은 그 오른쪽 */
+.me-wrap{position:relative;flex-wrap:wrap;justify-content:center;align-items:flex-end;row-gap:0;z-index:4}
+#mSide{order:0;position:relative;flex:0 0 100%;width:100%;flex-direction:row;justify-content:center;align-items:center;margin:-10px 0 0 !important}
+.me-wrap > .hand{order:1;margin:0 !important}
+#mInfo{position:absolute;right:0;bottom:4px;width:auto;margin:0 !important}
+
+/* ---- 영웅 능력: 동그란 그림 + 파란 비용 보석, 이름은 그 오른쪽 ---- */
+.hpw{position:absolute;left:calc(50% + var(--thw) / 2 + 12px);top:50%;transform:translateY(-50%);width:auto !important;margin:0 !important;padding:0;border:0;background:none;
+  display:flex;align-items:center;gap:8px;text-align:left;box-shadow:none}
+.hpw .ic{position:relative;flex:none;width:calc(var(--thw) * .52);height:calc(var(--thw) * .52);border-radius:50%;border:3px solid #8d8a94;box-sizing:border-box;
+  background:#171329 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:calc(var(--thw) * .22) !important;box-shadow:0 0 0 1px #2a2633,0 4px 10px rgba(0,0,0,.6)}
+.hpw .ic.img{font-size:0 !important}
+.hpw .cost{position:absolute;left:calc(var(--thw) * .26);top:calc(var(--thw) * -.1);transform:translateX(-50%);z-index:2;width:calc(var(--thw) * .21);height:calc(var(--thw) * .21);border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#7fd7ff,#1b6fb3 70%);border:2px solid #0d3a5c;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  font:900 calc(var(--thw) * .12)/1 Georgia,serif;color:#fff;text-shadow:0 0 2px #000}
+.hpw .tx{display:flex;flex-direction:column;min-width:0;max-width:150px;padding:3px 8px;border-radius:8px;background:rgba(12,10,22,.78);border:1px solid rgba(201,162,39,.3)}
+.hpw:not(:disabled) .ic{border-color:#46e27a;box-shadow:0 0 0 2px #1d7a3b,0 0 14px 3px rgba(70,226,122,.75)}
+.hpw.picked .ic{border-color:#fff;box-shadow:0 0 0 2px #0e5a55,0 0 18px 4px rgba(111,194,186,.9)}
+.hpw.used .ic{filter:grayscale(1) brightness(.55)}
+.hpw:disabled{filter:none}
+.hpw.hl{border-radius:50%}
+.hpw.hl .ic{box-shadow:0 0 0 3px #ffd36a,0 0 18px 5px rgba(255,211,106,.85)}
+@media (max-width:900px),(orientation:landscape) and (max-height:540px){
+  .hpw .tx{max-width:96px}.hpw small{display:none}
+  .hero .nm{font-size:10px;padding:2px 6px}.hero .arm,.hero .sp{font-size:9.5px;padding:1px 6px}
+}
+@media (orientation:landscape) and (max-height:420px){ .hpw .tx{display:none} }
+
+/* 폰 가로: 높이가 모자라니 내 영웅은 손패 왼쪽에 (모양은 같게), 영웅 능력은 영웅 바로 오른쪽 */
+@media (orientation:landscape) and (max-height:540px){
+  .me-wrap{flex-wrap:nowrap;align-items:center;column-gap:6px}
+  #mSide{flex:0 0 auto;width:auto;margin:0 !important;gap:4px}
+  .hpw{position:static;transform:none}
+  #mInfo{position:static;order:2}
+  #eRow{margin-bottom:-4px}
+}
+@media (orientation:landscape) and (max-height:540px){ #mSide .hero .nm{display:none} }
+
+/* =====================================================================
+   v157 하스스톤식 손패 (게임과 같게)
+   · 평소: 내 영웅·영웅 능력 오른쪽에 작게 모여 있다
+   · 손을 가져가면(PC 마우스 · 폰 누르기) 아래 가운데에서 크게 올라온다. 안내가 손패 카드를 가리킬 때도 올라온다
+   · 손패가 아래 줄을 차지하지 않으니 전장이 그만큼 커진다
+   ===================================================================== */
+.hpw .tx{display:none !important}
+.me-wrap{position:relative;flex-wrap:nowrap !important;justify-content:center !important;align-items:center;column-gap:0;min-height:calc(var(--thw) * 272 / 256)}
+#mSide{flex:0 0 auto !important;width:auto !important;margin:-10px 0 0 !important}
+.hpw{position:absolute !important;left:calc(50% + var(--thw) / 2 + 12px) !important;top:50% !important;transform:translateY(-50%) !important}
+.me-wrap > .hand{position:absolute;left:calc(50% + var(--thw) / 2 + var(--thw) * .52 + 26px);right:118px;bottom:0;min-height:0;height:auto;margin:0 !important;padding:0;
+  display:flex;justify-content:flex-start;align-items:flex-end;gap:0;z-index:6;pointer-events:none;transition:none}
+.me-wrap > .hand > *{pointer-events:auto}
+.me-wrap > .hand .hc{zoom:.62;transition:transform .15s ease}
+.me-wrap > .hand .hc + .hc{margin-left:calc(var(--cw) * -.42)}
+.me-wrap > .hand.up,
+.me-wrap > .hand:has(.hl):not(:has(.picked)){left:0;right:0;justify-content:center;z-index:30;padding-bottom:2px}
+@media (hover:hover){ .me-wrap > .hand:hover{left:0;right:0;justify-content:center;z-index:30;padding-bottom:2px} }
+.me-wrap > .hand.up .hc,
+.me-wrap > .hand:has(.hl):not(:has(.picked)) .hc{zoom:1}
+@media (hover:hover){ .me-wrap > .hand:hover .hc{zoom:1} }
+.me-wrap > .hand.up .hc + .hc,
+.me-wrap > .hand:has(.hl):not(:has(.picked)) .hc + .hc{margin-left:8px}
+@media (hover:hover){ .me-wrap > .hand:hover .hc + .hc{margin-left:8px} }
+#mInfo{position:absolute !important;right:0;bottom:4px;order:0 !important}
+@media (orientation:landscape) and (max-height:540px){
+  .me-wrap > .hand{left:calc(50% + var(--thw) / 2 + var(--thw) * .52 + 16px);right:84px}
+  .me-wrap > .hand .hc{zoom:.66}
+  .me-wrap > .hand.up .hc + .hc,
+  .me-wrap > .hand:has(.hl):not(:has(.picked)) .hc + .hc{margin-left:-6px}
+  #mSide{margin:0 !important}
+  #mSide .hero .nm{display:block}
+}

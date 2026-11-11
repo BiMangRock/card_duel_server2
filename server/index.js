@@ -43,11 +43,62 @@ app.use('/api', require('./social').createSocialRouter({ core: pvp.core, onRenam
 app.use('/api', (req, res) => res.status(404).json({ error: '없는 API예요.' }));
 
 // 게임 화면은 로그인한 사람만. 아니면 로그인 화면으로.
-app.get('/ranking', (req, res) => { res.set('Cache-Control', 'no-store'); res.sendFile(path.join(PUBLIC, 'ranking.html')); });   // v128 공개 순위 페이지 (로그인 없이)
-const sendIndex = (req, res) => auth.getSessionUser(req) ? res.sendFile(path.join(PUBLIC, 'index.html')) : res.redirect('/login.html');
+app.get('/ranking', (req, res) => sendStamped(res, path.join(PUBLIC, 'ranking.html')));   // v128 공개 순위 페이지 (로그인 없이)
+// v157 버전 번호 자동 붙이기: html 이 부르는 .js/.css 주소 뒤에 ?v=<지문> 을 붙여 보낸다.
+// 지문은 서버를 켤 때 public 의 js·css 파일 (경로·크기·수정 시각) 으로 만든다 → 파일을 덮어쓰고 서버를 다시 켜면
+// 주소가 바뀌어 브라우저·폰이 옛 파일 대신 새 파일을 바로 받는다 (강력 새로고침 필요 없음)
+const crypto = require('crypto');
+const ASSET_VER = (() => {
+  const h = crypto.createHash('sha1');
+  const walk = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const f = path.join(dir, e.name);
+    if (e.isDirectory()) { if (e.name !== 'images' && e.name !== 'fonts') walk(f); }
+    else if (/\.(js|css|html)$/.test(e.name)) { const st = fs.statSync(f); h.update(f + ':' + st.size + ':' + st.mtimeMs + ';'); }
+  } };
+  try { walk(PUBLIC); } catch (_) { h.update(String(Date.now())); }
+  return h.digest('hex').slice(0, 10);
+})();
+const stampCache = new Map();   // 파일 경로 → { mtime, html }
+function stampHtml(file) {
+  const st = fs.statSync(file), c = stampCache.get(file);
+  if (c && c.mtime === st.mtimeMs) return c.html;
+  const html = fs.readFileSync(file, 'utf8').replace(/(<(?:script|link)\b[^>]*?\b(?:src|href)=")([^"?#]+\.(?:js|css))(")/gi,
+    (m, a, url, b) => /^(?:https?:)?\/\//i.test(url) ? m : `${a}${url}?v=${ASSET_VER}${b}`);
+  stampCache.set(file, { mtime: st.mtimeMs, html });
+  return html;
+}
+function sendStamped(res, file) { res.set('Cache-Control', 'no-store'); res.type('html').send(stampHtml(file)); }
+console.log('[server] 정적 파일 버전', ASSET_VER);
+const sendIndex = (req, res) => auth.getSessionUser(req) ? sendStamped(res, path.join(PUBLIC, 'index.html')) : res.redirect('/login.html');
 app.get(['/', '/index.html'], (req, res) => { res.set('Cache-Control', 'no-store'); sendIndex(req, res); });
 
-app.use('/images', express.static(IMAGES, { maxAge: '7d' }));
+// v154 그림은 WebP 로 바꿔 두었다. 코드·DB(보스 아이콘)·튜토리얼은 예전 이름(.png/.jpg)을 그대로 쓰므로,
+//   같은 이름의 .webp 가 있으면 그걸 대신 보낸다. 없으면(원본이 더 작아 그대로 둔 그림) 원본을 보낸다.
+const webpExists = new Map();
+function preferWebp(dir) {
+  return (req, res, next) => {
+    const m = /^(.*)\.(png|jpe?g)$/i.exec(req.path);
+    if (m && (req.method === 'GET' || req.method === 'HEAD')) {
+      const rel = m[1] + '.webp';
+      const full = path.join(dir, decodeURIComponent(rel));
+      if (full.startsWith(dir + path.sep)) {
+        let ok = webpExists.get(full);
+        if (ok === undefined) { ok = fs.existsSync(full); webpExists.set(full, ok); }
+        if (ok) req.url = rel + req.url.slice(req.path.length);
+      }
+    }
+    next();
+  };
+}
+app.use('/images', preferWebp(IMAGES), express.static(IMAGES, { maxAge: '7d' }));
+app.use('/tutorial/images', preferWebp(path.join(PUBLIC, 'tutorial', 'images')));
+app.use('/fonts/files', express.static(path.join(PUBLIC, 'fonts', 'files'), { maxAge: '30d', immutable: true }));   // v154 글꼴 조각은 바뀌지 않으니 오래 캐시
+app.get(/\.html$|\/$/, (req, res, next) => {   // v157 나머지 html (로그인 · 튜토리얼 등) 도 버전 번호를 붙여 보낸다
+  let rel = decodeURIComponent(req.path); if (rel.endsWith('/')) rel += 'index.html';
+  const file = path.join(PUBLIC, rel);
+  if (!file.startsWith(PUBLIC + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return next();
+  sendStamped(res, file);
+});
 app.use(express.static(PUBLIC, { index: false, maxAge: 0, etag: true }));
 
 app.use((err, req, res, next) => {                       // 마지막 안전망

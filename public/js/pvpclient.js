@@ -219,7 +219,7 @@ const PvpClient = (() => {
   el('pvpRankBoardBtn').onclick = openBoard;
   el('pvpBackBtn').onclick = async () => {
     if (S.status && S.status.state === 'queue') await post('/api/pvp/cancel');
-    showScreen('mode');                                                   // v136 스트림은 계속 열어 둔다 (친구 접속 상태 · 대전 신청 알림)
+    showScreen('main');                                                   // v154 모드 선택은 메인 화면에 있다 · v136 스트림은 계속 열어 둔다 (친구 접속 상태 · 대전 신청 알림)
   };
   el('pvpAgainBtn').onclick = async () => { goToMenu(); await toggleQueue(); };
   document.querySelectorAll('.pvpWinGold').forEach(x => { x.textContent = PVP.WIN_GOLD; });
@@ -316,7 +316,7 @@ const PvpClient = (() => {
     const r = await post('/api/pvp/action', { matchId: S.matchId, seq, action });
     if (r.ok) {                                                            // 결과 화면은 스트림으로 온다. 혹시 안 오면 10초 뒤 풀고 다시 동기화
       clearTimeout(S.waitTimer);
-      S.waitTimer = setTimeout(() => { if (S.lastSeq === seq && !S.over) { ui.busy = false; render(); resync(); } }, 10000);
+      S.waitTimer = setTimeout(() => { if (S.lastSeq === seq && !S.over) { ui.busy = false; if (!ui.anim) render(); resync(); } }, 10000);
       return;
     }
     if (r.status === 409) { ui.busy = false; resync(); return; }            // 내 화면이 낡았음 → 최신 상태를 다시 받는다

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>스톰윈드 vs 가로쉬 · 튜토리얼</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
 <style>
 :root{
   --bg:#120f0d; --bg2:#1c1713; --panel:#241d17; --line:#4a3b2a; --gold:#e8c36a; --gold2:#b98d2f;
@@ -209,6 +210,8 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <link rel="stylesheet" href="/css/orient.css">
 <script src="/js/orient.js"></script>
 <script src="tut-drama.js"></script>
+<link rel="stylesheet" href="tut-hero.css">
+<script src="tut-hand.js" defer></script>
 </head>
 <body>
 <div class="app">
@@ -3631,6 +3634,11 @@ const STEPS=[
        ['J1','목표는 단 하나.'],['J3','<b>상대 영웅의 체력을 0으로!</b>'],
        ['J2','연습이라 가로쉬 체력은 <b>10</b>이에요.'],['J1','위쪽이 가로쉬, 아래쪽이 우리 편.'],
        ['J1',`할 곳은 ${KW}노란 테두리${E}로 반짝여요.`]]},
+ {ch:0,type:'info',title:'화면 보는 법',
+  say:[['J1','가운데 위 큰 초상화가 <b>가로쉬</b>예요.'],['J1','가운데 아래 초상화가 <b>우리 영웅</b>.'],
+       ['J2','초상화 옆 <b>빨간 물방울</b>이 체력이에요.'],['J1','실전엔 영웅 오른쪽에 <b>영웅 능력</b>도 있어요.'],
+       ['J3','카드는 <b>전장으로 끌어다 놓으면</b> 내요.'],['J3','내 하수인을 <b>적에게 끌어다 놓으면</b> 공격!'],
+       ['J2','끌기 대신 차례로 눌러도 돼요.']]},
  {ch:0,type:'info',title:'마나와 카드',
   say:[['J1','카드를 내려면 <b>마나</b>가 필요해요.'],['J1','오른쪽 아래 파란 수정이 마나예요.'],
        ['J2','매 턴 최대 마나가 <b>1씩</b> 늘어요.'],['J1','카드 왼쪽 위 파란 숫자가 <b>비용</b>.'],
@@ -4056,6 +4064,7 @@ async function advance(){
 /* ---------- 도감·승리 ---------- */
 const GLOSS=[
  ['마나','매 턴 최대 마나가 1씩 늘고(최대 10), 턴 시작에 가득 찹니다. 카드를 내면 비용만큼 씁니다.'],
+ ['조작','카드를 전장으로 끌어다 놓으면 냅니다. 내 하수인을 적 하수인·영웅에게 끌어다 놓으면 공격합니다. 끌지 않고 차례로 눌러도 됩니다.'],
  ['설명 보기','카드·하수인·영웅 능력을 꾹 누르면(PC는 마우스 올리기) 자세한 효과가 뜹니다. 손을 떼면 닫힙니다.'],
  ['놓을 자리','하수인을 끌고 가 놓은 자리(맨 왼쪽·맨 오른쪽·하수인 사이 어디든)에 놓입니다. 양옆에 효과를 주는 카드는 자리가 중요합니다.'],
  ['하수인','전장에 남아 싸우는 카드. 전장에는 최대 7기, 손패는 최대 10장까지.'],

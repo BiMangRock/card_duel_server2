@@ -67,7 +67,7 @@
     clipTop(0); clipBot(0); setSword(S.width + 200, -200, 25, 1.6, 0); setSpark(0, 0, 0);
 
     // --- 시간표 (ms) ---
-    const T = { in0: 250, in1: 750, w1: 1450, hop: 1620, w2: 2350, out: 2650, credit: 2800, end: 4400 };
+    const T = { in0: 250, in1: 750, w1: 1450, hop: 1620, w2: 2350, out: 2650, credit: 2800, end: 3600 };   // v154 제작 크레딧을 빼서 끝을 0.8초 당겼다
     const ease = t => 1 - Math.pow(1 - t, 3), easeIn = t => t * t * t, lerp = (a, b, t) => a + (b - a) * t, cl = t => Math.max(0, Math.min(1, t));
     const a1 = P(L1.x0, L1.y), b1 = P(L1.x1, L1.y), a2 = P(L2.x0, L2.y), b2 = P(L2.x1, L2.y);
     const toPct = x => cl((x - lx) / lw) * 100;

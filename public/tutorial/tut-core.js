@@ -107,7 +107,7 @@
     const h = heroPw(); if (!h) return null;
     const P = S.seats[0], b = el('button', 'hpw' + (P.powerUsed ? ' used' : '') + (sel && sel.kind === 'power' ? ' picked' : ''));
     b.id = 'hpBtn'; b.type = 'button';
-    b.innerHTML = `<span class="ic">${h.icon}</span><span class="tx"><b>${h.name}</b><small>${P.powerUsed ? '이번 턴 사용함' : `비용 ${h.cost} · ${h.text}`}</small></span>`;
+    b.innerHTML = `<span class="ic img" style="background-image:url('/images/hp/${h.id}.webp')">${h.icon}</span><span class="cost">${h.cost}</span><span class="tx"><b>${h.name}</b><small>${P.powerUsed ? '이번 턴 사용함' : h.text}</small></span>`;   // v156 게임과 같은 동그란 영웅 능력 그림
     b.disabled = !powerReady() && !(sel && sel.kind === 'power');
     b.onclick = ev => { ev.stopPropagation(); onPower(); };
     b.onmouseenter = () => inspectPower(0); b.onmouseleave = () => inspect(null);
