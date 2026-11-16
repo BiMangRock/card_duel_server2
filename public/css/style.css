@@ -1901,3 +1901,107 @@ body.hand-open.hand-hover .hand::before{display:none;}
 .chip.power{border-color:#c9a227; color:#ffd36a;}
 #cardPreview .hp-card.noart .hpc-art{align-items:center; justify-content:center;}
 #cardPreview .hp-card.noart .hpc-icon{font-size:3.6rem; margin:0;}
+
+/* ================= v163 특성(치트) 보여 주기 · 특성 도감 ================= */
+/* 특성 카드 (브리핑 · 배팅 뽑기 · 도감) */
+.trait-card{position:relative; display:flex; flex-direction:column; border-radius:14px; overflow:hidden; background:#ede3c8; color:#2a2417; border:3px solid #17131f; box-shadow:0 0 0 2px var(--gold-d), 0 10px 22px rgba(0,0,0,.5); min-width:0;}
+.trait-card .tc-art{width:100%; aspect-ratio:1/1; height:auto; object-fit:cover; display:block; background:#1c1930;}
+.trait-card .tc-body{display:flex; flex-direction:column; gap:.25rem; padding:.5rem .6rem .65rem;}
+.trait-card .tc-name{font-family:var(--font-d); font-weight:400; font-size:1rem; line-height:1.2;}
+.trait-card .tc-desc{font-size:.78rem; line-height:1.45;}
+.trait-card.global{background:#3a1616; color:#ffe3df; box-shadow:0 0 0 2px #d0463e, 0 10px 22px rgba(0,0,0,.5);}
+.trait-card .tc-tags{position:absolute; left:.4rem; top:.4rem; right:.4rem; display:flex; flex-wrap:wrap; gap:.25rem;}
+.trait-card .tc-tag{font-size:.64rem; font-weight:900; padding:.12rem .45rem; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,.5);}
+.trait-card .tc-tag.new{background:#d0463e; color:#fff;} .trait-card .tc-tag.me{background:#ffb3ad; color:#3a1616;} .trait-card .tc-tag.pw{background:var(--gold); color:#1a1405;}
+.trait-card.pop{animation:traitPop .45s cubic-bezier(.2,.9,.3,1.3);}
+@keyframes traitPop{from{transform:rotateY(90deg) scale(.8); opacity:.2} to{transform:none; opacity:1}}
+.trait-card.locked .tc-art{filter:brightness(.12) saturate(0) blur(2px);}
+.trait-card.locked{background:#221e33; color:#8f88a8; box-shadow:0 0 0 2px #3a3352;}
+
+/* 모달 공통 (A2 브리핑 · C1 뽑기) */
+.brief-modal{position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center; padding:1rem; background:rgba(8,7,14,.82); animation:fadeIn .2s ease-out;}
+.brief-box{width:min(70rem, 96vw); max-height:94vh; display:flex; border-radius:20px; overflow:hidden; border:1px solid var(--gold-d); background:linear-gradient(160deg,#2a2340,#1a1729 55%,#14121f); box-shadow:0 30px 80px rgba(0,0,0,.7); color:var(--parch);}
+.brief-left{width:16.5rem; flex:none; padding:1.6rem 1.2rem; display:flex; flex-direction:column; align-items:center; gap:.5rem; text-align:center; border-right:1px solid #3a3352; background:radial-gradient(circle at 50% 30%, rgba(180,85,46,.3), transparent 65%);}
+.brief-portrait{width:10rem; height:10rem; border-radius:50%; border:4px solid #e6c45a; background:#2a1a14 center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:4.5rem; box-shadow:0 0 34px rgba(230,120,60,.4);}
+.brief-stage{font-size:.82rem; color:var(--parch-d);} .brief-name{font-family:var(--font-d); font-weight:400; font-size:1.9rem; color:#ffe9b0; line-height:1.15;}
+.brief-rank{font-size:.8rem; font-weight:700; color:#e6bd3c; border:1px solid #e6bd3c; border-radius:999px; padding:.1rem .7rem;}
+.brief-desc{margin:0; font-size:.82rem; line-height:1.55; color:var(--parch-d); max-height:7rem; overflow:auto;}
+.brief-reward{margin-top:auto; display:flex; flex-direction:column; gap:.15rem; font-size:.8rem; color:var(--parch-d);} .brief-reward b{font-family:var(--font-d); font-weight:400; font-size:1.4rem; color:#e6c45a;}
+.brief-right{flex:1; min-width:0; padding:1.4rem 1.6rem; display:flex; flex-direction:column; gap:.8rem; overflow:auto;}
+.brief-power{display:flex; align-items:center; gap:.9rem; padding:.7rem .9rem; border-radius:14px; background:rgba(201,162,39,.1); border:1px solid rgba(201,162,39,.45);}
+.bpw-ico{position:relative; width:3.6rem; height:3.6rem; flex:none; border-radius:50%; border:3px solid #e6c45a; background:#14121f center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:1.6rem; overflow:visible;}
+.bpw-ico img{width:100%; height:100%; border-radius:50%; object-fit:cover;}
+.bpw-cost{position:absolute; left:-.35rem; top:-.35rem; width:1.5rem; height:1.5rem; border-radius:50%; background:#2f6fd6; color:#fff; font-style:normal; font-weight:900; font-size:.85rem; display:flex; align-items:center; justify-content:center; border:2px solid #14121f;}
+.bpw-txt{display:flex; flex-direction:column; gap:.1rem; min-width:0;} .bpw-txt span{font-size:.72rem; font-weight:700; color:#e6c45a; letter-spacing:.04em;} .bpw-txt b{font-family:var(--font-d); font-weight:400; font-size:1.25rem;} .bpw-txt small{font-size:.82rem;}
+.brief-h{margin:.2rem 0 0; font-size:.85rem; color:var(--parch-d); letter-spacing:.05em;}
+.brief-traits{display:grid; grid-template-columns:repeat(auto-fill, minmax(9.5rem, 1fr)); gap:.9rem;}
+.brief-tip{margin:0; font-size:.85rem; color:#e6c45a;} .brief-tip:empty{display:none;}
+.brief-btns{margin-top:auto; display:flex; justify-content:flex-end; gap:.7rem; padding-top:.4rem;}
+.brief-btns button{min-height:2.9rem; padding:.6rem 1.5rem; border-radius:12px; font:700 1rem var(--font-u); cursor:pointer;}
+.brief-btns .btn-back, .brief-btns .btn-skip{border:1px solid var(--gold-d); background:transparent; color:var(--parch);}
+.brief-btns .btn-go{border:0; background:var(--gold); color:#1a1405; font-weight:900; padding:.6rem 2.4rem;}
+.brief-btns .btn-go:disabled{opacity:.4; cursor:default;}
+@media (max-width:760px), (orientation:landscape) and (max-height:540px){
+  .brief-box{flex-direction:column; overflow:auto;} .brief-left{width:auto; flex-direction:row; flex-wrap:wrap; justify-content:center; border-right:0; border-bottom:1px solid #3a3352; padding:.8rem;}
+  .brief-portrait{width:4.5rem; height:4.5rem; font-size:2.2rem;} .brief-desc{display:none;} .brief-reward{margin-top:0;}
+  .brief-traits{grid-template-columns:repeat(auto-fill, minmax(7.5rem, 1fr)); gap:.6rem;} .trait-card .tc-desc{font-size:.7rem;}
+}
+/* C1 배팅 뽑기 */
+.roll-box{width:min(60rem, 96vw); max-height:94vh; overflow:auto; padding:1.5rem 1.7rem; border-radius:20px; border:1px solid var(--gold-d); background:radial-gradient(ellipse at 50% 30%, #2a2340, #14121f 80%); color:var(--parch); display:flex; flex-direction:column; gap:.8rem; box-shadow:0 30px 80px rgba(0,0,0,.7);}
+.roll-box h3{margin:0; font-family:var(--font-d); font-weight:400; font-size:1.7rem; color:#ffe9b0;} .roll-sub{margin:0; font-size:.85rem; color:var(--parch-d);}
+.roll-cards{display:grid; grid-template-columns:repeat(auto-fill, minmax(10rem, 1fr)); gap:1rem; perspective:900px;}
+.roll-slot{min-height:15rem; border-radius:14px; border:3px solid #17131f; box-shadow:0 0 0 2px #e6c45a, 0 0 30px rgba(230,196,90,.35); background:linear-gradient(180deg,#3a3358,#1c1930); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.6rem; overflow:hidden;}
+.roll-slot .rs-a, .roll-slot .rs-c{font-size:.85rem; color:#8f88a8;} .roll-slot .rs-b{font-family:var(--font-d); font-weight:400; font-size:1.3rem; color:#ffe9b0;}
+/* C2 결과: 이겨낸 특성 */
+#overlayReward .beaten{display:flex; flex-direction:column; align-items:center; gap:.45rem; margin-top:.7rem;}
+#overlayReward .bt-h{font-size:.8rem; font-weight:700; letter-spacing:.08em; color:#e6c45a;}
+#overlayReward .bt-row{display:flex; flex-wrap:wrap; justify-content:center; gap:.6rem; max-width:34rem;}
+#overlayReward .bt-tile{position:relative; width:5.6rem; display:flex; flex-direction:column; align-items:center; gap:.25rem; padding:.4rem; border-radius:12px; background:#1c1930; border:1px solid var(--gold-d); font-size:.72rem;}
+#overlayReward .bt-tile.global{background:#2a1414; border-color:#d0463e;}
+#overlayReward .bt-tile img{width:4.4rem; height:4.4rem; border-radius:9px; object-fit:cover;}
+#overlayReward .bt-tile b{font-weight:700; line-height:1.2; text-align:center;}
+#overlayReward .bt-stamp{position:absolute; right:-.45rem; top:-.45rem; font-style:normal; font-size:.66rem; font-weight:900; padding:.15rem .4rem; border-radius:6px; background:#7fd38a; color:#10240f; transform:rotate(10deg); box-shadow:0 2px 6px rgba(0,0,0,.5);}
+#overlayReward .bt-new{position:absolute; left:-.4rem; top:-.45rem; font-style:normal; font-size:.62rem; font-weight:900; padding:.15rem .35rem; border-radius:6px; background:#d0463e; color:#fff; transform:rotate(-8deg);}
+#overlayReward .bt-codex{font-size:.82rem; color:var(--parch-d);} #overlayReward .bt-codex b{color:#e6c45a;}
+#overlayReward .bt-bar{width:16rem; height:.45rem; border-radius:.25rem; background:#2a2438; overflow:hidden;} #overlayReward .bt-bar i{display:block; height:100%; background:linear-gradient(90deg,#8a6f1c,#e6c45a);}
+/* B1 전투 중: 상대 초상화 옆 특성 고리 · 전장 규칙 띠 */
+.opp-traits{position:absolute; left:calc(100% + 4.9rem); top:50%; transform:translateY(-50%); display:grid; grid-auto-flow:column; grid-template-rows:repeat(2, auto); gap:.35rem; z-index:6;}   /* 영웅 능력 버튼 오른쪽, 두 줄 */
+.opp-traits[hidden]{display:none;}
+.trait-ico{position:relative; width:2.5rem; height:2.5rem; border-radius:50%; border:2px solid #c9a227; background:#14121f; box-shadow:0 2px 8px rgba(0,0,0,.6); cursor:help;}
+.trait-ico img{width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;}
+.trait-ico.global{border-color:#d0463e; box-shadow:0 0 0 2px rgba(208,70,62,.35), 0 2px 8px rgba(0,0,0,.6);}
+.trait-ico.power{border-style:dashed;}
+.trait-ico .ti-n{position:absolute; right:-.4rem; bottom:-.35rem; font-style:normal; font-size:.62rem; font-weight:900; padding:0 .25rem; border-radius:.5rem; background:#e6c45a; color:#1a1405;}
+.trait-ico .ti-n[hidden]{display:none;}
+.trait-ico:focus-visible{outline:2px solid #fff1b8; outline-offset:2px;}
+.trait-ico.flash{animation:traitFlash .9s ease-out;}
+@keyframes traitFlash{0%{transform:scale(1); box-shadow:0 0 0 0 rgba(255,241,184,.9)} 30%{transform:scale(1.45); box-shadow:0 0 22px 8px rgba(230,196,90,.9)} 100%{transform:scale(1); box-shadow:0 2px 8px rgba(0,0,0,.6)}}
+@media (orientation:landscape) and (max-height:540px){ .trait-ico{width:1.75rem; height:1.75rem;} .opp-traits{left:calc(100% + 3.4rem); gap:.25rem;} #ruleBand{font-size:.62rem; padding:.2rem .6rem;} }
+#ruleBand{position:fixed; z-index:40; left:calc(.6rem + env(safe-area-inset-left,0px)); top:.35rem; max-width:min(24rem, 32vw); padding:.28rem .9rem; border-radius:999px; border-top:1px solid #d0463e !important; background:linear-gradient(180deg,#4a1a1a,#3a1616); border:1px solid #d0463e; border-top:0; color:#ffd2cd; font-size:.78rem; font-weight:700; text-align:center; cursor:help; box-shadow:0 4px 14px rgba(0,0,0,.5);}
+#ruleBand[hidden], #menu:not(.hidden) ~ #ruleBand{display:none !important;}
+#hand .card.rule-cost .cost, #hand .card.rule-cost .cost-gem{box-shadow:0 0 0 2px #d0463e, 0 0 10px rgba(208,70,62,.8);}
+/* 특성 도감 화면 */
+.codex-bar{height:.55rem; border-radius:.3rem; background:#2a2438; overflow:hidden; margin:.2rem 0 .9rem;} .codex-bar i{display:block; height:100%; width:0; background:linear-gradient(90deg,#8a6f1c,#e6c45a); transition:width .5s;}
+.codex-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); gap:.8rem; margin-bottom:1rem;}
+.codex-grid .trait-card .tc-name{font-size:.92rem;} .codex-grid .trait-card .tc-desc{font-size:.72rem;}
+.codex-link{display:flex; align-items:center; gap:.8rem; width:100%; margin:.2rem 0 .8rem; padding:.55rem .8rem; border-radius:12px; border:1px solid var(--gold-d); background:linear-gradient(90deg, rgba(201,162,39,.16), rgba(201,162,39,.04)); color:var(--parch); cursor:pointer; text-align:left; font:inherit;}
+.codex-link img{width:3rem; height:3rem; border-radius:10px; object-fit:cover; flex:none;}
+.codex-link span{display:flex; flex-direction:column; flex:1;} .codex-link small{color:var(--parch-d); font-size:.78rem;} .codex-link i{font-style:normal; font-size:1.4rem; color:#e6c45a;}
+#menu #screen-codex{width:min(64rem, 96vw); max-width:none;}
+#screen-codex .codex-bar, #screen-codex .codex-grid{width:100%; align-self:stretch;}
+#screen-codex .codex-grid{grid-template-columns:repeat(auto-fill, minmax(9.5rem, 1fr));}
+@media (max-width:760px), (orientation:landscape) and (max-height:540px){
+  .brief-traits{grid-template-columns:repeat(auto-fill, minmax(12rem, 1fr));}
+  .brief-traits .trait-card{flex-direction:row; align-items:stretch;}
+  .brief-traits .trait-card .tc-art{width:3.6rem; aspect-ratio:auto; height:auto; min-height:3.6rem; flex:none;}
+  .brief-traits .trait-card .tc-body{padding:.35rem .5rem;} .brief-traits .trait-card .tc-name{font-size:.82rem;}
+  .brief-traits .trait-card .tc-tags{left:auto; right:.3rem; top:.25rem;} .brief-traits .trait-card .tc-tag{font-size:.55rem;}
+  .brief-right{padding:.8rem 1rem; gap:.5rem;} .brief-power{padding:.4rem .6rem;} .bpw-ico{width:2.6rem; height:2.6rem;}
+}
+@media (max-width:760px), (orientation:landscape) and (max-height:540px){
+  .brief-right{overflow:visible;}
+  .brief-btns{position:sticky; bottom:-.8rem; margin:0 -1rem -.8rem; padding:.5rem 1rem .6rem; background:linear-gradient(180deg, rgba(20,18,31,0), #14121f 35%);}
+  .brief-btns button{min-height:2.6rem; padding:.45rem 1.2rem;}
+}
+/* v164 특성 설명: 한국어를 글자 중간이 아니라 단어(어절) 단위로 줄바꿈 */
+.trait-card, .brief-box, .roll-box, #overlayReward .bt-tile, #ruleBand, .codex-link, .opp-traits{word-break:keep-all; overflow-wrap:anywhere;}

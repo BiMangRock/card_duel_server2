@@ -1,0 +1,24 @@
+소리 출처 (public/sounds)
+
+효과음 sfx/  — Kenney (www.kenney.nl), CC0 (출처 표기 의무 없음)
+  Casino Audio      : draw, place, shuffle, fan, bet, pack
+  Impact Sounds     : thud, hit, hit_hero, shield_break, freeze, armor, turn
+  Interface Sounds  : heal, buff, error, click
+  RPG Audio         : hero_power, discover, gold
+  Sci-fi Sounds     : death, shield, fatigue, trait
+효과음 spell_1~3  — Freesound, vrymaa "Magic Blast or Whoosh" (#802725) 를 세 토막으로 자름. 라이선스는 Freesound 페이지에서 확인
+승리 win_1        — Pixabay, emand_edroff "Victory Bell Success Fanfare"
+패배 lose_1       — Pixabay, freesound_community "Game Over Arcade"
+
+배경음악 bgm/ — Pixabay (Pixabay Content License)
+  menu   : harumachimusic "Stone Wall — Nostalgic Medieval Harp and Guitar"
+  battle : vadim_makes_sound "Fantasy Worlds — Firelit Tavern"
+  boss   : lui_epicmusic "Beginning of a Reversal"
+  story  : turning_pages "Village Stroll Reverie"
+
+분위기음 amb/ — Pixabay (Pixabay Content License), 90초로 잘라 이음매 없이 반복되게 만듦
+  crowd   : deuslower "Medieval City Tavern Ambient"
+  forest  : audiopapkin "Forest Ambience"
+  wind    : traian1984 "Ambience Wind Blowing Through Trees 01"
+  dungeon : freesound_community "Dungeon Air"
+  mine    : joelfazhari "Old Mine Ambience"

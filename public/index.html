@@ -145,6 +145,7 @@
       <button type="button" class="mm-item" onclick="openCraft()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 4l7 7-3 3-7-7z"/><path d="M10 9l-7 7 3 3 7-7"/></svg><span class="mm-label">카드 제작</span><span class="desc" id="craftMenuDesc">카드를 분해해 가루를 모으고, 원하는 카드를 만듭니다</span></button>
       <button type="button" class="mm-item" onclick="showScreen('power')"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg><span class="mm-label">영웅 능력</span><span class="desc">비용 1 · 턴마다 한 번 쓰는 기본 능력을 고릅니다</span></button>
       <button type="button" class="mm-item" onclick="openQuests()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span class="mm-label">퀘스트</span><b class="fr-badge" id="questBadge" hidden></b><span class="desc" id="questMenuDesc">매일 새 퀘스트 · 끝내면 골드</span></button>
+      <button type="button" class="mm-item" onclick="openCodex()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 19V5"/><path d="M9 7h6M9 11h4"/></svg><span class="mm-label">특성 도감</span><span class="desc" id="codexMenuDesc">처음 이긴 특성마다 100골드</span></button>
       <button type="button" class="mm-item" onclick="Friends.open()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14c3 0 5 2.2 5 5"/></svg><span class="mm-label">친구</span><b class="fr-badge" id="friendBadge" hidden></b><span class="desc" id="friendMenuDesc">친구 추가 · 채팅 · 친구와 대전 · 친구 판 관전</span></button>
       <span class="mm-gap"></span>
       <button type="button" class="mm-item mm-sub" onclick="openTutorials()"><svg class="mm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></svg><span class="mm-label">튜토리얼</span><b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc">처음이라면 여기부터 · 첫 완료 보상 1,000골드 + 전설 카드 · 📖 가이드는 맨 밑</span></button>
@@ -288,11 +289,19 @@
       <div class="quest-list" id="firstList"></div>
       <p class="note warn" id="firstNote"></p>
     </div>
+    <button type="button" class="codex-link" onclick="openCodex()"><img src="/images/cheats/recycle2.webp" alt=""><span><b>📖 특성 도감</b><small id="codexLinkDesc">보스·AI 특성을 처음 이길 때마다 100골드</small></span><i aria-hidden="true">›</i></button>
     <h3>📜 일일 퀘스트</h3>
     <p class="sub" id="questSub">매일 새벽 5시에 새 퀘스트 3개가 나옵니다. 끝내면 골드가 바로 들어옵니다. (AI 대전·모험·유저 대전 모두 진행)</p>
     <div class="quest-list" id="questList"></div>
     <p class="note" id="questNote"></p>
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
+  </div>
+  <div class="screen" id="screen-codex">
+    <h3>📖 특성 도감</h3>
+    <p class="sub" id="codexSum"></p>
+    <div class="codex-bar"><i id="codexBar"></i></div>
+    <div class="codex-grid" id="codexGrid"></div>
+    <button class="menu-btn back" onclick="openQuests()">퀘스트로</button>
   </div>
   <div class="screen" id="screen-settings">
     <h3>⚙ 설정</h3>
@@ -445,5 +454,6 @@
 <script src="/js/friends.js"></script>
 <script src="/js/replay.js"></script>
 <script src="/js/mobile.js"></script>
+<script src="/js/sound.js"></script>
 </body>
 </html>

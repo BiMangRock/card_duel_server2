@@ -13,6 +13,7 @@ const { PROGRESS, craftableCard, cleanStats } = require(path.join(JS, 'progress.
 const { Economy } = require(path.join(JS, 'economy.js'));
 const { CONFIG, defaultDeckList } = require(path.join(JS, 'engine.js'));
 const { tutorialState } = require('./tutorial');             // v140 첫 걸음 (튜토리얼 첫 완료 보상)
+const { CHEATS } = require(path.join(JS, 'cheats.js'));      // v163 특성 도감
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS player_progress (
@@ -23,6 +24,13 @@ CREATE TABLE IF NOT EXISTS player_progress (
   rerolls      INTEGER NOT NULL DEFAULT 0,               -- 오늘 바꾼 횟수
   games_today  INTEGER NOT NULL DEFAULT 0,               -- 오늘 퀘스트 진행으로 센 판 수
   updated_at   INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS cheat_codex (                  -- v163 특성 도감: 이겨 본 특성 (처음 이길 때 CODEX_GOLD 골드)
+  user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  cheat_id TEXT NOT NULL,
+  first_at INTEGER NOT NULL,
+  wins     INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (user_id, cheat_id)
 );
 CREATE TABLE IF NOT EXISTS craft_log (                    -- 제작·분해 기록 (문의·부정 확인용)
   id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, at INTEGER NOT NULL, kind TEXT NOT NULL, card_name TEXT NOT NULL, count INTEGER NOT NULL, dust INTEGER NOT NULL
@@ -58,7 +66,9 @@ const questsOut = r => ({
   day: r.day, rerollsLeft: Math.max(0, PROGRESS.REROLLS - r.rerolls), gamesLeft: PROGRESS.MAX_GAMES_PER_DAY > 0 ? Math.max(0, PROGRESS.MAX_GAMES_PER_DAY - r.games) : null,   // null = 제한 없음
   list: r.quests.map(q => { const d = qdef(q.id); return { id: q.id, text: d.text, goal: d.goal, gold: d.gold, prog: Math.min(d.goal, q.prog), done: !!q.done }; }),
 });
-const progressOut = uid => { const r = rowOf(uid); return { dust: r.dust, quests: questsOut(r), tutorial: tutorialState(uid) }; };
+const CHEAT_IDS = new Set(CHEATS.map(c => c.id));
+const codexOf = uid => Object.fromEntries(db.prepare('SELECT cheat_id, first_at, wins FROM cheat_codex WHERE user_id=?').all(uid).filter(r => CHEAT_IDS.has(r.cheat_id)).map(r => [r.cheat_id, { at: r.first_at, wins: r.wins }]));
+const progressOut = uid => { const r = rowOf(uid); return { dust: r.dust, quests: questsOut(r), tutorial: tutorialState(uid), codex: { got: codexOf(uid), total: CHEATS.length, gold: PROGRESS.CODEX_GOLD } }; };
 
 const router = express.Router();
 router.use(requireAuth);
@@ -140,29 +150,38 @@ router.post('/disenchant-extra', (req, res) => {
 });
 
 // ---------- 일일 퀘스트 ----------
-// 한 판이 끝날 때 화면이 보낸다. {stats, rev}. 완료된 퀘스트의 골드를 지갑에 넣는다.
+// 한 판이 끝날 때 화면이 보낸다. {stats, rev, beaten}. 완료된 퀘스트의 골드를 지갑에 넣는다.
+//  v163 beaten = 이긴 판에서 상대가 가졌던 특성 id 들 → 도감에 없던 특성마다 CODEX_GOLD 골드 (오늘 판 수 제한과 상관없이)
 router.post('/quests/report', (req, res) => {
   const uid = req.user.id, b = req.body || {};
   if (!Number.isInteger(b.rev)) return res.status(400).json({ error: '잘못된 요청이에요.' });
   const st = cleanStats(b.stats);
+  const beaten = st.wins ? [...new Set((Array.isArray(b.beaten) ? b.beaten : []).map(String))].filter(id => CHEAT_IDS.has(id)).slice(0, 12) : [];
+  if (!beaten.length) st.cheatWins = 0;
   db.exec('BEGIN IMMEDIATE');
   try {
     const r = rowOf(uid), w = ensureWallet(uid);
-    if (PROGRESS.MAX_GAMES_PER_DAY > 0 && r.games >= PROGRESS.MAX_GAMES_PER_DAY) { db.exec('ROLLBACK'); return res.json({ ok: true, completed: [], capped: true, ...progressOut(uid), wallet: walletOut(w) }); }
     if (b.rev !== w.rev) { db.exec('ROLLBACK'); return res.status(409).json({ error: '다른 기기에서 먼저 저장되었어요. 새로고침해 주세요.', wallet: walletOut(w) }); }
-    const completed = []; let gold = 0;
-    for (const q of r.quests) {
+    const codexNew = []; let gold = 0;
+    for (const id of beaten) {                      // v163 특성 도감
+      const ins = db.prepare('INSERT OR IGNORE INTO cheat_codex(user_id,cheat_id,first_at,wins) VALUES (?,?,?,1)').run(uid, id, Date.now());
+      if (ins.changes) { codexNew.push({ id, gold: PROGRESS.CODEX_GOLD }); gold += PROGRESS.CODEX_GOLD; }
+      else db.prepare('UPDATE cheat_codex SET wins=wins+1 WHERE user_id=? AND cheat_id=?').run(uid, id);
+    }
+    const capped = PROGRESS.MAX_GAMES_PER_DAY > 0 && r.games >= PROGRESS.MAX_GAMES_PER_DAY;
+    const completed = [];
+    if (!capped) for (const q of r.quests) {
       if (q.done) continue;
       const d = qdef(q.id); q.prog = Math.min(d.goal, (q.prog || 0) + (st[d.stat] || 0));
       if (q.prog >= d.goal) { q.done = true; gold += d.gold; completed.push({ id: q.id, text: d.text, gold: d.gold }); }
     }
-    db.prepare('UPDATE player_progress SET quests_json=?, games_today=games_today+?, updated_at=? WHERE user_id=?').run(JSON.stringify(r.quests), st.games ? 1 : 0, Date.now(), uid);
+    if (!capped) db.prepare('UPDATE player_progress SET quests_json=?, games_today=games_today+?, updated_at=? WHERE user_id=?').run(JSON.stringify(r.quests), st.games ? 1 : 0, Date.now(), uid);
     if (gold) {
       const upd = db.prepare('UPDATE wallets SET gold=gold+?, rev=rev+1, updated_at=? WHERE user_id=? AND rev=?').run(gold, Date.now(), uid, w.rev);
       if (!upd.changes) throw new Error('wallet changed');
     }
     db.exec('COMMIT');
-    res.json({ ok: true, completed, gold, ...progressOut(uid), wallet: walletOut(ensureWallet(uid)) });
+    res.json({ ok: true, completed, codexNew, gold, capped, ...progressOut(uid), wallet: walletOut(ensureWallet(uid)) });
   } catch (e) { try { db.exec('ROLLBACK'); } catch (_) {} console.error('quests/report 실패:', e); res.status(500).json({ error: '서버 오류가 났어요.' }); }
 });
 // {index} → 그 퀘스트를 다른 것으로 (하루 REROLLS 번, 끝난 퀘스트는 못 바꿈)

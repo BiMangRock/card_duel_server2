@@ -19,7 +19,9 @@ const PROGRESS = {
     { id: 'big6',     text: '비용 5 이상 카드 6장 내기',         stat: 'big',     goal: 6,  gold: 50 },
     { id: 'pvp1',     text: '유저 대전 1판 하기',               stat: 'pvp',     goal: 1,  gold: 60 },
     { id: 'adv1',     text: '모험 모드 보스전 1판 하기',         stat: 'adv',     goal: 1,  gold: 50 },
+    { id: 'cheat2',   text: '특성이 있는 상대에게 2번 승리하기 (모험 · AI 배팅)', stat: 'cheatWins', goal: 2, gold: 70 },   // v163
   ],
+  CODEX_GOLD: 100,   // v163 특성 도감: 처음 이겨낸 특성마다 (서버가 지급)
   // ---- 첫 걸음 (v140): 튜토리얼 첫 완료 보상. 계정당 한 번만, 받으면 목록에서 사라진다. 일일 퀘스트 칸·바꾸기와 무관 ----
   //  reward: {gold:N} 골드 / {rarity:'전설'} 그 등급에서 아직 없는 카드 중 무작위 1장 (다 있으면 그 등급 전체 중 무작위)
   //          {odds:{희귀:60, 특급:30, 전설:10}} 등급을 먼저 확률로 뽑고 같은 방식으로 1장. 모험·보스 전용 카드는 안 나옴
@@ -37,7 +39,7 @@ const PROGRESS = {
       desc: '게임 밖 기능 · 덱 만들기와 덱 슬롯, 상점, 카드 제작, 퀘스트, 각 모드를 제이나와 함께 둘러봅니다', reward: { odds: { '희귀': 60, '특급': 30, '전설': 10 } }, rewardText: '무작위 희귀·특급·전설 카드 1장' },
   ],
   // 한 판에서 인정하는 최대치 (이상한 값을 막는 상한)
-  STAT_CAP: { games: 1, wins: 1, spells: 999, minions: 999, attacks: 999, face: 9999, powers: 999, big: 999, pvp: 1, adv: 1 },   // v133 판당 상한 사실상 없음 (판 수·승리만 1)
+  STAT_CAP: { games: 1, wins: 1, spells: 999, minions: 999, attacks: 999, face: 9999, powers: 999, big: 999, pvp: 1, adv: 1, cheatWins: 1 },   // v133 판당 상한 사실상 없음 (판 수·승리만 1)
   // ---- 감정 표현 ----
   EMOTES: [
     { id: 'hello',   text: '안녕하세요!' },

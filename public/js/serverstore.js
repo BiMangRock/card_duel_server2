@@ -200,7 +200,7 @@
   // ---------- v132 카드 제작·분해 · 일일 퀘스트 ----------
   S.progress = null;                                 // {dust, quests:{day, list, rerollsLeft, gamesLeft}}
   S.onProgress = null;                               // 가루·퀘스트가 바뀌면 화면이 다시 그린다
-  const takeProgress = d => { if (d && d.quests) { S.progress = { dust: d.dust, quests: d.quests, tutorial: d.tutorial || {} }; if (S.onProgress) S.onProgress(); } if (d && d.collection) S.collection = d.collection; };
+  const takeProgress = d => { if (d && d.quests) { S.progress = { dust: d.dust, quests: d.quests, tutorial: d.tutorial || {}, codex: d.codex || { got: {}, total: 0, gold: 0 } }; if (S.onProgress) S.onProgress(); } if (d && d.collection) S.collection = d.collection; };   // v163 codex = 특성 도감
   S.loadProgress = async () => { try { const r = await call('GET', '/api/progress'); if (r.ok) takeProgress(r.data); return r.ok; } catch (e) { return false; } };
   const progCall = async (url, body) => {
     let r; try { r = await call('POST', url, body); } catch (e) { return { ok: false, error: '서버에 연결할 수 없어요.' }; }
@@ -212,16 +212,16 @@
   S.disenchantExtra = () => progCall('/api/disenchant-extra');
   S.rerollQuest = index => progCall('/api/quests/reroll', { index });
   // 한 판이 끝나면 기록을 보낸다. 퀘스트 보상 골드는 서버가 지갑에 넣으므로, 밀린 골드 저장을 먼저 끝내고 저장 번호(rev)를 같이 보낸다
-  S.reportGame = async stats => {
+  S.reportGame = async (stats, beaten) => {   // v163 beaten = 이긴 판에서 상대가 가졌던 특성 id (도감)
     if (S.locked) return { ok: false };
     if (!(await waitWalletSaved())) return { ok: false };
-    let r; try { r = await call('POST', '/api/quests/report', { stats, rev }); } catch (e) { return { ok: false }; }
+    let r; try { r = await call('POST', '/api/quests/report', { stats, rev, beaten: beaten || [] }); } catch (e) { return { ok: false }; }
     if (r.status === 409) { S.locked = true; banner('⚠ 다른 기기나 탭에서 먼저 저장되었어요. 이 화면의 변경은 저장되지 않으니 새로고침해 주세요.', true); return { ok: false }; }
     if (!r.ok) return { ok: false };
     const d = r.data;
     if (d.wallet) { rev = d.wallet.rev; S.wallet = strip(d.wallet); lastSnap = JSON.stringify(S.wallet); Economy.set({ ...Economy.get(), gold: d.wallet.gold }); }
     takeProgress(d);
-    return { ok: true, completed: d.completed || [], gold: d.gold || 0, capped: !!d.capped };
+    return { ok: true, completed: d.completed || [], codexNew: d.codexNew || [], gold: d.gold || 0, capped: !!d.capped };
   };
 
   // v140 첫 걸음: 튜토리얼 첫 완료 보상 받기. 골드 보상은 서버가 지갑에 넣으므로 밀린 골드 저장을 먼저 끝내고 rev 를 같이 보낸다

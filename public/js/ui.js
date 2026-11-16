@@ -723,6 +723,7 @@ async function playEvents0(evs){
   for(let i=0;i<evs.length;i++){
     const ev=evs[i];
     if(ev.type==='play') continue;   // v160 손에서 낸 카드 표시용 (기록 막대가 읽는다)
+    if(ev.src && ev.src.seat===OPP && ev.src.name && game && game.mode!=='pvp'){ try{ flashTrait(ev.src.name); }catch(e){} }   // v163 상대 특성 발동 → 고리 아이콘 번쩍
     if(ev.type==='spell') spellSeen=true;
     if(ev.type==='board'){        // v39: 혼돈의 주문서 중간 상태. 하수인 소환·버프·피해·죽음이 주문 순서대로 화면에 반영된다
       if(!dv){ dv=structuredClone(view); dv.pending=null; dv.legal=[]; view=dv; }
@@ -825,7 +826,9 @@ function finishGame(){
   if(!game || game.settled) return;
   game.settled=true;
   const winner=Host.state.winner;
-  if(game.mode!=='test' && !game.devTest){ const md=game.mode; setTimeout(()=>QStats.finish(winner===MY, md), 0); }   // v132 퀘스트 기록 (골드 정산이 저장 대기열에 들어간 뒤에 보낸다)
+  if(winner===MY && !game.devTest && (game.mode==='adventure' || game.mode==='bet')){   // v163 이겨낸 특성 (도감)
+    game.beatenIds=oppTraits().map(t=>t.id); game.beatenNew=game.beatenIds.filter(id=>!codexHas(id)); }
+  if(game.mode!=='test' && !game.devTest){ const md=game.mode, bt=(game.beatenIds||[]).slice(); setTimeout(()=>QStats.finish(winner===MY, md, bt), 0); }   // v132 퀘스트 기록 (골드 정산이 저장 대기열에 들어간 뒤에 보낸다)
   if(game.mode==='adventure'){                         // v114 모험: 이기면 등급별 골드 보상 (첫 클리어 전액, 재도전은 일부)
     if(winner===MY){
       if(game.devTest){ logLine('시험 대전 종료: 승리 (기록·보상 없음)'); }
@@ -840,7 +843,7 @@ function finishGame(){
           (gotCards?`<span class="sub2 cards">🎁 획득 카드: ${escHtml(gotCards)}</span>`:'')+
           ((game.boss.chapter || first) && game.boss.rewardChoice && game.boss.rewardChoice.length?`<span class="sub2 cards">🎁 보상 카드 묶음을 고를 수 있어요! (고른 카드는 잠긴 덱에 바로 더해져요)</span>`:'')+
           (next?`<span class="sub2">🔓 다음 상대: ${escHtml(next.name)}</span>`:'')+(grad?`<span class="sub2 cards">🎓 졸업을 축하합니다! 덱 잠금이 풀렸어요.</span>`:'')+
-          `<span class="sub2">보유 골드 ${fmt(Economy.get().gold)}</span>`;
+          `<span class="sub2">보유 골드 {{GOLD}}</span>`;   // v163 도감 골드가 들어오면 다시 그릴 때 최신 값
         logLine(`보스 격파! ${first?'첫 클리어':'재도전'} 보상 +${fmt(amount)}골드`+(gotCards?` · 카드 ${gotCards}`:''));
       }
     } else {
@@ -865,14 +868,14 @@ function finishGame(){
 }
 function rewardHTML(){
   if(game && game.mode==='pvp') return game.pvpHTML||'';
-  if(game && game.mode==='adventure') return game.advReward||'';
+  if(game && game.mode==='adventure') return (game.advReward||'').replace('{{GOLD}}', fmt(Economy.get().gold))+beatenHTML();   // v163 이겨낸 특성
   const m=game && game.result; if(!m) return '';
   const sign=n=>n>0?`<span class="plus">+${fmt(n)}골드</span>`:n<0?`<span class="minus">${fmt(n)}골드</span>`:'<span>±0골드</span>';
   let top, sub='';
   if(m.kind==='easy') top=m.win?sign(m.payout):'<span>획득 골드 없음</span>';
   else if(m.kind==='bet'){ top=sign(m.net); sub=m.win?`배팅 ${fmt(m.bet)}골드 × 배당 ${m.payoutPct}% → ${fmt(m.payout)}골드 반환`:m.draw?'무승부로 배팅 금액이 환불되었습니다':`배팅 ${fmt(m.bet)}골드를 잃었습니다`; }
   else { top=m.win?sign(m.payout):'<span>획득 골드 없음</span>'; sub=m.draw?'':`오늘의 보상 풀 ${m.poolFrom} → ${m.poolTo}`; }
-  return `${top}<span class="sub2">${sub}</span><span class="sub2">보유 골드 ${fmt(Economy.get().gold)}</span>`;
+  return `${top}<span class="sub2">${sub}</span><span class="sub2">보유 골드 ${fmt(Economy.get().gold)}</span>`+beatenHTML();   // v163
 }
 async function runOpponentTurn(){
   while(!Host.state.over && Host.state.turn===OPP){
@@ -908,17 +911,20 @@ function playCard(c){
 // ---------- v132 일일 퀘스트: 한 판 기록 (내 행동·이벤트에서 센다) ----------
 const QStats = {
   cur:null,
-  start(){ this.cur={games:1, wins:0, spells:0, minions:0, attacks:0, face:0, powers:0, big:0, pvp:0, adv:0}; },
+  start(){ this.cur={games:1, wins:0, spells:0, minions:0, attacks:0, face:0, powers:0, big:0, pvp:0, adv:0, cheatWins:0}; },
   action(a){ const c=this.cur; if(!c || !view || !a) return;
     if(a.type==='PLAY_CARD'){ const card=view.me.hand.find(x=>x.id===a.cardId); if(card){ if(card.type==='spell'){ if(!(card.effect && card.effect.type==='mana')) c.spells++; } else c.minions++; if((card.cost||0)>=5) c.big++; } }
     else if(a.type==='ATTACK') c.attacks++;
     else if(a.type==='HERO_POWER') c.powers++; },
   event(ev){ const c=this.cur; if(c && ev.type==='damage' && ev.target && ev.target.kind==='hero' && ev.target.seat===OPP && ev.amount>0) c.face+=ev.amount; },
-  async finish(won, mode){
+  async finish(won, mode, beaten){
     const c=this.cur; this.cur=null; if(!c || !window.ServerStore || !ServerStore.reportGame) return;
-    c.wins=won?1:0; c.pvp=mode==='pvp'?1:0; c.adv=mode==='adventure'?1:0;
-    const r=await ServerStore.reportGame(c);
-    if(r && r.ok){ updateWallet(); (r.completed||[]).forEach((q,i)=>setTimeout(()=>toast(`📜 퀘스트 완료! ${q.text} · +${q.gold}골드`, 'gold'), 600+i*1800)); updateQuestMenuDesc(); }
+    c.wins=won?1:0; c.pvp=mode==='pvp'?1:0; c.adv=mode==='adventure'?1:0; c.cheatWins=(won && beaten && beaten.length)?1:0;   // v163
+    const g=game, r=await ServerStore.reportGame(c, won ? (beaten||[]) : []);
+    if(r && r.ok){ updateWallet();
+      const msgs=[...(r.codexNew||[]).map(x=>`📖 특성 도감 등록! ${(cheatById(x.id)||{}).name||x.id} · +${x.gold}골드`), ...(r.completed||[]).map(q=>`📜 퀘스트 완료! ${q.text} · +${q.gold}골드`)];   // v163
+      msgs.forEach((t,i)=>setTimeout(()=>toast(t, 'gold'), 600+i*1800)); updateQuestMenuDesc();
+      if(g && g===game){ g.beatenNew=(r.codexNew||[]).map(x=>x.id); g.codexSynced=true; if($('overlay').classList.contains('show')) $('overlayReward').innerHTML=rewardHTML(); } }
   },
 };
 function toast(text, kind){                          // 화면 위쪽에 잠깐 뜨는 알림
@@ -1098,6 +1104,7 @@ async function claimTutorial(id, btn){
 function openQuests(){ showScreen('quests'); renderQuests(); ServerStore.loadProgress().then(renderQuests); }
 function renderQuests(){
   const box=$('questList'), p=ServerStore.progress; if(!box) return;
+  { const ci=codexInfo(), n=Object.keys(ci.got||{}).length, el=$('codexLinkDesc'); if(el) el.textContent=`${n} / ${CHEATS.length} 이겨냄 · 보스·AI 특성을 처음 이길 때마다 ${ci.gold}골드`; }   // v163
   renderFirstSteps();
   if(!p){ box.innerHTML='<p class="note">불러오는 중…</p>'; return; }
   const q=p.quests; box.innerHTML='';
@@ -1732,10 +1739,9 @@ function renderOppHandOpen(cards){
   const box=$('aiHand'); box.innerHTML=''; box.classList.add('open');
   cards.forEach(c=>box.appendChild(cardEl(c, {extra:'opp-open'})));
 }
-function renderCheats(){
-  const box=$('aiCheats'); box.innerHTML='';
-  hideTip();   // 칩을 다시 만들면 마우스 아웃 이벤트가 안 오므로 남아 있는 툴팁을 치운다
-  ((game&&game.cheats)||[]).forEach(c=>{ const el=document.createElement('span'); el.className='chip'; el.textContent=(c.icon?c.icon+' ':'')+c.name; el.dataset.tip=c.desc; el.tabIndex=0; box.appendChild(el); });
+function renderCheats(){                                  // v163 글자 칩 대신 상대 초상화 옆 특성 고리 (renderTraits)
+  const box=$('aiCheats'); if(box && box.firstChild){ box.innerHTML=''; hideTip(); }
+  try{ renderTraits(); }catch(e){ console.warn('traits', e); }
 }
 // ---------- v155 손패: 하스스톤처럼 아래에 부채꼴로 겹쳐 놓기 · 터치 기기는 눌러서 크게 펼치기 ----------
 const COARSE=!!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
@@ -2546,12 +2552,14 @@ function openBetScreen(){
 $('betInput').addEventListener('input', refreshBetUI);
 $('betInput').addEventListener('change', ()=>{ $('betInput').value=readBet(); refreshBetUI(); });
 $('betRange').addEventListener('input', ()=>{ $('betInput').value=$('betRange').value; refreshBetUI(); });
-function confirmBet(){
+async function confirmBet(){
   const amount=readBet();
   const placed=Economy.placeBet(Economy.get(), amount);
   if(!placed){ refreshBetUI(); return; }
   Economy.set(placed);                         // 시작 시점에 차감하고 즉시 저장
-  startGame(curKey, {mode:'bet', bet:amount, tier:betTier});
+  const roll=rollCheats(betTier);              // v163 특성을 먼저 뽑아 보여 준다 (배팅금은 이미 걸림 → 취소 없이 대전 시작만)
+  if(roll.list.length) await showBetRoll(roll, betTier);
+  startGame(curKey, {mode:'bet', bet:amount, tier:betTier, roll});
 }
 
 function startGame(key, opts={}){
@@ -2560,7 +2568,7 @@ function startGame(key, opts={}){
   if(!opts.preloaded){ Preload.ensure().then(()=>startGame(key, {...opts, preloaded:true})); return; }   // v138 그림을 전부 받은 뒤 시작
   const mode=opts.mode||'normal', sv=Economy.get();
   const tier = mode==='bet' ? (opts.tier||ECON.BET_DEFAULT) : 0;
-  const roll = mode==='bet' ? rollCheats(tier) : {mods:{}, list:[]};
+  const roll = mode==='bet' ? (opts.roll || rollCheats(tier)) : {mods:{}, list:[]};   // v163 배팅 화면에서 미리 뽑아 보여 준 특성
   game={key, mode, bet:mode==='bet'?(opts.bet||0):0, tier, cheats:roll.list, pool:Economy.poolNow(sv), settled:false, result:null};
   QStats.start(); setTimeout(aiGreet, 0);   // v132
   Bot=d.bot;
@@ -3030,6 +3038,7 @@ async function startBoss(idx, opts={}){
   if(typeof AdvStory!=='undefined' && AdvStory.has(boss.id) && !opts.noStory){ try{ Preload.warmup(); }catch(_){} await AdvStory.play(boss.id); }   // v148 스토리 연출 (수능 전야 → 필적 확인란). 한 번 본 사람은 건너뛰기 가능
   { const cut=BOSS_CUTSCENE[boss.id];                                               // v150 수능 1교시 · 1학년 컷신: 도전할 때마다 (모험 화면에서 다시 보기)
     if(cut && typeof Cutscene!=='undefined' && Cutscene.has(cut) && !opts.noStory){ try{ Preload.warmup(); }catch(_){} await Cutscene.play(cut); } }   // v150 매번 (본 적 있으면 건너뛰기 가능)
+  if(!opts.briefed && !(await showBossBriefing(boss))) return;          // v163 도전 전 브리핑 (보스 특성 · 영웅 능력 · 보상). 돌아가기면 그만둔다
   await Preload.ensure();                                          // v138 보스 초상화·카드 그림을 전부 받은 뒤 시작
   const r=await resolveBossBot(boss);
   const d=DIFFICULTY.normal2;
@@ -3817,3 +3826,149 @@ const Hist = (function(){
 })();
 { const _logLine=logLine; logLine=function(msg){ Hist.line(msg); return _logLine.apply(this, arguments); };
   const _play=playEvents; playEvents=async function(evs){ Hist.begin(evs); try{ return await _play.apply(this, arguments); } finally { Hist.end(); } }; }
+
+// ================= v163 특성(치트) 보여 주기 · 특성 도감 =================
+//  A2 모험 도전 전 브리핑 · B1 전투 중 상대 초상화 옆 특성 고리 + 전장 규칙 띠 · C1 배팅 후 특성 뽑기 · C2 결과의 「이겨낸 특성」
+//  도감: 이긴 판에서 상대가 가진 특성을 서버에 보낸다(QStats.finish → /quests/report). 처음 이긴 특성마다 서버가 PROGRESS.CODEX_GOLD 골드
+const cheatArt = id => id ? `/images/cheats/${id}.webp` : '';
+const cheatById = id => CHEATS.find(c=>c.id===id) || null;
+const codexInfo = () => (ServerStore.progress && ServerStore.progress.codex) || {got:{}, total:CHEATS.length, gold:(PROGRESS && PROGRESS.CODEX_GOLD)||100};
+const codexHas = id => !!(codexInfo().got||{})[id];
+// 상대가 가진 특성 [{id, name, desc, global, power}] — 모험: 보스 치트 + 보스 능력(치트) / 배팅: 뽑힌 치트
+function oppTraits(g){
+  g=g||game; if(!g) return [];
+  if(g.mode==='adventure' && g.boss){
+    const out=bossCheatList(g.boss).map(c=>({id:c.id, name:c.name, desc:bossCheatDesc(g.boss,c), global:!!c.global}));
+    const p=bossPowerOf(g.boss); if(p && !out.some(x=>x.id===p.id)) out.push({id:p.id, name:p.name, desc:(p.active?`영웅 능력 (${p.cost}): `:'지속 영웅 능력: ')+p.text, global:!!(cheatById(p.id)||{}).global, power:true});
+    return out; }
+  if(g.mode==='bet') return (g.cheats||[]).map(c=>({id:c.id, name:c.name, desc:c.desc, global:!!(cheatById(c.id)||{}).global}));
+  return [];
+}
+function traitImg(id, cls){ const im=document.createElement('img'); im.className=cls||''; im.alt=''; im.decoding='async'; im.src=cheatArt(id); im.onerror=()=>{ im.style.visibility='hidden'; }; return im; }
+function traitCard(t, opt={}){                          // 카드처럼 생긴 특성 한 장 (브리핑 · 배팅 뽑기 · 도감)
+  const d=document.createElement('div'); d.className='trait-card'+(t.global?' global':'')+(opt.cls?' '+opt.cls:'');
+  d.appendChild(traitImg(t.id, 'tc-art'));
+  const b=document.createElement('div'); b.className='tc-body';
+  b.innerHTML='<b class="tc-name"></b><span class="tc-desc"></span>';
+  b.querySelector('.tc-name').textContent=t.name+(t.global?' · 전장 규칙':'');
+  b.querySelector('.tc-desc').textContent=String(t.desc||'').replace(/^\[양쪽\]\s*/,'');   // [양쪽] 은 '나에게도' 꼬리표로
+  d.appendChild(b);
+  const tags=[]; if(t.global) tags.push(['me','나에게도']); if(t.power) tags.push(['pw','영웅 능력']); if(opt.isNew) tags.push(['new',`NEW · 이기면 +${codexInfo().gold}골드`]);
+  if(tags.length){ const tg=document.createElement('div'); tg.className='tc-tags'; tags.forEach(([k,txt])=>{ const s=document.createElement('span'); s.className='tc-tag '+k; s.textContent=txt; tg.appendChild(s); }); d.appendChild(tg); }
+  return d;
+}
+
+// ---------- B1 전투 중: 상대 초상화 옆 특성 고리 · 전장 규칙 띠 ----------
+let traitKey='';
+function renderTraits(){
+  const hero=$('aiHero'); if(!hero) return;
+  let ring=$('oppTraits'); if(!ring){ ring=document.createElement('div'); ring.id='oppTraits'; ring.className='opp-traits'; hero.appendChild(ring); }
+  let band=$('ruleBand'); if(!band){ band=document.createElement('div'); band.id='ruleBand'; const lt=$('logToggle'); if(lt) lt.after(band); else document.body.appendChild(band); }
+  const list=(game && !game.spectate && Host.state) ? oppTraits() : [];
+  const key=list.map(t=>t.id).join(',')+'|'+(game&&game.key);
+  if(key!==traitKey){ traitKey=key; ring.innerHTML=''; hideTip();
+    list.forEach(t=>{ const b=document.createElement('span'); b.className='trait-ico'+(t.global?' global':'')+(t.power?' power':''); b.tabIndex=0; b.dataset.id=t.id;
+      b.dataset.tip=`${t.name}${t.global?' (전장 규칙 · 나에게도 적용)':''} — ${t.desc}`; b.appendChild(traitImg(t.id)); const n=document.createElement('i'); n.className='ti-n'; b.appendChild(n); ring.appendChild(b); });
+    const rules=list.filter(t=>t.global);
+    band.innerHTML=''; band.hidden=!rules.length;
+    if(rules.length){ const s=document.createElement('span'); s.textContent='⚠ 전장 규칙 · '+rules.map(t=>t.name).join(' · '); band.appendChild(s);   // 이름만 짧게, 설명은 마우스를 올리면
+      band.tabIndex=0; band.dataset.tip='나에게도 적용 — '+rules.map(t=>`${t.name}: ${t.desc.replace(/^\[양쪽\]\s*/,'')}`).join(' / '); }
+  }
+  ring.hidden=!list.length;
+  // 쌓이는 수치 (재사용하기 상급: 다음 발동 때 얻는 방어도)
+  const S=Host.state && Host.state.seats && Host.state.seats[OPP];
+  ring.querySelectorAll('.trait-ico').forEach(b=>{ const n=b.querySelector('.ti-n'); let v='';
+    if(b.dataset.id==='recycle2' && S && S.mods && S.mods.recycle2) v='+'+(S.recycleN || S.mods.recycle2);
+    n.textContent=v; n.hidden=!v; });
+  // 전장 규칙으로 바뀐 내 손패 비용 → 빨간 테두리
+  const md=(view && view.me && view.me.mods) || {}, ruled=(md.spellFive!=null && md.spellFive!==false);
+  document.querySelectorAll('#hand .card').forEach(el=>{ const c=view && view.me.hand.find(x=>String(x.id)===el.dataset.id); el.classList.toggle('rule-cost', !!(ruled && c && c.type==='spell' && !(c.effect && c.effect.type==='mana'))); });
+}
+// 특성이 발동하면 고리의 아이콘을 번쩍 (이벤트 src 이름 = 특성 이름)
+function flashTrait(name){ const t=oppTraits().find(x=>x.name===name); if(!t) return; const b=document.querySelector(`#oppTraits .trait-ico[data-id="${t.id}"]`); if(!b) return; b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
+
+// ---------- A2 모험: 도전 전 보스 브리핑 ----------
+function showBossBriefing(boss){
+  return new Promise(resolve=>{
+    const old=$('bossBrief'); if(old) old.remove();
+    const m=document.createElement('div'); m.id='bossBrief'; m.className='brief-modal'; m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true'); m.setAttribute('aria-label', boss.name+' 브리핑');
+    const fake={mode:'adventure', boss}, traits=oppTraits(fake), first=!AdventureBook.has(boss.id);
+    const ic=String(boss.icon||''), img=/[\/.](jpg|jpeg|png|webp)$/i.test(ic)||ic.includes('/');
+    const bp=bossPowerOf(boss), hp=!bp && boss.heroPower && HERO_POWERS[boss.heroPower];
+    m.innerHTML=`<div class="brief-box">
+      <div class="brief-left"><div class="brief-portrait"></div><span class="brief-stage"></span><b class="brief-name"></b><span class="brief-rank"></span><p class="brief-desc"></p>
+        <div class="brief-reward"><span>${first?'첫 클리어 보상':'재도전 보상'}</span><b></b></div></div>
+      <div class="brief-right"><div class="brief-power"></div><h4 class="brief-h"></h4><div class="brief-traits"></div><p class="brief-tip"></p>
+        <div class="brief-btns"><button type="button" class="btn-back">돌아가기</button><button type="button" class="btn-go">도전하기</button></div></div></div>`;
+    const pt=m.querySelector('.brief-portrait'); if(img) pt.style.backgroundImage=`url("${ic.startsWith('/')?ic:'/'+ic}")`; else pt.textContent=ic||'👹';
+    m.querySelector('.brief-stage').textContent=boss.chapter ? `${(ADV_CHAPTERS.find(c=>c.id===boss.chapter)||{}).name||''} · ${boss.stage||''}단계` : '자유 보스전';
+    m.querySelector('.brief-name').textContent=boss.name;
+    { const rk=rankInfo(bossRank(boss)); m.querySelector('.brief-rank').textContent=`${rk[1]||''} · 특성 ${traits.length}`; }
+    m.querySelector('.brief-desc').textContent=boss.desc||'';
+    m.querySelector('.brief-reward b').textContent=`${fmt(first?bossReward(boss):bossRepeatGold(boss))}골드`;
+    const pw=m.querySelector('.brief-power');
+    if(bp){ pw.innerHTML='<div class="bpw-ico"></div><div class="bpw-txt"><span></span><b></b><small></small></div>'; pw.querySelector('.bpw-ico').appendChild(traitImg(bp.id)); if(bp.active){ const c=document.createElement('i'); c.className='bpw-cost'; c.textContent=bp.cost; pw.querySelector('.bpw-ico').appendChild(c); }
+      pw.querySelector('span').textContent=bp.active?'보스 영웅 능력 · 사용형':'보스 영웅 능력 · 지속'; pw.querySelector('b').textContent=bp.name; pw.querySelector('small').textContent=bp.text; }
+    else { pw.innerHTML='<div class="bpw-ico"></div><div class="bpw-txt"><span>영웅 능력</span><b></b><small></small></div>'; const a=hp && hpArtOf(boss.heroPower);
+      if(a) pw.querySelector('.bpw-ico').style.backgroundImage=`url("${a}")`; else pw.querySelector('.bpw-ico').textContent=hp?hp.icon:'🎲';
+      pw.querySelector('b').textContent=hp?hp.name:'판마다 무작위'; pw.querySelector('small').textContent=hp?hp.text:''; }
+    const list=traits.filter(t=>!t.power);
+    m.querySelector('.brief-h').textContent=list.length ? `보스 특성 ${list.length}` : '특성 없음 — 정정당당한 승부';
+    const box=m.querySelector('.brief-traits'); list.forEach(t=>box.appendChild(traitCard(t, {isNew:!codexHas(t.id)})));
+    const nNew=traits.filter(t=>!codexHas(t.id)).length;
+    m.querySelector('.brief-tip').textContent = nNew ? `📖 처음 이기는 특성 ${nNew}개 — 이기면 특성 도감에 오르고 하나당 ${codexInfo().gold}골드` : (traits.length ? '📖 이 보스의 특성은 모두 도감에 있어요' : '');
+    const done=v=>{ document.removeEventListener('keydown', onKey, true); m.remove(); resolve(v); };
+    const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); done(false); } };
+    document.addEventListener('keydown', onKey, true);
+    m.querySelector('.btn-back').onclick=()=>done(false); m.querySelector('.btn-go').onclick=()=>done(true);
+    m.addEventListener('click', e=>{ if(e.target===m) done(false); });
+    document.body.appendChild(m); setTimeout(()=>m.querySelector('.btn-go').focus({preventScroll:true}), 30);
+  });
+}
+
+// ---------- C1 AI 대전: 배팅 후 특성 뽑기 ----------
+function showBetRoll(roll, tier){
+  return new Promise(resolve=>{
+    const old=$('betRoll'); if(old) old.remove();
+    const m=document.createElement('div'); m.id='betRoll'; m.className='brief-modal'; m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true'); m.setAttribute('aria-label','AI 특성 뽑기');
+    m.innerHTML=`<div class="roll-box"><h3></h3><p class="roll-sub"></p><div class="roll-cards"></div><div class="brief-btns"><button type="button" class="btn-skip">바로 보기</button><button type="button" class="btn-go" disabled>대전 시작</button></div></div>`;
+    m.querySelector('h3').textContent=`배당 ${tier}% · AI가 받을 특성 ${roll.list.length}개`;
+    m.querySelector('.roll-sub').textContent='배팅금은 이미 걸렸어요. 특성을 확인하고 대전을 시작하세요.';
+    const box=m.querySelector('.roll-cards'), names=cheatCandidates(tier).map(c=>c.name), slots=[];
+    roll.list.forEach(c=>{ const s=document.createElement('div'); s.className='roll-slot spinning'; s.innerHTML='<span class="rs-a"></span><b class="rs-b"></b><span class="rs-c"></span>'; box.appendChild(s); slots.push({s, c}); });
+    let timer=null, k=0, revealed=0;
+    const spin=()=>{ slots.forEach(({s},i)=>{ if(!s.classList.contains('spinning')) return; const pick=j=>names[(k+i*3+j+names.length)%names.length]||'?'; s.querySelector('.rs-a').textContent=pick(-1); s.querySelector('.rs-b').textContent=pick(0); s.querySelector('.rs-c').textContent=pick(1); }); k++; };
+    const reveal=i=>{ const o=slots[i]; if(!o || !o.s.classList.contains('spinning')) return;
+      const t={id:o.c.id, name:o.c.name, desc:o.c.desc, global:!!(cheatById(o.c.id)||{}).global};
+      const card=traitCard(t, {isNew:!codexHas(t.id), cls:'pop'}); o.s.replaceWith(card); o.s=card; revealed++;
+      if(revealed>=slots.length){ clearInterval(timer); m.querySelector('.btn-go').disabled=false; m.querySelector('.btn-skip').hidden=true; m.querySelector('.btn-go').focus(); } };
+    timer=setInterval(spin, 70); spin();
+    slots.forEach((_,i)=>setTimeout(()=>reveal(i), 900+i*650));
+    m.querySelector('.btn-skip').onclick=()=>slots.forEach((_,i)=>reveal(i));
+    m.querySelector('.btn-go').onclick=()=>{ clearInterval(timer); m.remove(); resolve(true); };
+    document.body.appendChild(m);
+  });
+}
+
+// ---------- C2 결과: 이겨낸 특성 ----------
+function beatenHTML(){
+  const ids=(game && game.beatenIds)||[]; if(!ids.length) return '';
+  const got=codexInfo(), isNew=id=>(game.beatenNew||[]).includes(id), have=Object.keys(got.got||{}).length, nNew=(game.beatenNew||[]).length, total=got.total||CHEATS.length;
+  const tiles=ids.map(id=>{ const c=cheatById(id); return `<span class="bt-tile${c&&c.global?' global':''}"><img src="${cheatArt(id)}" alt=""><b>${escHtml(c?c.name:id)}</b><i class="bt-stamp">격파</i>${isNew(id)?`<i class="bt-new">NEW +${got.gold}G</i>`:''}</span>`; }).join('');
+  const now=game.codexSynced ? have : have+nNew;
+  return `<span class="beaten"><span class="bt-h">이겨낸 특성</span><span class="bt-row">${tiles}</span><span class="bt-codex">📖 특성 도감 <b>${now} / ${total}</b>${nNew?` (+${nNew} 새로 · ${fmt(nNew*got.gold)}골드)`:''}</span><span class="bt-bar"><i style="width:${Math.round(now/Math.max(1,total)*100)}%"></i></span></span>`;
+}
+
+// ---------- 특성 도감 화면 ----------
+function openCodex(){ showScreen('codex'); renderCodex(); ServerStore.loadProgress().then(renderCodex); }
+function renderCodex(){
+  const grid=$('codexGrid'), sum=$('codexSum'); if(!grid) return;
+  const info=codexInfo(), got=info.got||{}, n=CHEATS.filter(c=>got[c.id]).length;
+  sum.textContent=`${n} / ${CHEATS.length} 이겨냄 · 처음 이기는 특성마다 ${info.gold}골드 (모험 보스 · AI 배팅 상대의 특성)`;
+  $('codexBar').style.width=Math.round(n/CHEATS.length*100)+'%';
+  grid.innerHTML='';
+  [...CHEATS].sort((a,b)=>(got[b.id]?1:0)-(got[a.id]?1:0)).forEach(c=>{ const g=got[c.id], v=cheatValue(c,0);   // 이겨낸 특성이 앞에
+    const t=traitCard({id:c.id, name:g?c.name:'???', desc:g?c.desc(v)+(g.wins>1?` · ${g.wins}번 이김`:''):`아직 이기지 못한 특성 · 이기면 +${info.gold}골드`, global:!!c.global}, {cls:g?'got':'locked'});
+    grid.appendChild(t); });
+  updateQuestMenuDesc && updateQuestMenuDesc();
+}
