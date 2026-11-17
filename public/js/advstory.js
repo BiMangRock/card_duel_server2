@@ -190,7 +190,7 @@ const AdvStory = (() => {
     const choose = L => new Promise(res => {
       box.classList.remove('show'); setFace('');
       const c = document.createElement('div'); c.className = 'as-choice';
-      c.innerHTML = `<div class="as-q">${esc(L.choice)}</div>` + L.opts.map((o, i) => `<button type="button" data-i="${i}" style="animation-delay:${i * 0.07}s"><span class="n">${i + 1}</span><span class="l">${esc(o.label)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</button>`).join('');
+      c.innerHTML = `<div class="as-q">${esc(L.choice)}</div>` + L.opts.map((o, i) => `<button type="button" data-i="${i}" style="animation-delay:${i * 0.07}s"><span class="n">${i + 1}</span><span class="l">${esc(o.label)}</span>${o.sub && !(window.statOnlySub && window.statOnlySub(o.sub)) ? `<small>${esc(o.sub)}</small>` : ''}</button>`).join('');   // v167 숨은 수치 표시는 숨김
       w.appendChild(c);
       let done = false;
       const pick = i => { if (done || !L.opts[i]) return; done = true; choiceKey = null; c.querySelectorAll('button').forEach(b => b.disabled = true); c.querySelector(`[data-i="${i}"]`).classList.add('picked'); setTimeout(() => { c.remove(); res(L.opts[i]); }, skipped ? 0 : 380); };

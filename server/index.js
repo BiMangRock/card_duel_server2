@@ -37,6 +37,7 @@ app.use('/api', require('./bosses').router);           // v116: 보스 목록 (�
 app.use('/api', shop.router);
 app.use('/api', require('./progress').router);
 app.use('/api', require('./tutorial').router);          // v140 튜토리얼 첫 완료 보상 (첫 걸음)
+app.use('/api', require('./quiz').router);              // v168 수능 기출 출제 기록
 app.use('/api', require('./decks').router);           // v135 덱 슬롯 여러 개        // v132 카드 제작·분해 · 일일 퀘스트
 app.use('/api', pvp.router);                             // 유저 대전: /api/pvp/ws(웹소켓, attachWs) · stream(SSE) · queue · cancel · mulligan · action · status
 app.use('/api', require('./social').createSocialRouter({ core: pvp.core, onRename: () => require('./pvp-db').invalidateBoard() }));   // v136 닉네임 · 친구

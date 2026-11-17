@@ -42,7 +42,7 @@
   mine    : joelfazhari "Old Mine Ambience"
 
 v166 수능 보스 (시연용 · 저작권이 있는 곡이라 공개 배포 전에는 바꿔 주세요)
-  bgm/papulatus · horntail · sleepywood · friendstory · serenity — 메이플스토리 BGM (넥슨)
+  bgm/papulatus — 메이플스토리 BGM 「파풀라투스」 (넥슨). v167부터 수능 보스전에만 씀
   ending/cheonggaeguri — NEON 「청개구리」 (2013 OST). 3초 지점부터 52초로 자름
   ending/bell2 · bell1 — 「수능 끝나고 종소리」 녹음에서 본령 두 소절 · 한 소절만 잘라냄
 그림 · 글꼴 (v166)

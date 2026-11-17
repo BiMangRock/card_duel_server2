@@ -245,7 +245,7 @@ function eventText(ev){
     case 'reveal': return `${who(ev.seat)} ${ev.src.name}: 덱의 주문 「${ev.name}」(비용 ${ev.cost}) 공개`;
     case 'spellTax': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.seat===MY?'내':'상대'} 다음 턴 주문 비용 +${ev.amount}`;
     case 'board': return null;
-    case 'bossPhase': return `⚠ ${who(ev.seat)} 보스 강화! 방어도 +${ev.armor||0}`+(ev.gain?` · ${ev.gain.icon||''} ${ev.gain.name} 획득`+(ev.gain.global?' (전장 규칙: 나에게도 적용)':''):'');   // v166
+    case 'bossPhase': return `⚠ 보스가 폭주합니다. 방어도 +${ev.armor||0}`+(ev.gain?`, ${ev.gain.name} 획득`+(ev.gain.global?', 나에게도 적용':''):'');   // v166
     case 'generated': if(ev.returned) return `${who(ev.seat)} 「${ev.name}」이(가) 대상이 죽어 손패로 돌아왔습니다${ev.burned?' — 손패가 가득 차 소각':''}`;
       return ev.seat===MY ? `${ev.src.name}: 「${ev.name}」 획득${ev.burned?' — 손패가 가득 차 소각':''}` : `상대가 ${ev.src.name}(으)로 카드를 얻었습니다${ev.burned?' (손패가 가득 차 소각)':''}`;
     case 'overload': return `${who(ev.seat)} 「${ev.name}」: 다음 턴 마나 수정 ${ev.amount}개 과부하`;
@@ -1108,7 +1108,7 @@ async function claimTutorial(id, btn){
 function openQuests(){ showScreen('quests'); renderQuests(); ServerStore.loadProgress().then(renderQuests); }
 function renderQuests(){
   const box=$('questList'), p=ServerStore.progress; if(!box) return;
-  { const ci=codexInfo(), n=Object.keys(ci.got||{}).length, el=$('codexLinkDesc'); if(el) el.textContent=`${n} / ${CHEATS.length} 이겨냄 · 보스·AI 특성을 처음 이길 때마다 ${ci.gold}골드`; }   // v163
+  { const ci=codexInfo(), n=Object.keys(ci.got||{}).length, el=$('codexLinkDesc'); if(el) el.textContent=`${n} / ${CHEATS.length} 이겨냄`; }   // v163 · v167 짧게
   renderFirstSteps();
   if(!p){ box.innerHTML='<p class="note">불러오는 중…</p>'; return; }
   const q=p.quests; box.innerHTML='';
@@ -2099,7 +2099,7 @@ function renderDeckEditor(){
   grid.scrollTop=st;      // 다시 그려도 스크롤 위치 유지
   edUpdateFilterBtn();
 }
-function updateDeckMenuDesc(){ const a=typeof DeckSlots!=='undefined' && ServerStore.decks && DeckSlots.active(); $('deckMenuDesc').textContent = a ? `사용 중: ${a.name} · 저장한 덱 ${ServerStore.decks.slots.length}/${ServerStore.decks.max}개 · 덱 코드로 공유` : `덱 여러 개 저장 · 골라 쓰기 · 덱 코드로 친구와 공유 (${CONFIG.DECK_SIZE}장, 같은 카드 최대 ${CONFIG.COPIES}장)`; }   // v135
+function updateDeckMenuDesc(){ const a=typeof DeckSlots!=='undefined' && ServerStore.decks && DeckSlots.active(); $('deckMenuDesc').textContent = a ? `덱: ${a.name}` : '덱 고르기'; }   // v135 · v167 짧게
 function openDeckEditor(){ ed.test=false; ed.boss=false; ed.adv=false; ed.slot=null; $('edClear').style.display=''; ed.counts=countsOf(DeckBook.get()); renderDeckEditor(); $('deckEditor').classList.add('show'); }
 function openAdvDeckEditor(){ if(Object.keys(ServerStore.runs).length){ alert('재학 중에는 덱을 바꿀 수 없어요. (졸업·자퇴하거나 보스에게 지면 풀려요)'); return; } ed.test=false; ed.boss=false; ed.adv=true; ed.slot=null; $('edClear').style.display=''; ed.counts=countsOf(AdvDeckBook.get()); renderDeckEditor(); $('deckEditor').classList.add('show'); }   // v117
 // ---------- v135 덱 슬롯 (여러 덱 저장) · 덱 코드 ----------
@@ -2468,7 +2468,7 @@ function renderPowerScreen(){                     // v131 메뉴 → 영웅 능�
   item('random', '🎲', '무작위', '판마다 무작위로 정해집니다');
 }
 function updatePowerMenuDesc(){ const el=$('powerMenuDesc'); if(!el) return; const v=HeroPowerPref.get(), h=HERO_POWERS[v];
-  el.textContent = h ? `지금: ${h.icon} ${h.name} — ${h.text} (비용 ${HP_COST}, 턴마다 한 번)` : '지금: 🎲 판마다 무작위 (비용 1, 턴마다 한 번)'; }
+  el.textContent = h ? `영웅 능력: ${h.name}` : '영웅 능력: 판마다 무작위'; }   // v167 짧게
 const PRELOAD_SCREENS=new Set(['mode','difficulty','playmode','bet','adventure','pvp','friends','test']);   // v138 대전을 고르는 화면에 오면 뒤에서 미리 받기 시작
 function showScreen(name){
   if(typeof ModeIntro!=='undefined') ModeIntro.onScreen(name);   // v139 처음 들어가는 모드면 안내를 한 번 띄운다
@@ -3049,10 +3049,12 @@ async function startBoss(idx, opts={}){
   game={key:'adventure', mode:'adventure', boss, bossIdx:idx, devTest:!!opts.devTest, devFromAdv:!!opts.fromAdv, bet:0, tier:0, cheats:[], pool:0, settled:false, result:null, deckNames:boss.chapter?(runOf(boss.chapter)?runOf(boss.chapter).deck.slice():AdvDeckBook.get()):DeckBook.get()};   // v117: 도장깨기 챕터(영남대 입학)만 모험 덱, 자유 보스전은 일반 덱 (모험 전용 카드는 챕터에서만)
   Bot=r.bot;
   Host.startBoss(boss, game.deckNames, !!(boss.chapter && runOf(boss.chapter)));
+  game.snBonus = (window.SuneungFx && SuneungFx.isSuneung(boss)) ? SuneungFx.applyStartBonus(Host.state) : null;   // v167 컷신 선택(컨디션) → 시작 카드 · 보스 방어도
   if(!game.devTest) QStats.start(); setTimeout(aiGreet, 0);   // v132
   view=Host.view(MY);
   ui.selected=null; ui.pending=null; ui.busy=false; stopArrow(); closeDeck(); resetSurrenderBtn();
   $('logList').innerHTML='';
+  if(game.snBonus) logLine((game.snBonus.good?'✦ ':'⚠ ')+game.snBonus.text);
   $('overlay').classList.remove('show');
   $('overlayReward').innerHTML='';
   document.querySelector('#aiHero .name').textContent='모험 · '+(advIsImgIcon(boss.icon) ? boss.name : `${boss.icon} ${boss.name}`);   // v156 모험 상대는 「모험 · 보스 이름」
@@ -3281,7 +3283,7 @@ function renderShop(){
   const info=shopInfo, gold=Economy.get().gold;
   $('shopGold').textContent=`💰 ${fmt(gold)}`;
   $('shopPackSize').textContent=`${SHOP.PACK_SIZE}장`;
-  $('shopSub').textContent=`1팩 ${fmt(SHOP.PACK_PRICE)}골드 · 카드 ${SHOP.PACK_SIZE}장 · ${SHOP.GUARANTEE_MIN} 이상 1장 보장`;
+  $('shopSub').textContent=`카드 ${SHOP.PACK_SIZE}장, ${SHOP.GUARANTEE_MIN} 이상 1장 보장`;   // v167
   // 등급별 확률 · 내 수집 현황 · 중복 환급
   const box=$('shopRates'); box.innerHTML='';
   SHOP_RARITIES.forEach(r=>{
@@ -3296,7 +3298,7 @@ function renderShop(){
   const left=info?info.pity.left:null;
   $('shopPityEpic').textContent=left?(left.epic<=1?'다음 팩 확정!':`${left.epic}팩`):'…';
   $('shopPityLegend').textContent=left?(left.legend<=1?'다음 팩 확정!':`${left.legend}팩`):'…';
-  $('shopDupNote').textContent=`같은 카드가 ${SHOP.DUP_CAP}장을 넘게 나오면 '남는 카드'로 그대로 쌓입니다. 🔨 카드 제작에서 분해(일괄 추출)하면 가루가 되고, 가루로 원하는 카드를 만들 수 있습니다. 천장은 특급 이상 ${SHOP.PITY_EPIC}팩 · 전설 ${SHOP.PITY_LEGEND}팩 연속으로 안 나오면 다음 팩에 확정입니다.`;
+  $('shopDupNote').textContent=`${SHOP.DUP_CAP}장을 넘는 카드는 카드 제작에서 가루로 바꿀 수 있어요`;   // v167 짧게
   [[1,'shopBuy1'],[5,'shopBuy5']].forEach(([n,id])=>{
     const b=$(id); b.textContent=`${n}팩 열기 · ${fmt(shopCost(n))}골드`; b.disabled=shopWorking||gold<shopCost(n)||!info;
   });
@@ -3930,7 +3932,8 @@ function showBossBriefing(boss){
     const box=m.querySelector('.brief-traits'); list.forEach(t=>box.appendChild(traitCard(t, {isNew:!t.unique && !codexHas(t.id)})));
     const nNew=traits.filter(t=>!t.unique && !codexHas(t.id)).length;
     m.querySelector('.brief-tip').textContent = nNew ? `📖 처음 이기는 특성 ${nNew}개 — 이기면 특성 도감에 오르고 하나당 ${codexInfo().gold}골드` : (traits.filter(t=>!t.unique).length ? '📖 이 보스의 특성은 모두 도감에 있어요' : '');
-    if(window.SuneungFx && SuneungFx.isSuneung(boss)){ const w=document.createElement('p'); w.className='brief-tip sn-warn'; w.style.color='#ffb0a0'; w.textContent='⚠ 보스 체력이 66% · 33% · 15% 아래로 떨어질 때마다 교시가 바뀌며 보스가 강해져요 (방어도 +5 · 무작위 영웅 능력이나 치트)'; m.querySelector('.brief-tip').after(w); }   // v166
+    if(window.SuneungFx && SuneungFx.isSuneung(boss)){ const w=document.createElement('p'); w.className='brief-tip sn-warn'; w.style.color='#ffb0a0'; w.textContent='⚠ 이 보스는 몰릴수록 폭주합니다'; m.querySelector('.brief-tip').after(w);
+      const sb=SuneungFx.storyBonus(); if(sb){ const x=document.createElement('p'); x.className='brief-tip sn-warn'; x.style.color=sb.good?'#a8e6a0':'#ffb0a0'; x.textContent=(sb.good?'✦ ':'⚠ ')+sb.text; w.after(x); } }   // v167 컨디션   // v166
     const done=v=>{ document.removeEventListener('keydown', onKey, true); m.remove(); resolve(v); };
     const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); done(false); } };
     document.addEventListener('keydown', onKey, true);
@@ -3978,7 +3981,7 @@ function openCodex(){ showScreen('codex'); renderCodex(); ServerStore.loadProgre
 function renderCodex(){
   const grid=$('codexGrid'), sum=$('codexSum'); if(!grid) return;
   const info=codexInfo(), got=info.got||{}, n=CHEATS.filter(c=>got[c.id]).length;
-  sum.textContent=`${n} / ${CHEATS.length} 이겨냄 · 처음 이기는 특성마다 ${info.gold}골드 (모험 보스 · AI 배팅 상대의 특성)`;
+  sum.textContent=`${n} / ${CHEATS.length} 이겨냄 · 처음 이기면 ${info.gold}골드`;   // v167 짧게
   $('codexBar').style.width=Math.round(n/CHEATS.length*100)+'%';
   grid.innerHTML='';
   [...CHEATS].sort((a,b)=>(got[b.id]?1:0)-(got[a.id]?1:0)).forEach(c=>{ const g=got[c.id], v=cheatValue(c,0);   // 이겨낸 특성이 앞에

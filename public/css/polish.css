@@ -1,0 +1,89 @@
+/* polish.css — v167 화면 다듬기 (polish.js) */
+
+/* 왼쪽 위 뒤로가기 */
+#navBack{position:fixed; top:max(.8rem, env(safe-area-inset-top)); left:max(.8rem, env(safe-area-inset-left)); z-index:60; width:2.9rem; height:2.9rem; padding:0;
+  display:none; align-items:center; justify-content:center; border-radius:50%; cursor:pointer; color:#f5e7bf;
+  background:radial-gradient(circle at 50% 35%, #2c2852 0%, #191632 70%); border:2px solid #c9a227;
+  box-shadow:0 0 0 3px rgba(20,16,40,.85), 0 6px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,236,170,.25); transition:transform .12s ease, filter .12s ease, box-shadow .15s ease}
+#navBack.show{display:flex}
+#navBack svg{width:1.45rem; height:1.45rem; margin-right:.12rem}
+#navBack:hover{filter:brightness(1.15); box-shadow:0 0 0 3px rgba(20,16,40,.85), 0 6px 18px rgba(0,0,0,.6), 0 0 14px rgba(232,201,90,.45)}
+#navBack:active{transform:scale(.93)}
+#navBack:focus-visible{outline:2px solid #ffe08a; outline-offset:3px}
+#menu .menu-btn.back.nb-proxy{display:none !important}
+
+/* 메인: 모드 카드 그림이 천천히 확대 · 이동 (카드마다 박자를 다르게) */
+@keyframes mmKen1{0%{transform:scale(1.02) translate(0,0)} 100%{transform:scale(1.12) translate(-2.5%,-1.5%)}}
+@keyframes mmKen2{0%{transform:scale(1.10) translate(2%,0)} 100%{transform:scale(1.02) translate(-1.5%,1%)}}
+@keyframes mmKen3{0%{transform:scale(1.03) translate(0,1.5%)} 100%{transform:scale(1.13) translate(1.5%,-2%)}}
+#screen-main .mm-mode .mm-art{transform-origin:50% 40%; will-change:transform; transition:filter .35s ease}
+#screen-main .mm-mode.ai .mm-art{animation:mmKen1 16s ease-in-out infinite alternate}
+#screen-main .mm-mode.pvp .mm-art{animation:mmKen2 19s ease-in-out infinite alternate}
+#screen-main .mm-mode.adv .mm-art{animation:mmKen3 17s ease-in-out infinite alternate}
+#screen-main .mm-mode:hover .mm-art{filter:brightness(1.12) saturate(1.08)}
+#screen-main .mm-mode{transition:transform .18s ease, border-color .15s, box-shadow .15s}
+#screen-main .mm-mode:hover:not(.tilt){transform:translateY(-6px)}
+@media (prefers-reduced-motion: reduce){ #screen-main .mm-mode .mm-art{animation:none} }
+
+/* 메인 제목: 게임 제목처럼 */
+#screen-main .mm-head h2{font-family:var(--font-d); font-size:clamp(1.9rem, 3.8vw, 2.7rem); letter-spacing:.03em; line-height:1.1;
+  background:linear-gradient(180deg, #fff3c4 0%, #f2cf62 48%, #b9862a 100%); -webkit-background-clip:text; background-clip:text; color:transparent;
+  -webkit-text-stroke:1px rgba(60,35,5,.55); filter:drop-shadow(0 3px 0 rgba(40,22,4,.85)) drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+#screen-main .mm-desc{font-size:.9rem}
+
+/* 컷신 문제: 몇 번째인지 · 그만 풀기 */
+#cutscene .cs-gquiz .g-subj .g-cnt{float:right; font-weight:700; opacity:.7}
+#cutscene .cs-gquiz .g-quit{display:block; margin:.5rem auto 0; background:none; border:none; color:#8a7f6a; font:inherit; font-size:.85rem; text-decoration:underline; cursor:pointer}
+#cutscene .cs-gquiz .g-quit:hover{color:#5a4f3a}
+/* 엔딩 성적통지표 */
+#snFx .sn-endrep{pointer-events:none; background:rgba(0,0,0,.35)}
+#snFx .sn-myrep{top:52%; width:40cqw}
+#snFx .sn-myrep .sn-note{margin-top:.9cqw; font-family:"AdvPen", cursive; font-size:2.1cqw; color:#1d3fae; transform:rotate(-2deg); text-align:right}
+#snFx.ending.gray .sn-endrep{filter:none}
+/* 왼쪽 메뉴 줄: 모의고사가 늘어서 낮은 화면에서도 스크롤 없이 */
+@media (max-height: 840px){
+  #screen-main .mm-rail{gap:0}
+  #screen-main .mm-item{min-height:50px; gap:.1rem}
+  #screen-main .mm-logo{max-height:56px; width:auto}
+}
+
+/* ===== v168 기출 문항 (cutscene GAMES.gichul) · v169 지문은 왼쪽에 화면 높이 가득, 힌트는 말 없이 번쩍임 ===== */
+#cutscene .cs-gquiz.gx .g-paper{width:min(860px, 96vw); max-height:calc(100vh - 6rem); display:flex; flex-direction:column; padding:.8rem 1rem; overflow:hidden}
+#cutscene .cs-gquiz.gx.has-lead{align-items:center; justify-content:flex-end; padding-bottom:1.5vh}
+#cutscene .cs-gquiz.gx.has-lead .g-paper{width:min(1500px, 98vw); height:calc(100vh - 5.4rem); max-height:none}
+/* 지문이 아래로 더 있으면 아래쪽에 안내 (끝까지 내리면 사라짐) */
+#cutscene .cs-gquiz.gx .gx-scroll{position:relative}
+#cutscene .cs-gquiz.gx .gx-more{position:sticky; bottom:-.4rem; margin:0 -.4rem -.4rem; height:2.6rem; display:flex; align-items:flex-end; justify-content:center; padding-bottom:.35rem;
+  background:linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.96) 60%); color:#7a5a12; font:700 .85rem var(--font-u, system-ui, sans-serif); pointer-events:none; transition:opacity .3s}
+#cutscene .cs-gquiz.gx .gx-more.done{opacity:0}
+#cutscene .cs-gquiz.gx .gx-pts{font-style:normal; font-weight:700; color:#8a2b1d; margin-left:.3rem}
+#cutscene .cs-gquiz.gx .gx-body{flex:1 1 auto; min-height:120px; display:flex; gap:.7rem}
+#cutscene .cs-gquiz.gx .gx-scroll{flex:1 1 0; min-width:0; overflow:auto; background:#fff; border:1px solid #ddd; border-radius:4px; padding:.4rem; overscroll-behavior:contain; scrollbar-width:thin}
+#cutscene .cs-gquiz.gx .gx-scroll img{display:block; width:100%; max-width:760px; height:auto; margin:0 auto}
+#cutscene .cs-gquiz.gx.has-lead .gx-lead-col{flex:1.15 1 0}
+#cutscene .cs-gquiz.gx.has-lead .gx-q-col{flex:1 1 0}
+@media (max-aspect-ratio: 1/1){ #cutscene .cs-gquiz.gx .gx-body{flex-direction:column} }
+#cutscene .cs-gquiz.gx .gx-opts{display:flex; gap:.6rem; justify-content:center; margin:.6rem 0 .3rem}
+#cutscene .cs-gquiz.gx .gx-opts button{position:relative; width:3.2rem; height:3.2rem; border-radius:50%; border:2px solid #333; background:#fff; color:#111; font-size:1.45rem; line-height:1; cursor:pointer; transition:transform .12s}
+#cutscene .cs-gquiz.gx .gx-opts button:hover{transform:translateY(-2px); background:#f4efe0}
+/* 번쩍임: 약한 확신 = 가끔 한 번 번쩍, 강한 확신 = 빠르게 두 번씩 번쩍 + 별빛 */
+#cutscene .cs-gquiz.gx .gx-opts button.flash::before{content:''; position:absolute; left:50%; top:50%; width:5.6rem; height:5.6rem; margin:-2.8rem 0 0 -2.8rem; pointer-events:none; opacity:0;
+  background:url(/images/suneung/fx/star_06.png) center/contain no-repeat; filter:sepia(1) saturate(3) hue-rotate(160deg) brightness(1.1)}
+#cutscene .cs-gquiz.gx .gx-opts button.flash.weak{animation:gxFlashW 2.4s ease-out infinite}
+#cutscene .cs-gquiz.gx .gx-opts button.flash.weak::before{animation:gxStarW 2.4s ease-out infinite}
+#cutscene .cs-gquiz.gx .gx-opts button.flash.strong{animation:gxFlashS 1s ease-out infinite}
+#cutscene .cs-gquiz.gx .gx-opts button.flash.strong::before{width:7.5rem; height:7.5rem; margin:-3.75rem 0 0 -3.75rem; animation:gxStarS 1s ease-out infinite}
+@keyframes gxFlashW{0%,62%,100%{background:#fff; box-shadow:none} 66%{background:#e8f6ff; border-color:#3a8fd8; box-shadow:0 0 0 4px rgba(90,170,255,.55), 0 0 22px 8px rgba(90,170,255,.6)} 80%{background:#fff; box-shadow:0 0 0 0 rgba(90,170,255,0)}}
+@keyframes gxStarW{0%,62%,100%{opacity:0; transform:scale(.4) rotate(0)} 66%{opacity:.9; transform:scale(.9) rotate(20deg)} 82%{opacity:0; transform:scale(1.2) rotate(45deg)}}
+@keyframes gxFlashS{0%,100%{background:#fff; border-color:#1f6fc0; box-shadow:0 0 10px 2px rgba(90,170,255,.45)}
+  10%{background:#dff2ff; box-shadow:0 0 0 6px rgba(80,165,255,.7), 0 0 34px 12px rgba(80,165,255,.85)} 22%{background:#fff; box-shadow:0 0 8px 2px rgba(90,170,255,.4)}
+  32%{background:#dff2ff; box-shadow:0 0 0 6px rgba(80,165,255,.7), 0 0 34px 12px rgba(80,165,255,.85)} 46%{background:#fff; box-shadow:0 0 10px 2px rgba(90,170,255,.45)}}
+@keyframes gxStarS{0%{opacity:0; transform:scale(.3) rotate(0)} 10%{opacity:1; transform:scale(1) rotate(25deg)} 30%{opacity:.2; transform:scale(1.1) rotate(40deg)} 34%{opacity:1; transform:scale(1.05) rotate(55deg)} 60%,100%{opacity:0; transform:scale(1.35) rotate(90deg)}}
+#cutscene .cs-gquiz.gx .gx-row{display:flex; gap:.6rem; align-items:center; margin-top:.4rem}
+#cutscene .cs-gquiz.gx .gx-row .g-guess{flex:1 1 auto; width:auto; margin:0}
+#cutscene .cs-gquiz.gx .gx-row .g-quit{margin:0; flex:0 0 auto}
+#cutscene .cs-gquiz.gx .gx-time{flex:0 0 auto; font-variant-numeric:tabular-nums; font-weight:700; color:#555; min-width:3.2rem}
+#snFx .sn-myrep{width:min(64cqw, 92vw)}
+#snFx .sn-myrep table th{font-size:1.05cqw}
+#snFx .sn-myrep table th.sb{font-weight:600; background:#f3f1e8}
+#snFx .sn-myrep table td{font-size:1.2cqw}

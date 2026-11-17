@@ -23,7 +23,7 @@ const SuneungFx = (() => {
   const PHASES = [
     { at: 66, cut: 'suneung_math', no: '2교시', subj: '수학 영역', time: '오전 10:30', clock: [10, 30], cast: '지금부터 2교시 수학 영역 시험을 시작하겠습니다.' },
     { at: 33, cut: 'suneung_english', no: '3교시', subj: '영어 영역', time: '오후 1:10', clock: [13, 10], cast: '지금부터 3교시 영어 영역 듣기 평가를 시작하겠습니다.' },
-    { at: 15, cut: 'suneung_lang2', no: '5교시', subj: '제2외국어/한문 영역', time: '오후 5:05', clock: [17, 5], cast: '지금부터 5교시 제2외국어/한문 영역 시험을 시작하겠습니다.', last: true },
+    { at: 15, cut: 'suneung_lang2', no: '4교시', subj: '한국사/탐구 영역', time: '오후 2:50', clock: [14, 50], cast: '지금부터 4교시 한국사, 탐구 영역 시험을 시작하겠습니다.', last: true },   // v168 실제 수능 순서
   ];
   const START_CLOCK = [8, 40];
   // 엔진 newGame 의 opts.phases[보스 좌석]. 수능 보스만
@@ -31,6 +31,22 @@ const SuneungFx = (() => {
     if (!isSuneung(boss) || typeof phaseGainPool !== 'function') return null;
     preload();
     return { at: PHASES.map(p => p.at), armor: 5, pool: phaseGainPool() };
+  }
+
+  // v167 컷신 선택 → 보스전 시작: 컨디션(전야 · 아침 · 쉬는 시간 선택의 합)
+  //   2 이상 = 내가 카드 1장을 더 들고 시작 / −1 이하 = 보스가 방어도 3을 얻고 시작
+  function storyBonus() {
+    try { if (!window.StoryState || StoryState.cur !== 'suneung') return null; const c = StoryState.get().cond || 0;
+      if (c >= 2) return { good: true, kind: 'card', text: '컨디션 최상: 카드 1장을 더 들고 시작' };
+      if (c <= -1) return { good: false, kind: 'armor', text: '컨디션 난조: 보스가 방어도 3을 얻고 시작' };
+    } catch (_) {}
+    return null;
+  }
+  function applyStartBonus(state) {
+    const b = storyBonus(); if (!b || !state) return null;
+    if (b.kind === 'card') { const P = state.seats[0]; if (P && P.deck && P.deck.length) P.hand.push(P.deck.shift()); }
+    if (b.kind === 'armor') { const P = state.seats[1]; if (P) P.armor = (P.armor || 0) + 3; }
+    return b;
   }
 
   // 「같은 입학에서 본 교시」: 입학(런) 시작 시각별로 이 기기에 기억. 런이 없는 개발자 시험 대전은 이 페이지를 연 동안만
@@ -154,10 +170,10 @@ const SuneungFx = (() => {
   }
   function gainChip(g) {
     if (!g) return '';
-    const kind = g.kind === 'cheat' ? (g.global ? '전장 규칙 · 나에게도 적용' : '지속 능력 (비용 없음)') : g.kind === 'active' ? `보스 영웅 능력 (${g.cost}마나)` : `영웅 능력 (${g.cost}마나)`;
+    const kind = g.kind === 'cheat' ? (g.global ? '나에게도 적용' : '지속 능력') : '영웅 능력';
     const art = g.kind === 'hero' ? (typeof hpArtOf === 'function' && hpArtOf(g.id)) : `/images/cheats/${g.id}.webp`;
     return `<div class="sn-gain${g.global ? ' global' : ''}"><span class="sn-ic"${art ? ` style="background-image:url('${esc(art)}')"` : ''}>${art ? '' : esc(g.icon || '✦')}</span>
-      <span class="tx"><small>보스가 새 능력을 얻었습니다 · ${esc(kind)}</small><b>${esc(g.icon || '')} ${esc(g.name)}</b><em>${esc(String(g.text || '').replace(/^\[양쪽\]\s*/, ''))}</em></span></div>`;
+      <span class="tx"><small>${esc(kind)}</small><b>${esc(g.icon || '')} ${esc(g.name)}</b><em>${esc(String(g.text || '').replace(/^\[양쪽\]\s*/, ''))}</em></span></div>`;
   }
   async function banner(p, ev) {
     const prev = ev.idx > 0 ? PHASES[ev.idx - 1].clock : START_CLOCK;
@@ -172,7 +188,7 @@ const SuneungFx = (() => {
     await wait(250); board.classList.add('show');
     castBox(ui, p.cast);
     await wait(1100);
-    const gains = el(ui, 'sn-gains', `<div class="sn-gain armor"><span class="sn-ic">🛡</span><span class="tx"><small>보스 강화</small><b>방어도 +${ev.armor || 0}</b><em>${esc(p.no)} 시작 — 시험이 더 어려워집니다</em></span></div>${gainChip(ev.gain)}`);
+    const gains = el(ui, 'sn-gains', `<div class="sn-gain armor"><span class="sn-ic">🛡</span><span class="tx"><small>보스 강화</small><b>방어도 +${ev.armor || 0}</b></span></div>${gainChip(ev.gain)}`);
     void gains.offsetWidth; gains.classList.add('show'); sfx('armor'); if (ev.gain) setTimeout(() => sfx('trait'), 260);
     if (p.last) setTimeout(() => sfx('sp_shadow'), 200);
     await holdOrTap(r, 4300, 500);
@@ -204,7 +220,7 @@ const SuneungFx = (() => {
     const card = el(st, 'sn-bigcard', ''); card.style.backgroundImage = 'url("/images/ynu/ynu_lotto.jpg")';
     sfx('sp_shadow'); sfx('trait', { rate: .7 });
     await wait(200); card.classList.add('show');
-    const t = titleBlock(ui, '제2외국어/한문 영역 · 아랍어', '5교시의 악령', '전설 등장', 'purple');
+    const t = titleBlock(ui, '제2외국어 영역 아랍어', '5교시의 악령', '전설 등장', 'purple');
     await wait(500); t.classList.add('show'); r.classList.add('shake');
     for (let i = 0; i < 7; i++) particle(st, i % 2 ? 'star_06' : 'star_04', 30 + Math.random() * 40, 25 + Math.random() * 50, 6 + Math.random() * 6, { cls: 'sn-twinkle', tint: TINT.gold, delay: 150 + i * 160 });
     await holdOrTap(r, 2900, 700);
@@ -227,7 +243,7 @@ const SuneungFx = (() => {
     particle(st, 'dirt_03', 66, 55, 34, { cls: 'sn-debris', tint: 'brightness(.6)' });
     r.classList.add('shake'); sfx('sp_fire'); sfx('hit_hero', { rate: .8 });
     rep.querySelectorAll('.gr i').forEach((g, k) => setTimeout(() => { g.textContent = '3'; g.parentElement.classList.add('down'); }, 80 + k * 70));
-    const t = titleBlock(ui, '전설 주문', '물수능 컷 폭발', '1등급 컷이 무너졌다 — 전체 피해 3 · 보스 방어도 +2', 'red');
+    const t = titleBlock(ui, '전설 주문', '물수능 컷 폭발', '1등급 컷이 무너졌다', 'red');
     t.classList.add('show');
     await holdOrTap(r, 2900, 700);
     await close();
@@ -343,7 +359,12 @@ const SuneungFx = (() => {
       th.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${endY}px)` }], { duration: T.roll, easing: 'cubic-bezier(.25,0,.35,1)', fill: 'forwards' });
     });
     const tEnd = tThanks + T.roll + T.hold;
-    at(tEnd, () => finish(false));
+    // v167 크레딧이 멈춘 뒤 내 성적통지표 (컷신에서 푼 문제로 등급). 문제를 하나도 안 풀었으면 건너뛴다
+    const rep = reportCard();
+    if (rep) {
+      at(tEnd, () => { const box = el(r, 'sn-stage sn-endrep', rep); box.style.zIndex = 9; requestAnimationFrame(() => box.querySelector('.sn-report').classList.add('show')); fadeAudio(song, vol('music') * .55, 800); });
+      at(tEnd + 4800, () => finish(false));
+    } else at(tEnd, () => finish(false));
     async function finish(bySkip) {
       if (skipped) return; skipped = true; timers.forEach(clearTimeout);
       await Promise.all([fadeAudio(song, 0, bySkip ? 600 : T.songFade), fadeAudio(bell, 0, 400)]);
@@ -357,24 +378,104 @@ const SuneungFx = (() => {
     }
   }
 
+  // v168 성적통지표: 이번 판에 실제로 푼 과목만 칸으로 (StoryState flag sn_results, cutscene.js GAMES.gichul)
+  //   맞힌 배점 비율로 등급 · 백분위 · 표준점수를 그럴듯하게 만든다. 영어 · 한국사는 실제처럼 등급만
+  const gradeOfR = r => r >= .9 ? 1 : r >= .75 ? 2 : r >= .6 ? 3 : r >= .5 ? 4 : r >= .4 ? 5 : r >= .3 ? 6 : r >= .2 ? 7 : r >= .1 ? 8 : 9;
+  function scoreOf(e) {
+    const r = e.max ? e.got / e.max : 0, g = gradeOfR(r), abs = e.area === '영어' || e.area === '한국사';
+    const std = abs ? '-' : (e.area === '국어' || e.area === '수학') ? Math.round(70 + r * 75) : Math.round(30 + r * 42);
+    const pct = abs ? '-' : Math.max(1, Math.min(99, Math.round(4 + r * 95)));
+    return { std, pct, g };
+  }
+  function reportCard() {
+    let res = null; try { if (window.StoryState && StoryState.cur === 'suneung') res = StoryState.get().sn_results; } catch (_) {}
+    const all = Object.values(res || {}).filter(e => e && e.n);
+    if (!all.length) return null;
+    const ORDER = { '국어': 0, '수학': 1, '영어': 2, '한국사': 3, '사회': 4, '과학': 5, '한문': 6 };
+    all.sort((a, b) => (ORDER[a.area] ?? 9) - (ORDER[b.area] ?? 9));
+    const groups = [];   // [{title, cols:[e]}]
+    for (const e of all) {
+      const title = e.area === '사회' || e.area === '과학' ? '탐구 영역' : e.area === '한문' ? '제2외국어/한문 영역' : `${e.area} 영역`;
+      const g = groups.find(x => x.title === title) || (groups.push({ title, cols: [] }), groups[groups.length - 1]);
+      g.cols.push(e);
+    }
+    const cols = groups.flatMap(g => g.cols), sc = cols.map(scoreOf);
+    const sub = e => (e.area === '사회' || e.area === '과학' || e.area === '한문') ? (e.label || e.area) : '';
+    const hasSub = cols.some(sub);
+    const head1 = `<tr><th rowspan="${hasSub ? 2 : 1}">구 분</th>${groups.map(g => `<th colspan="${g.cols.length}"${!hasSub || g.cols.every(c => !sub(c)) ? (hasSub ? ' rowspan="2"' : '') : ''}>${esc(g.title)}</th>`).join('')}</tr>`;
+    const head2 = hasSub ? `<tr>${groups.filter(g => g.cols.some(sub)).flatMap(g => g.cols).map(c => `<th class="sb">${esc(sub(c))}</th>`).join('')}</tr>` : '';
+    const row = (name, f, cls) => `<tr><th>${name}</th>${sc.map(x => `<td${cls ? ` class="${cls}"` : ''}>${cls ? `<i>${f(x)}</i>` : f(x)}</td>`).join('')}</tr>`;
+    const avg = sc.reduce((a, x) => a + x.g, 0) / sc.length;
+    const note = avg <= 1.2 ? '전 과목 1등급… 꿈인가?' : avg <= 2.5 ? '이 정도면 해볼 만하다' : avg <= 4.5 ? '가채점은 내일 하자' : avg <= 6.5 ? '…엄마한테 뭐라고 하지' : 'N수 선언…?';
+    return `<div class="sn-report sn-myrep"><div class="hd sn-myeong">대학수학능력시험 성적통지표</div>
+      <div class="who"><span>성명</span><b>강민수</b><span>수험번호</span><b>12345678</b></div>
+      <table>${head1}${head2}${row('표준점수', x => x.std)}${row('백분위', x => x.pct)}${row('등 급', x => x.g, 'gr')}</table>
+      <div class="sn-note">${esc(note)}</div></div>`;
+  }
+
+  // ===================== 모의고사 (v167): 전 과목 30문제, 언제든 그만두기 =====================
+  const MOCK_KEY = () => { const u = window.CURRENT_USER; return 'cardDuel.mockBest.' + (u && (u.username || u.id) ? (u.username || u.id) : 'guest'); };
+  function mockExam() {
+    if (!window.Cutscene || !window.QuizBank) return;
+    let best = 0; try { best = Number(localStorage.getItem(MOCK_KEY()) || 0); } catch (_) {}
+    Cutscene.SCRIPTS.mock_exam = {
+      dir: 'ynu1/', title: '모의고사',
+      steps: [
+        { t: 'scene', kicker: '모의고사', title: '전 과목 30문제', time: best ? `최고 기록 ${best}문제` : '첫 도전', bg: 'bg_exam_room' },
+        { t: 'desc', text: '맞힐수록 문제가 쉬워진다. 언제든 [그만 풀기]로 끝낼 수 있다.' },
+        { t: 'game', g: 'quiz', pool: 'mix', count: 30, mock: true, noStats: true, ms: 20000 },
+        { t: 'big', kicker: '모의고사 결과', text: () => { const q = Cutscene.lastQuiz || { ok: 0, done: 0 }; return `${q.ok} / ${q.done}`; },
+          sub: () => { const q = Cutscene.lastQuiz || { ok: 0 }; if (q.ok > best) { try { localStorage.setItem(MOCK_KEY(), String(q.ok)); } catch (_) {} return best ? `최고 기록 경신! 전 기록 ${best}문제` : '첫 기록'; } return `최고 기록 ${best}문제`; } },
+      ],
+    };
+    return Cutscene.play('mock_exam');
+  }
+
   // ===================== 브금 (sound.js 가 0.7초마다 묻는다) =====================
   // inStory: 컷신·스토리 화면인지, bg: 지금 배경 이름. 돌려준 music 이 그 화면의 음악 (null = 조용히), undefined 면 원래 규칙
   function bgm(inStory, bg) {
     if (endingOn) return { music: null, amb: null };
     if (inStory) {
-      bg = bg || '';
-      if (/^s[12]_/.test(bg)) return { music: 'sleepywood' };                       // 수능 전야
-      if (/^s3_/.test(bg)) return { music: 'friendstory' };                        // 수능 날 아침
-      if (/^(s4_sheet|bg_exam|bg_omr|bg_dusk)/.test(bg)) return { music: 'serenity' };   // 필적 확인란 · 1교시 · 교시 컷신
-      return null;
+      if (EXAM_BG.test(bg || '')) return { music: null, amb: null };              // 시험 장면: 음악 없이 (초침 · 연필 소리는 examAmb)
+      return null;                                                               // 전야 · 아침: 원래 스토리 브금
     }
     if (inSuneungGame()) {
       const menu = document.getElementById('menu'); if (menu && !menu.classList.contains('hidden')) return null;
-      let done = 0; try { const P = Host.state && Host.state.seats[oppSeat()]; done = P && P.phases ? P.phases.done : 0; } catch (_) {}
-      return { music: done >= 3 ? 'horntail' : 'papulatus', amb: null };          // 5교시부터 혼테일
+      return { music: 'papulatus', amb: null };                                  // v167 메이플은 보스전 한 곡만
     }
     return null;
   }
+
+  // ===================== 시험장 소리 (v167): 시계 초침 + 가끔 연필 사각사각. 코드로 합성 =====================
+  const EXAM_BG = /^(s4_sheet|bg_exam|bg_omr|bg_dusk)/;
+  const examAmb = (() => {
+    let ac = null, on = false, tickT = null, penT = null, n = 0;
+    const ctx = () => { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (_) { ac = null; } return ac; };
+    function noise(sec) { const c = ac, b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * sec)), c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const s = c.createBufferSource(); s.buffer = b; return s; }
+    function tick() {
+      const v = vol('sfx'); if (!ac || !v) return; const t = ac.currentTime;
+      const src = noise(0.04), bp = ac.createBiquadFilter(), g = ac.createGain();
+      bp.type = 'bandpass'; bp.frequency.value = (n++ % 2) ? 2300 : 2900; bp.Q.value = 6;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5 * v, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0008, t + 0.035);
+      src.connect(bp).connect(g).connect(ac.destination); src.start(t); src.stop(t + 0.05);
+    }
+    function pencil() {
+      const v = vol('sfx'); if (!ac || !v) return; const t = ac.currentTime, dur = 0.35 + Math.random() * 0.5;
+      const src = noise(dur), bp = ac.createBiquadFilter(), g = ac.createGain();
+      bp.type = 'bandpass'; bp.frequency.value = 3600 + Math.random() * 1400; bp.Q.value = 1.1;
+      const steps = Math.ceil(dur * 18), curve = new Float32Array(steps + 1);
+      for (let i = 0; i <= steps; i++) curve[i] = (i === 0 || i === steps ? 0 : (0.4 + Math.random() * 0.6)) * 0.09 * v;
+      g.gain.setValueCurveAtTime(curve, t, dur);
+      src.connect(bp).connect(g).connect(ac.destination); src.start(t); src.stop(t + dur + 0.02);
+    }
+    function schedulePen() { penT = setTimeout(() => { if (!on) return; pencil(); if (Math.random() < 0.4) setTimeout(() => on && pencil(), 420); schedulePen(); }, 2200 + Math.random() * 4200); }
+    function start() { if (on) return; if (!ctx()) return; on = true; tick(); tickT = setInterval(tick, 1000); schedulePen(); }
+    function stop() { on = false; clearInterval(tickT); clearTimeout(penT); }
+    // 지금 화면에 시험 장면 배경이 떠 있으면 켜고, 아니면 끈다
+    function bgName() { const b = document.querySelector('.cs-bg.show, .as-bg.show'); if (!b) return ''; const m = /\/([^\/]+?)\.(?:webp|jpg|png)/.exec(b.style.backgroundImage || '') || /\/([^\/]+?)\.(?:webp|jpg|png)/.exec((b.querySelector && b.querySelector('img') || {}).src || ''); return m ? m[1] : ''; }
+    setInterval(() => { (EXAM_BG.test(bgName()) && !endingOn) ? start() : stop(); }, 600);
+    return { start, stop, bgName };
+  })();
 
   // ===================== 미리 받기 =====================
   let preloaded = false, preloadedEnd = false;
@@ -392,6 +493,6 @@ const SuneungFx = (() => {
   }
 
   window.SuneungBgm = bgm;
-  return { isSuneung, phasesFor, phase, onPlay, queueEnding, ending, endingActive, afterEnding, preload, preloadEnding, PHASES, _bgm: bgm };
+  return { isSuneung, phasesFor, phase, onPlay, queueEnding, ending, endingActive, afterEnding, preload, preloadEnding, PHASES, _bgm: bgm, storyBonus, applyStartBonus, mockExam, examAmb };
 })();
 window.SuneungFx = SuneungFx;

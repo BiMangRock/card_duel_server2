@@ -71,6 +71,9 @@
     return { begin, get, apply, popup, STATS, get cur() { return load().cur; } };
   })();
   window.StoryState = StoryState;
+  // v167 선택지 아래의 「💪 +1」 같은 숨은 수치 표시는 보여 주지 않는다 (고른 뒤 잠깐 떠오르는 표시만). 「화면을 빠르게 연타!」 같은 안내는 그대로
+  const statOnlySub = t => /^[\s0-9+\-−🍺⭐💌📝💪✏🌱\uFE0F]+$/u.test(String(t || ''));
+  window.statOnlySub = statOnlySub;
 
   // ===================== 대본 =====================
   const ME = '나', HW = '현우', SB = '선배', CR = '첫사랑', PF = '교수님', GF = '여자친구';
@@ -91,14 +94,11 @@
       dir: 'ynu1/', title: '수능 당일',
       steps: [
         { t: 'scene', kicker: '수능 당일', title: '1교시 · 국어 영역', time: '오전 8:40', bg: 'bg_exam_room' },
-        { t: 'desc', text: '감독관이 문제지를 나눠 준다. 펄럭— 종이 넘기는 소리만 가득하다.' },
+        { t: 'desc', text: ['감독관이 문제지를 나눠 준다. 펄럭— 종이 넘기는 소리만 가득하다.', '감독관이 신분증과 얼굴을 번갈아 본다. …사진보다 지금이 더 피곤해 보인다.', '뒷자리에서 누가 샤프를 딸깍딸깍 누른다. 하필 오늘.', '감독관 두 명이 교실 앞뒤에 선다. 교실 공기가 한 단계 무거워진다.'] },
         { t: 'mono', face: 'me_sn_calm', text: s => s.cond >= 2 ? '머리가 맑다. 오늘은… 할 수 있다.' : s.cond <= -1 ? '눈꺼풀이 천근만근이다… 정신 차리자, 강민수.' : '원래 하던 대로. 원래 하던 대로.' },
         { t: 'desc', text: '문제당 시간은 밧줄이 다 탈 때까지! 모르겠으면… 3번으로 찍어도 된다.' },
-        { t: 'game', g: 'quiz', subj: '국어', no: 18,
-          q: '다음 글에 드러난 화자의 정서로 가장 적절한 것은?',
-          passage: '창밖엔 첫눈, 책상엔 수능 특강.\n펜은 지문 위를 걷는데, 마음은 이미\n수능 끝난 다음 날 늦잠 속에 누워 있다.',
-          opts: ['학업에 대한 뜨거운 열정', '자연에 대한 경외감', '현실에서 벗어나고 싶은 마음', '첫눈을 기다리는 설렘', '출판사에 대한 감사'], ans: 2 },
-        { t: 'desc', bg: 'bg_exam_break', text: '쉬는 시간. 복도 여기저기서 답을 맞춰 보는 소리가 들린다.' },
+        { t: 'game', g: 'gichul', plan: '국어' },   // v168 기출 3문제 (2점 2 + 3점 1)
+        { t: 'desc', bg: 'bg_exam_break', text: ['쉬는 시간. 복도 여기저기서 답을 맞춰 보는 소리가 들린다.', '쉬는 시간. 누군가 「18번 3번 아니야?」 하고 외친다. 교실이 술렁인다.', '쉬는 시간. 옆자리 수험생이 초콜릿을 세 개째 까고 있다.', '쉬는 시간. 화장실 줄이 복도 끝까지 이어져 있다.'] },
         { t: 'choice', q: '(친구들이 국어 답을 맞춰 보고 있다…)', def: 1, opts: [
           { label: '같이 맞춰 본다', sub: '💪 −1', set: { cond: -1 }, then: [{ t: 'mono', face: 'me_sn_panic', text: '…18번, 나만 다른 걸 골랐다. 망했다.' }] },
           { label: '귀를 막고 다음 과목만 생각한다', then: [{ t: 'mono', face: 'me_sn_calm', text: '지나간 건 지나간 거다. 다음.' }] },
@@ -113,10 +113,8 @@
       dir: 'ynu1/', title: '2교시 · 수학',
       steps: [
         { t: 'scene', kicker: '수능 당일', title: '2교시 · 수학 영역', time: '오전 10:30', bg: 'bg_exam_math' },
-        { t: 'desc', text: '머리에서 김이 난다. 앞자리 수험생이 머리를 쥐어뜯고 있다.' },
-        { t: 'game', g: 'quiz', subj: '수학', no: 21,
-          q: '(전날 잔 시간) × (유튜브를 본 편수) = 12 이다.\n유튜브를 4편 봤다면, 전날 잔 시간은?',
-          opts: ['2시간', '4시간', '6시간', '3시간', '12시간'], ans: 3 },
+        { t: 'desc', text: ['머리에서 김이 난다. 앞자리 수험생이 머리를 쥐어뜯고 있다.', '감독관이 내 자리 옆에 멈춰 선다. …왜 하필 지금.', '계산 칸이 모자라서 문제지 여백까지 숫자로 가득 찼다.', '옆자리에서 계산기 두드리듯 샤프를 두드린다. 똑, 똑, 똑.'] },
+        { t: 'game', g: 'gichul', plan: '수학' },   // 2점 · 3점 · 4점
         { t: 'mono', face: 'me_sn_calm', text: '…시험지가 더 두꺼워진 것 같다. 아니, 시험이 나를 향해 덤벼 온다.' },
         { t: 'calc', fn: s => ({ sn: s.score + (s.cond >= 2 ? 1 : 0) >= 4 ? 'S' : s.score + (s.cond >= 2 ? 1 : 0) >= 2 ? 'A' : 'B' }) },
       ],
@@ -125,11 +123,8 @@
       dir: 'ynu1/', title: '3교시 · 영어',
       steps: [
         { t: 'scene', kicker: '수능 당일', title: '3교시 · 영어 영역', time: '오후 1:10', bg: 'bg_exam_english' },
-        { t: 'desc', text: '듣기 평가가 시작된다. 스피커에서 지지직— 소리가 난다. 교실 전체가 숨을 죽인다.' },
-        { t: 'game', g: 'quiz', subj: '영어', no: 29,
-          q: 'Choose the word that best fits the blank.',
-          passage: 'After the exam, I will finally ______ my phone for twelve hours straight.',
-          opts: ['study', 'stare at', 'ignore', 'recycle', 'fax'], ans: 1 },
+        { t: 'desc', text: ['듣기 평가가 시작된다. 스피커에서 지지직— 소리가 난다. 교실 전체가 숨을 죽인다.', '듣기 평가 시간. 창밖으로 비행기가… 지나가지 않는다. 다행이다.', '듣기 평가 시간. 앞자리 수험생이 훌쩍인다. 하필 비염이다.', '듣기 평가 시간. 감독관도 숨을 참는 것 같다.'] },
+        { t: 'game', g: 'gichul', plan: '영어' },   // 2점 2 + 3점 1
         { t: 'desc', bg: 'bg_omr', text: '답안지에 옮겨 적다가… 어? 번호가 한 칸씩 밀린 것 같다!!', fx: ['shake', 'red'] },
         { t: 'choice', q: '(남은 시간은 얼마 없다. 어떻게 할까?)', def: 0, opts: [
           { label: '지우고 다시 마킹한다!', sub: '화면을 빠르게 연타!', then: [
@@ -142,18 +137,16 @@
         { t: 'calc', fn: s => ({ sn: s.score + (s.cond >= 2 ? 1 : 0) >= 4 ? 'S' : s.score + (s.cond >= 2 ? 1 : 0) >= 2 ? 'A' : 'B' }) },
       ],
     },
-    suneung_lang2: {
-      dir: 'ynu1/', title: '5교시 · 제2외국어',
+    suneung_lang2: {   // v168 4교시 한국사 · 탐구 (id 는 그대로)
+      dir: 'ynu1/', title: '4교시 · 한국사/탐구',
       steps: [
-        { t: 'scene', kicker: '수능 당일', title: '5교시 · 제2외국어/한문 영역', time: '오후 5:05', bg: '/images/suneung/bg_dusk' },
-        { t: 'desc', text: '해가 기울었다. 교실이 반쯤 비었다. 제2외국어를 신청한 사람만 남았다.' },
-        { t: 'mono', face: 'me_sn_calm', text: '아랍어… 찍기만 해도 평균은 나온다던 그 과목.' },
+        { t: 'scene', kicker: '수능 당일', title: '4교시 · 한국사/탐구 영역', time: '오후 2:50', bg: '/images/suneung/bg_dusk' },
+        { t: 'desc', text: ['창밖 해가 기울기 시작했다. 한국사 다음엔 탐구 두 과목이 이어진다.', '점심 먹고 난 뒤라 교실 공기가 무겁다. 여기저기서 하품 소리.', '감독관이 시험지를 나눠 준다. 사회, 과학, 한국사… 오늘 머리가 버틸까.'] },
+        { t: 'mono', face: 'me_sn_calm', text: ['탐구는… 솔직히 잘 모른다. 감으로 간다.', '외운 건 다 어디 갔지. 머릿속이 하얗다.'] },
         { t: 'desc', text: '그런데 칠판 앞에 짙은 안개가 피어오른다. 시험지 위의 글자들이 꿈틀거리며 기어 나온다!', fx: ['shake', 'red'] },
-        { t: 'mono', face: 'me_sn_panic', text: '…5교시의 악령이다.' },
-        { t: 'game', g: 'quiz', subj: '아랍어', no: 1,
-          q: "다음 중 아랍어 인사말 '안녕하세요(평화가 함께하길)'로 가장 적절한 것은?",
-          opts: ['앗살라무 알라이쿰', '곤니치와', '니하오', '봉주르', '구텐 탁'], ans: 0 },
-        { t: 'mono', face: 'me_sn_relief', text: '마지막 교시다. 여기만 버티면… 진짜 끝난다.' },
+        { t: 'mono', face: 'me_sn_panic', text: '…시험장의 악령이다.' },
+        { t: 'game', g: 'gichul', plan: '탐구' },   // 사회 · 과학 · 한국사/한문, 한 문제에 약한 확신 힌트
+        { t: 'mono', face: 'me_sn_relief', text: '여기만 버티면… 진짜 끝난다.' },
         { t: 'calc', fn: s => ({ sn: s.score + (s.cond >= 2 ? 1 : 0) >= 4 ? 'S' : s.score + (s.cond >= 2 ? 1 : 0) >= 2 ? 'A' : 'B' }) },
       ],
     },
@@ -737,6 +730,7 @@
     const phHead = $('.cs-ph-head'), phHeadGroup = phHead.innerHTML;
     const S = () => StoryState.get();
     const val = v => typeof v === 'function' ? v(S()) : v;
+    const pickTxt = v => { v = val(v); return Array.isArray(v) ? v[Math.floor(Math.random() * v.length)] : v; };   // v167 대사가 배열이면 판마다 하나를 무작위로
 
     // ---- 입력: 화면 누르기 / 스페이스·엔터 = 다음, Esc = 건너뛰기 ----
     let skipped = false, auto = false, tapResolve = null, typing = null, keyHook = null;
@@ -833,9 +827,9 @@
     const addChat = (st) => {
       phone.hidden = false;
       const el = document.createElement('div');
-      if (st.sys) { el.className = 'cs-msg sys'; el.innerHTML = `<span>${esc(val(st.text))}</span>`; }
-      else if (st.mine) { el.className = 'cs-msg mine'; el.innerHTML = `<span>${esc(val(st.text))}</span><em>1</em>`; }
-      else { el.className = 'cs-msg'; el.innerHTML = `<b>${esc(val(st.who))}</b><span>${esc(val(st.text))}</span>`; }
+      if (st.sys) { el.className = 'cs-msg sys'; el.innerHTML = `<span>${esc(pickTxt(st.text))}</span>`; }
+      else if (st.mine) { el.className = 'cs-msg mine'; el.innerHTML = `<span>${esc(pickTxt(st.text))}</span><em>1</em>`; }
+      else { el.className = 'cs-msg'; el.innerHTML = `<b>${esc(val(st.who))}</b><span>${esc(pickTxt(st.text))}</span>`; }
       phBody.appendChild(el); phBody.scrollTop = phBody.scrollHeight;
       restart(root, 'fx-buzz');
       return el;
@@ -852,7 +846,7 @@
         if (style === 'dance') {
           html = `<div class="cs-q">${esc(st.q)}</div><div class="cs-dcards">${opts.map((o, i) => `<button type="button" class="cs-dcard${o.img ? '' : ' none'}" data-i="${i}" style="animation-delay:${i * 0.08}s">${o.img ? `<img src="${urlOf(sc, o.img)}" alt="">` : '<i>👏</i>'}<b>${i + 1}. ${esc(o.label)}</b></button>`).join('')}</div>`;
         } else {
-          html = `<div class="cs-q">${esc(st.q)}</div><div class="cs-opts">${opts.map((o, i) => `<button type="button" class="cs-opt" data-i="${i}" style="animation-delay:${i * 0.07}s"><span class="n">${i + 1}</span><span class="l">${esc(o.label)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</button>`).join('')}</div>`;
+          html = `<div class="cs-q">${esc(st.q)}</div><div class="cs-opts">${opts.map((o, i) => `<button type="button" class="cs-opt" data-i="${i}" style="animation-delay:${i * 0.07}s"><span class="n">${i + 1}</span><span class="l">${esc(o.label)}</span>${o.sub && !statOnlySub(o.sub) ? `<small>${esc(o.sub)}</small>` : ''}</button>`).join('')}</div>`;
         }
         const panel = ui('cs-choice ' + style, html);
         const pick = i => { if (!opts[i]) return; panel.querySelectorAll('button').forEach(b => b.disabled = true); panel.querySelector(`[data-i="${i}"]`).classList.add('picked'); setTimeout(() => finish(opts[i]), 380); };
@@ -990,28 +984,103 @@
     };
 
     // 수능 문제: 밧줄 타이머 안에 고르기. [모르겠다, 3번] 은 3번으로 찍는다
+    // v167 st.pool = 과목(또는 'mix') → 문제 묶음(quizbank.js)에서 st.count 문제를 차례로. 맞힐수록 쉬운 문제가 나온다
+    //   여러 문제면 [그만 풀기] 로 중간에 끝낼 수 있다. st.noStats 면 숨은 수치에 남기지 않는다 (모의고사)
+    //   결과는 Cutscene.lastQuiz = {subj, ok, done, total}, 그리고 수치 flag qz_<과목> = {ok, n} (엔딩 성적표가 읽는다)
     GAMES.quiz = async st => {
+      if (!st.pool || typeof QuizBank === 'undefined') return quizOne(st);
+      const N = Math.max(1, st.count || 3); let ok = 0, done = 0; const used = [];
+      for (let k = 0; k < N; k++) {
+        const q = QuizBank.draw(st.pool, QuizBank.levelFor(ok, N), used); if (!q) break; used.push(q.id);
+        const r = await quizOne({ subj: q.subj, no: st.mock ? k + 1 : (st.no || 0) + k, q: q.q, passage: q.passage, opts: q.opts, ans: q.ans,
+          quit: N > 1, head: N > 1 ? `${k + 1} / ${N}` : '', noStats: st.noStats, ms: st.ms });
+        if (r === 'quit' || skipped) break;
+        done++; if (r) ok++;
+      }
+      window.Cutscene.lastQuiz = { subj: st.pool, ok, done, total: N };
+      if (!st.noStats) StoryState.apply({}, { ['qz_' + st.pool]: { ok, n: done } }, true);
+    };
+    // v168 기출 문항 (Gichul): st.plan = '국어' | '수학' | '영어' | '탐구'. 문항은 그림, 보기 ①~⑤ 버튼. 시간은 배점대로
+    //   힌트(한 문제): 국어·수학·영어 = 가장 높은 배점 문제에 약한 확신(빛 2개), 컨디션 3 이상이면 강한 확신(정답에 빛)
+    //                 탐구 = 셋 중 무작위 한 문제에 항상 약한 확신(신의 계시 · 「②④번은 아닌 듯」 등), 컨디션 3 이상이면 강한 확신
+    //   결과는 숨은 수치 flag sn_results[과목] = {label, area, ok, n, got, max} 에 쌓인다 (엔딩 성적통지표)
+    const N_ = n => '①②③④⑤'[n];
+    const others = ans => [0, 1, 2, 3, 4].filter(i => i !== ans).sort(() => Math.random() - 0.5);
+    GAMES.gichul = async st => {
       hideBox(); setFace('');
-      const s0 = S(), ms = Math.max(9000, 15000 + s0.cond * 2000);
+      if (typeof Gichul === 'undefined') return;
+      let items = []; try { items = await Gichul.plan(st.plan); } catch (_) {}
+      const cond = S().cond || 0, tamgu = st.plan === '탐구';
+      const res = Object.assign({}, S().sn_results || {});
+      for (let k = 0; k < items.length; k++) {
+        const { q, hint } = items[k];
+        let h = null;   // v169 말(속마음) 없이 보기 번호만 번쩍인다. 약한 확신 = 정답 포함 2개, 강한 확신(컨디션 3 이상) = 정답 1개
+        if (hint) h = cond >= 3 ? { kind: 'strong', glow: [q.ans] } : { kind: 'weak', glow: [q.ans, others(q.ans)[0]].sort() };
+        const r = await gichulOne(q, { k, n: items.length, hint: h, quit: true });
+        if (r === 'quit' || skipped) break;
+        const key = tamgu || q.area === '한국사' || q.area === '한문' ? (q.sub || q.area) : q.area;
+        const e = res[key] || (res[key] = { label: key, area: q.area, ok: 0, n: 0, got: 0, max: 0 });
+        e.n++; e.max += q.pts; if (r) { e.ok++; e.got += q.pts; }
+        StoryState.apply(r ? { score: 1 } : {}, { sn_results: res }, true);
+      }
+    };
+    async function gichulOne(q, o) {
+      const ms = Gichul.timeFor(q.pts), label = q.area === '사회' ? '사회탐구' : q.area === '과학' ? '과학탐구' : q.area === '한문' ? '제2외국어/한문' : q.area;
+      const pickN = await until(finish => {
+        const p = ui('cs-gquiz gx' + (q.lead ? ' has-lead' : ''), `
+          <div class="g-paper">
+            <div class="g-subj"><b>${esc(label)}</b> 영역${q.sub ? ` · ${esc(q.sub)}` : ''} · ${q.no}번 <i class="gx-pts">${q.pts}점</i><span class="g-cnt">${o.k + 1} / ${o.n}</span></div>
+            <div class="gx-body">${q.lead ? `<div class="gx-scroll gx-lead-col"><img class="gx-lead" src="${q.lead}" alt="지문"></div>` : ''}<div class="gx-scroll gx-q-col"><img class="gx-q" src="${q.img}" alt="${esc(label)} ${q.no}번 문제"></div></div>
+            <div class="gx-opts">${[0, 1, 2, 3, 4].map(i => `<button type="button" data-i="${i}">${N_(i)}</button>`).join('')}</div>
+            <div class="g-rope"><i style="animation-duration:${ms}ms"></i></div>
+            <div class="gx-row"><span class="gx-time"></span><button type="button" class="g-guess" data-i="2">모르겠다… 3번으로 찍는다</button>${o.quit ? '<button type="button" class="g-quit" data-quit="1">그만 풀기</button>' : ''}</div>
+          </div>`);
+        const opts = [...p.querySelectorAll('.gx-opts button')];
+        if (o.hint) setTimeout(() => (o.hint.glow || []).forEach(n => opts[n].classList.add('flash', o.hint.kind)), 700);
+        // 지문 · 문제 칸: 아래로 더 있으면 「아래로 더 있어요」 (끝까지 내리면 사라짐)
+        p.querySelectorAll('.gx-scroll').forEach(sc => {
+          const more = document.createElement('div'); more.className = 'gx-more'; more.textContent = sc.classList.contains('gx-lead-col') ? '지문이 아래로 더 있어요 ↓' : '아래로 더 있어요 ↓'; sc.appendChild(more);
+          const upd = () => more.classList.toggle('done', sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 8);
+          sc.addEventListener('scroll', upd, { passive: true }); sc.querySelectorAll('img').forEach(im => im.addEventListener('load', upd)); setTimeout(upd, 60);
+        });
+        const tEl = p.querySelector('.gx-time'), t0 = Date.now();
+        const tick = () => { const left = Math.max(0, ms - (Date.now() - t0)); tEl.textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`; };
+        tick(); const tv = setInterval(tick, 1000);
+        const t = setTimeout(() => finish(-1), ms);
+        p.querySelectorAll('button').forEach(b => b.onclick = () => { if (b.dataset.quit) { finish('quit'); return; } b.classList.add('marked'); setTimeout(() => finish(+b.dataset.i), 250); });
+        keyHook = e => { const n = parseInt(e.key, 10); if (n >= 1 && n <= 5) { finish(n - 1); return true; } return false; };
+        return () => { clearTimeout(t); clearInterval(tv); p.remove(); };
+      }, 2);
+      if (pickN === 'quit') return 'quit';
+      const ok = pickN === q.ans;
+      if (!skipped) await bigText(pickN < 0 ? '시간 초과…' : ok ? '확신의 정답!' : '…찜찜하다', ok ? 'good' : 'bad', 900);
+      return ok;
+    }
+    async function quizOne(st) {
+      hideBox(); setFace('');
+      const s0 = S(), ms = st.ms || Math.max(9000, 15000 + s0.cond * 2000);
       const pickN = await until(finish => {
         const p = ui('cs-gquiz', `
           <div class="g-paper">
-            <div class="g-subj"><b>${esc(st.subj)}</b> 영역 · ${st.no}번</div>
+            <div class="g-subj"><b>${esc(st.subj)}</b> 영역 · ${st.no}번${st.head ? `<span class="g-cnt">${esc(st.head)}</span>` : ''}</div>
             <div class="g-q">${esc(st.q).replace(/\n/g, '<br>')}</div>
             ${st.passage ? `<div class="g-pass">${esc(st.passage).replace(/\n/g, '<br>')}</div>` : ''}
             <div class="g-opts">${st.opts.map((o, i) => `<button type="button" data-i="${i}"><span>${'①②③④⑤'[i]}</span>${esc(o)}</button>`).join('')}</div>
             <div class="g-rope"><i style="animation-duration:${ms}ms"></i></div>
-            <button type="button" class="g-guess" data-i="2">🎲 모르겠다… 3번으로 찍는다</button>
+            <button type="button" class="g-guess" data-i="2">모르겠다… 3번으로 찍는다</button>
+            ${st.quit ? '<button type="button" class="g-quit" data-quit="1">그만 풀기</button>' : ''}
           </div>`);
         const t = setTimeout(() => finish(-1), ms);
-        p.querySelectorAll('button').forEach(b => b.onclick = () => { b.classList.add('marked'); setTimeout(() => finish(+b.dataset.i), 250); });
+        p.querySelectorAll('button').forEach(b => b.onclick = () => { if (b.dataset.quit) { finish('quit'); return; } b.classList.add('marked'); setTimeout(() => finish(+b.dataset.i), 250); });
         keyHook = e => { const n = parseInt(e.key, 10); if (n >= 1 && n <= 5) { finish(n - 1); return true; } return false; };
         return () => { clearTimeout(t); p.remove(); };
       }, 2);
+      if (pickN === 'quit') return 'quit';
       const ok = pickN === st.ans;
-      if (!skipped) await bigText(pickN < 0 ? '시간 초과…' : ok ? '확신의 정답! (아마도)' : '…찜찜하다', ok ? 'good' : 'bad', 900);
-      StoryState.apply(ok ? { score: 1 } : {});
-    };
+      if (!skipped) await bigText(pickN < 0 ? '시간 초과…' : ok ? '확신의 정답!' : '…찜찜하다', ok ? 'good' : 'bad', 900);
+      if (!st.noStats) StoryState.apply(ok ? { score: 1 } : {});
+      return ok;
+    }
 
     // 연타: 정해진 시간 안에 화면(또는 스페이스)을 need 번
     GAMES.mash = async st => {
@@ -1162,7 +1231,7 @@
     }
     async function item(st) {
       hideBox(); setFace('');
-      const w = ui('cs-item', `<img src="${urlOf(sc, st.img)}" alt="">${st.text ? `<b>${esc(val(st.text))}</b>` : ''}`); w.style.pointerEvents = 'none';
+      const w = ui('cs-item', `<img src="${urlOf(sc, st.img)}" alt="">${st.text ? `<b>${esc(pickTxt(st.text))}</b>` : ''}`); w.style.pointerEvents = 'none';
       restart(root, 'fx-flash');
       await waitTap(st.auto || (auto ? 1600 : 0)); w.classList.add('out'); await sleep(250); w.remove();
     }
@@ -1224,7 +1293,7 @@
         }
         case 'game': if (GAMES[st.g]) await GAMES[st.g](st); return;
         case 'vs': if (!skipped) await vs(st); return;
-        case 'big': if (!skipped) { hideBox(); const b = ui('cs-bigcard', `<small>${esc(st.kicker || '')}</small><b>${esc(st.text)}</b><span>${esc(st.sub || '')}</span>`); b.style.pointerEvents = 'none'; await pause(2300); b.remove(); } return;
+        case 'big': if (!skipped) { hideBox(); const b = ui('cs-bigcard', `<small>${esc(pickTxt(st.kicker) || '')}</small><b>${esc(pickTxt(st.text))}</b><span>${esc(pickTxt(st.sub) || '')}</span>`); b.style.pointerEvents = 'none'; await pause(2300); b.remove(); } return;
         case 'dance': await dance(st); return;
         case 'ring': if (!skipped) await ring(st); return;
         case 'kakao': if (!skipped) await kakao(st); return;
@@ -1239,7 +1308,7 @@
           if (st.t === 'video') {
             const el = document.createElement('div'); el.className = 'cs-msg video';
             const img = val(st.img);
-            el.innerHTML = `${img ? `<img src="${urlOf(sc, img)}" alt="">` : ''}<span class="play">▶</span><span class="nm">[${esc(val(st.text))}]</span>`;
+            el.innerHTML = `${img ? `<img src="${urlOf(sc, img)}" alt="">` : ''}<span class="play">▶</span><span class="nm">[${esc(pickTxt(st.text))}]</span>`;
             phBody.appendChild(el); phBody.scrollTop = phBody.scrollHeight; restart(root, 'fx-buzz');
           } else addChat(st);
           await waitTap(st.auto || (auto ? 1400 : 0));
@@ -1260,7 +1329,7 @@
       fx(st.fx);
       setFace(st.face);
       showBox(st);
-      await typeText(val(st.text));
+      await typeText(pickTxt(st.text));
       await waitTap(st.auto);
     }
     async function exec(steps) {
