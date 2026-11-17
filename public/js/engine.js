@@ -851,13 +851,13 @@ const SPELL_FX = {
             cast:(s,seat,c,target,ev,src)=>{ summonDeckCopy(s, seat, ev, src); },
             spellWorth:(c,view)=> CONFIG.MAX_BOARD-view.me.board.length>=1 && view.me.deckCount>=3 ? 5 : 0,
             ruleUse:(view,acts)=> acts.length && CONFIG.MAX_BOARD-view.me.board.length>=1 && view.me.deckCount>=3 ? acts[0] : null },
-  upgradeMinion:{ text:()=>`아군 하수인을 비용이 (1) 높은 무작위 하수인으로 변신시킵니다`, needsTarget:true, rank:4,
+  upgradeMinion:{ text:()=>`아군 하수인을 비용이 (1) 높은 무작위 하수인으로 변신시킵니다. 변신한 하수인은 이번 턴에 공격할 수 없습니다`, needsTarget:true, rank:4,
             targets:(s,seat)=>minsOf(s,seat).filter(t=>{ const m=findMinion(s,seat,t.id); return m && GEN_POOL.some(x=>x.type==='minion' && x.cost===(m.cost||0)+1 && !x.generatedOnly); }),
             cast:onMinion((t,s,seat,c,target,ev,src)=>{ const P=s.seats[seat], bf=(P.mods&&P.mods.buff)||0,
               pool=GEN_POOL.filter(x=>x.type==='minion' && x.cost===(t.cost||0)+1 && !x.generatedOnly);
               if(!pool.length){ ev.push({type:'ignored', seat, src}); return; }
               const base=pool[Math.floor(nextRand(s)*pool.length)], idx=P.board.indexOf(t);
-              const nm={...structuredClone(base), id:t.id, maxHp:base.hp+bf, hp:base.hp+bf, attacked:t.attacked, summoned:t.summoned}; delete nm.effect; delete nm.inDeck; cheatMinion(P, nm);   // 새 하수인 (전투의 함성은 없음, 공격 여부는 유지)
+              const nm={...structuredClone(base), id:t.id, maxHp:base.hp+bf, hp:base.hp+bf, attacked:t.attacked, summoned:true}; delete nm.effect; delete nm.inDeck; cheatMinion(P, nm);   // 새 하수인 (전투의 함성은 없음). 진화한 하수인은 이번 턴에 공격할 수 없다 (돌진이면 가능)
               P.board[idx]=nm; ev.push({type:'transform', target, name:t.name, to:base.name, src}); }),
             worth:(view,card,t,ctx,h)=>{ if(!h.mineSide||!h.m) return -1000; const m=h.m, b=CARD_POOL.find(x=>x.name===m.name);
               const lost=b ? Math.max(0,(m.atk+m.maxHp)-(b.atk+b.hp)) : 0;                          // 강화·성장은 사라진다
@@ -2107,6 +2107,9 @@ function newGame(rng=Math.random, opts={}){
     const bossPower=bp && bp.id ? {id:String(bp.id), value:bp.value, active:!!(bp.active && BOSS_ACTIVE[bp.id]), cost:Math.max(0, Math.min(10, Math.floor(Number(bp.cost)||0))), name:String(bp.name||bp.id), icon:String(bp.icon||'✦'), text:String(bp.text||'')} : null;
     if(bossPower && !bossPower.active) mods[bossPower.id]=bossPower.value===undefined ? true : bossPower.value;
     s.seats.push({hp:maxHp, maxHp, armor:mods.startArmor||0, mana:0, maxMana:mods.startMana?Math.max(0, mods.startMana-1):0, deck, hand:[], board:[], mods, heroPower:bossPower ? null : (HERO_POWERS[hpId]?hpId:null), powerUsed:false, ...(bossPower?{bossPower}:{})});
+    { const P=s.seats[seat], ph=opts.phases && opts.phases[seat], un=opts.uniques && opts.uniques[seat];   // v166 보스 페이즈 · 고유 능력
+      if(ph && Array.isArray(ph.at) && ph.at.length) P.phases={at:ph.at.map(Number).filter(x=>x>0 && x<100).sort((x,y)=>y-x), armor:Math.max(0, Math.floor(Number(ph.armor)||0)), pool:Array.isArray(ph.pool)?ph.pool.slice():[], done:0};
+      if(un && UNIQUE_IDS.includes(un)) P.unique=un; }
   }
   for(const k of GLOBAL_MODS){ const a=s.seats[0].mods[k], b=s.seats[1].mods[k], v=(a!=null && a!==false) ? a : b;   // v162 양쪽 규칙 치트
     if(v!=null && v!==false){ s.seats[0].mods[k]=v; s.seats[1].mods[k]=v; } }
@@ -2124,10 +2127,60 @@ function newGame(rng=Math.random, opts={}){
 }
 
 // ---- 내부 변경 함수 (복제본 s 에만 사용) ----
+// ---- v166 보스 고유 능력 · 페이즈 ----
+//  고유 능력(보스 편집 화면에서 고름): nsuDeclare = N수 선언 — 덱이 비면 탈진 피해 대신, 카드를 뽑을 때마다 무작위 전설·특급 카드(일반 카드 풀)
+const UNIQUE_ABILITIES = {
+  nsuDeclare:{name:'N수 선언', icon:'📚', text:'덱이 비면 탈진 피해 대신, 카드를 뽑을 때마다 무작위 전설·특급 카드를 얻습니다'},
+};
+const UNIQUE_IDS = Object.keys(UNIQUE_ABILITIES);
+const NSU_POOL = () => GEN_POOL.filter(c=>(c.rarity==='전설' || c.rarity==='특급') && !c.generatedOnly && !c.fatigue);
+function nsuDraw(s, seat, ev){
+  const P=s.seats[seat], pool=NSU_POOL(); if(!pool.length) return;
+  const c=structuredClone(pool[Math.floor(nextRand(s)*pool.length)]); delete c.lifeCost; c.id=s.nextId++;
+  const burned=P.hand.length>=handMax(P); if(!burned) P.hand.push(c);
+  if(ev) ev.push({type:'generated', seat, name:c.name, burned, src:{seat, name:'N수 선언'}, ...(burned?{card:c}:{})});
+}
+//  페이즈: P.phases = {at:[66,33,15](체력 %), armor, pool, done}. 체력이 선 아래로 내려가면(아직 살아 있을 때) 선마다 한 번씩
+//   → 방어도 +armor, 그리고 pool 에서 무작위 한 가지를 얻는다 (영웅 능력 50% · 치트 50%, 한쪽이 비면 다른 쪽)
+//     hero  = 일반 영웅 능력으로 바뀜 · active = 보스 사용형 능력으로 바뀜 · cheat = 비용 없는 지속 능력(치트)으로 바뀜 (global 이면 양쪽 모두에게)
+//   이미 걸린 치트 · 지금 영웅 능력과 같은 것은 뽑지 않는다. 앞서 얻은 치트는 영웅 능력 자리가 바뀌어도 계속 켜져 있다
+function phaseLine(P, k){ return Math.floor((P.maxHp ?? CONFIG.HERO_HP)*P.phases.at[k]/100); }
+function pickPhaseGain(s, seat){
+  const P=s.seats[seat], md=P.mods||{}, pool=P.phases.pool||[];
+  const ok=g=> g.kind==='hero' ? (HERO_POWERS[g.id] && P.heroPower!==g.id)
+            : g.kind==='active' ? (BOSS_ACTIVE[g.id] && !(P.bossPower && P.bossPower.active && P.bossPower.id===g.id))
+            : g.kind==='cheat' ? (md[g.id]==null || md[g.id]===false) : false;
+  const powers=pool.filter(g=>g.kind!=='cheat' && ok(g)), cheats=pool.filter(g=>g.kind==='cheat' && ok(g));
+  const side=!powers.length ? cheats : !cheats.length ? powers : (nextRand(s)<0.5 ? powers : cheats);
+  return side.length ? side[Math.floor(nextRand(s)*side.length)] : null;
+}
+function applyPhaseGain(s, seat, g){
+  const P=s.seats[seat];
+  if(g.kind==='hero'){ P.heroPower=g.id; delete P.bossPower; P.powerUsed=false; return; }
+  const bp={id:String(g.id), value:g.value, active:g.kind==='active', cost:g.kind==='active' ? Math.max(0, Math.min(10, Math.floor(Number(g.cost)||0))) : 0, name:String(g.name||g.id), icon:String(g.icon||'✦'), text:String(g.text||'')};
+  P.bossPower=bp; P.heroPower=null; P.powerUsed=false;
+  if(g.kind==='cheat'){ const v=g.value===undefined ? true : g.value;
+    P.mods=P.mods||{}; P.mods[g.id]=v;
+    if(g.global) for(const Q of s.seats){ Q.mods=Q.mods||{}; Q.mods[g.id]=v; } }
+}
+function checkPhases(s, ev){
+  if(s.over) return;
+  for(let seat=0; seat<2; seat++){
+    const P=s.seats[seat]; if(!P.phases || P.hp<=0) continue;
+    while(P.phases.done<P.phases.at.length && P.hp<=phaseLine(P, P.phases.done)){
+      const idx=P.phases.done++, armor=P.phases.armor;
+      if(armor){ P.armor=(P.armor||0)+armor; }
+      const g=pickPhaseGain(s, seat);
+      if(g){ applyPhaseGain(s, seat, g); (P.phaseGains=P.phaseGains||[]).push({kind:g.kind, id:g.id, name:g.name, icon:g.icon, text:g.text, global:!!g.global}); }
+      ev.push({type:'bossPhase', seat, idx, armor, gain:g ? {kind:g.kind, id:g.id, name:g.name, icon:g.icon, text:g.text, cost:g.kind==='hero'?HP_COST:(g.cost||0), global:!!g.global} : null});
+    }
+  }
+}
 function drawCards(s, seat, n, ev, src){
   const P=s.seats[seat]; let drawn=0, burned=0; const bcards=[], minis=[];
   for(let i=0;i<n;i++){
     if(!P.deck.length){      // 탈진: 덱이 빈 채로 카드를 뽑아야 할 때마다 영웅이 피해를 입는다. 1, 2, 3, ... 으로 계속 늘어난다 (좌석별)
+      if(P.unique==='nsuDeclare'){ nsuDraw(s, seat, ev); continue; }   // v166 고유 능력 N수 선언: 탈진 대신 무작위 전설·특급 카드
       if(P.mods && P.mods.noFatigue) continue;   // v98 치트 피로 면역
       P.fatigue=(P.fatigue||0)+1;
       const evs=ev||[];
@@ -2611,7 +2664,7 @@ function sweepDead(s, ev){
       for(const sd of [0,1]){ const Q=s.seats[sd]; if(!(Q.mods && Q.mods.recycle2)) continue;   // v162 재사용하기·상급: 어느 쪽 하수인이든 죽으면 방어도, 죽을 때마다 +1
         const n=Q.recycleN || (Number(Q.mods.recycle2)||1); Q.recycleN=n+1; Q.armor=(Q.armor||0)+n; ev.push({type:'armor', seat:sd, amount:n, src:{seat:sd, name:'재사용하기'}}); }
       runDeath(s, seat, m, ev, sm);   // v96: 죽음의 메아리 (소리치는 요들러도 이 함수를 다시 부른다)
-      if(m.revive){ m.revive=false; m.hp=m.reviveFull ? m.maxHp : 1; m.shield=false; delete m.shieldHits; ev.push({type:'revive', seat, id:m.id, name:m.name}); return true; }   // 환생: 1회, 체력 1로 (돌진은 유지)
+      if(m.revive){ m.revive=false; m.hp=m.reviveFull ? m.maxHp : 1; m.shield=false; delete m.shieldHits; m.attacked=false; m.wfUsed=false; m.summoned=true; ev.push({type:'revive', seat, id:m.id, name:m.name}); return true; }   // 환생: 1회, 체력 1로. 새로 소환된 것처럼 — 돌진은 바로 다시 공격, 속공은 하수인만, 나머지는 다음 턴부터
       if(CARD_POOL.some(c=>c.type==='minion' && c.name===m.name)) (P.grave=P.grave||[]).push({name:m.name, taunt:!!m.taunt});   // v63 물 공급지용 무덤
       if(P.mods && P.mods.reinforce && P.reinfTurn!==s.turnNo && P.hand.length<handMax(P)){   // v98 치트 후속 지원: 내 하수인이 죽으면 그 카드의 복사본 1장을 손패로 (턴당 1회)
         const base=CARD_POOL.find(x=>x.type==='minion' && x.name===m.name);
@@ -3584,6 +3637,7 @@ function apply(state, a, actor){
   sweepDead(s, ev);
   checkGlide(s, ev);
   checkEnd(s, ev);
+  checkPhases(s, ev);                              // v166 보스 페이즈 (체력 선을 넘으면 방어도 + 새 능력)
   refreshAura(s, ev); cheatAuras(s);   // v162
   guardStatuses(state, s, actor, a, ev);           // v118 출석 안 부르는 천사 교수님 · 에어팟: 적이 건 상태이상 되돌리기
   if(s.endNow!==undefined){ const who=s.endNow; delete s.endNow;                     // v117 21학점의 무리수: 내 턴 즉시 종료
@@ -4091,5 +4145,5 @@ function selfPlay(games=1000, botA=BotPlayers.rule, botB=BotPlayers.random, maxT
 if (typeof module !== 'undefined') {
   module.exports = {VERSION, CONFIG, CARD_POOL, GEN_POOL, BotPlayers, newGame, apply, viewFor, selfPlay, mulliganHand,
                     buildRandomDeck, validateDeckList, defaultDeckList, shuffle, runeOf, RUNE_NAME, RUNE_ORDER, EFFECT_TEXT, effectText, YNU2_GADGETS, ABS_GRADE, DRINKS,
-                    HERO_POWERS, HERO_POWER_IDS, HP_COST, randomHeroPower, heroPowerInfo, heroPowerChoice};
+                    HERO_POWERS, HERO_POWER_IDS, HP_COST, randomHeroPower, heroPowerInfo, heroPowerChoice, UNIQUE_ABILITIES, UNIQUE_IDS, NSU_POOL, checkPhases, BOSS_ACTIVE};
 }

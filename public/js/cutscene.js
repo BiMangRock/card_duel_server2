@@ -104,15 +104,26 @@
           { label: '귀를 막고 다음 과목만 생각한다', then: [{ t: 'mono', face: 'me_sn_calm', text: '지나간 건 지나간 거다. 다음.' }] },
           { label: '창밖을 보며 심호흡', sub: '💪 +1', set: { cond: 1 }, then: [{ t: 'mono', face: 'me_sn_relief', text: '후— 하늘이 회색이다. …괜찮아, 아직 반도 안 왔다.' }] },
         ] },
+        { t: 'calc', fn: s => ({ sn: s.score + (s.cond >= 2 ? 1 : 0) >= 4 ? 'S' : s.score + (s.cond >= 2 ? 1 : 0) >= 2 ? 'A' : 'B' }) },
+      ],
+    },
+    // ---------------- v166 수능 보스 페이즈 컷신 (보스 체력 66% · 33% · 15%) ----------------
+    //  같은 입학(모험) 안에서 처음 넘을 때만 전체 컷신, 다시 도전하면 짧은 교시 배너만 (suneung.js)
+    suneung_math: {
+      dir: 'ynu1/', title: '2교시 · 수학',
+      steps: [
         { t: 'scene', kicker: '수능 당일', title: '2교시 · 수학 영역', time: '오전 10:30', bg: 'bg_exam_math' },
         { t: 'desc', text: '머리에서 김이 난다. 앞자리 수험생이 머리를 쥐어뜯고 있다.' },
         { t: 'game', g: 'quiz', subj: '수학', no: 21,
           q: '(전날 잔 시간) × (유튜브를 본 편수) = 12 이다.\n유튜브를 4편 봤다면, 전날 잔 시간은?',
           opts: ['2시간', '4시간', '6시간', '3시간', '12시간'], ans: 3 },
-        { t: 'scene', kicker: '수능 당일', title: '점심시간', time: '낮 12:10', bg: 'bg_lunch' },
-        { t: 'desc', text: '엄마가 싸 준 도시락. 따뜻한 국에서 김이 오른다. 뚜껑 안쪽에 쪽지가 붙어 있다.' },
-        { t: 'mono', face: 'me_sn_calm', text: '「아들, 원래 하던 대로. 사랑해.」 …목이 메어서 밥이 잘 안 넘어간다.' },
-        { if: s => s.savedChoco, t: 'mono', face: 'me_sn_relief', text: '가방 안에 아껴 둔 두바이 초콜릿 한 조각. …지금이다.', set: { cond: 1 } },
+        { t: 'mono', face: 'me_sn_calm', text: '…시험지가 더 두꺼워진 것 같다. 아니, 시험이 나를 향해 덤벼 온다.' },
+        { t: 'calc', fn: s => ({ sn: s.score + (s.cond >= 2 ? 1 : 0) >= 4 ? 'S' : s.score + (s.cond >= 2 ? 1 : 0) >= 2 ? 'A' : 'B' }) },
+      ],
+    },
+    suneung_english: {
+      dir: 'ynu1/', title: '3교시 · 영어',
+      steps: [
         { t: 'scene', kicker: '수능 당일', title: '3교시 · 영어 영역', time: '오후 1:10', bg: 'bg_exam_english' },
         { t: 'desc', text: '듣기 평가가 시작된다. 스피커에서 지지직— 소리가 난다. 교실 전체가 숨을 죽인다.' },
         { t: 'game', g: 'quiz', subj: '영어', no: 29,
@@ -129,9 +140,21 @@
           ] },
         ] },
         { t: 'calc', fn: s => ({ sn: s.score + (s.cond >= 2 ? 1 : 0) >= 4 ? 'S' : s.score + (s.cond >= 2 ? 1 : 0) >= 2 ? 'A' : 'B' }) },
-        { t: 'desc', bg: 'bg_exam_end', text: '해 질 녘. 교문 밖으로 수험생들이 쏟아져 나온다. 꽃다발, 따뜻한 차, 끌어안는 사람들.' },
-        { t: 'mono', face: 'me_sn_relief', text: '끝났다. …정말, 끝났다.' },
-        { t: 'big', kicker: '딩- 동- 댕- 동-', text: '수능 종료', sub: '결과는… 한 달 뒤에 나온다' },
+      ],
+    },
+    suneung_lang2: {
+      dir: 'ynu1/', title: '5교시 · 제2외국어',
+      steps: [
+        { t: 'scene', kicker: '수능 당일', title: '5교시 · 제2외국어/한문 영역', time: '오후 5:05', bg: '/images/suneung/bg_dusk' },
+        { t: 'desc', text: '해가 기울었다. 교실이 반쯤 비었다. 제2외국어를 신청한 사람만 남았다.' },
+        { t: 'mono', face: 'me_sn_calm', text: '아랍어… 찍기만 해도 평균은 나온다던 그 과목.' },
+        { t: 'desc', text: '그런데 칠판 앞에 짙은 안개가 피어오른다. 시험지 위의 글자들이 꿈틀거리며 기어 나온다!', fx: ['shake', 'red'] },
+        { t: 'mono', face: 'me_sn_panic', text: '…5교시의 악령이다.' },
+        { t: 'game', g: 'quiz', subj: '아랍어', no: 1,
+          q: "다음 중 아랍어 인사말 '안녕하세요(평화가 함께하길)'로 가장 적절한 것은?",
+          opts: ['앗살라무 알라이쿰', '곤니치와', '니하오', '봉주르', '구텐 탁'], ans: 0 },
+        { t: 'mono', face: 'me_sn_relief', text: '마지막 교시다. 여기만 버티면… 진짜 끝난다.' },
+        { t: 'calc', fn: s => ({ sn: s.score + (s.cond >= 2 ? 1 : 0) >= 4 ? 'S' : s.score + (s.cond >= 2 ? 1 : 0) >= 2 ? 'A' : 'B' }) },
       ],
     },
 

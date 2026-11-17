@@ -2005,3 +2005,24 @@ body.hand-open.hand-hover .hand::before{display:none;}
 }
 /* v164 특성 설명: 한국어를 글자 중간이 아니라 단어(어절) 단위로 줄바꿈 */
 .trait-card, .brief-box, .roll-box, #overlayReward .bt-tile, #ruleBand, .codex-link, .opp-traits{word-break:keep-all; overflow-wrap:anywhere;}
+/* v165 카드 그림 크게 (하스스톤 비율): 그림 칸이 카드 높이의 약 63%, 가운데 정렬. 하수인은 타원, 주문은 위가 둥근 사각형.
+   카드 높이 128 → 146px (폭 92px 그대로). 이름 띠는 그림 아래 끝에 걸치고(이름 글씨 크기는 그대로), 설명 글씨는 25% 작게 — 넘치면 자동으로 더 줄어듦.
+   마우스를 올렸을 때 뜨는 큰 카드도 같은 카드를 3.37배로 키운 것이라 어디서 보든 모양이 같다. 전장(.zone) 하수인 모양은 그대로 */
+:not(.zone) > .card.hs{height:146px;}
+#discoverModal .card.hs, #mulliganModal .card.hs, #spellCast .card.hs, #burnCast .card.hs, .deck-grid .card.hs, .pk-front .card.hs{min-height:146px;}
+:not(.zone) > .card.hs .card-art, :not(.zone) > .card.hs:not(:has(.card-art))::before{left:50%; right:auto; width:77px; margin-left:-38.5px; top:5px; height:92px; border-radius:50%;}
+:not(.zone) > .card.hs.spell .card-art{left:50%; right:auto; width:80px; margin-left:-40px; border-radius:7px 7px 14px 14px;}
+:not(.zone) > .card.hs .card-art img{object-position:center 30%;}
+:not(.zone) > .card.hs .cname{top:91px;}
+:not(.zone) > .card.hs .rgem{top:103px;}
+:not(.zone) > .card.hs .effect{top:108px; bottom:10px; left:5px; right:5px; padding:3px 3px 1px; font-size:.38rem; line-height:1.12;}
+:not(.zone) > .card.hs.eff-2 .effect{font-size:.34rem;}
+:not(.zone) > .card.hs.eff-3 .effect{font-size:.31rem;}
+:not(.zone) > .card.hs.eff-4 .effect{font-size:.28rem;}
+:not(.zone) > .card.hs.eff-5 .effect{font-size:.26rem; padding-top:3px;}
+:not(.zone) > .card.hs .effect .tag{font-size:.92em; margin:0 1px 1px;}
+#cardPreview .card.hs{width:92px; height:146px; min-height:0; transform:scale(3.3); transition:none;}
+#cardPreview .card.hs .card-art{height:92px; flex:none;}
+#cardPreview .card.hs .cname{font-size:.6rem;}
+#cardPreview .card.hs .effect{display:flex; overflow:hidden; line-height:1.12; font-size:.38rem;}
+#cardPreview .card.hs.eff-2 .effect{font-size:.34rem;} #cardPreview .card.hs.eff-3 .effect{font-size:.31rem;} #cardPreview .card.hs.eff-4 .effect{font-size:.28rem;} #cardPreview .card.hs.eff-5 .effect{font-size:.26rem;}

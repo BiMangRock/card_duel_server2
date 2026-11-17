@@ -1,6 +1,12 @@
 // cardart.js (v140) — 카드 이름 → 그림 파일. 메인 게임(ui.js)과 튜토리얼이 같이 쓴다. (원래 ui.js 안에 있던 표)
 const CARD_ART = {
   // v146 엔진이 만드는 토큰·생성 카드 (cards.js 에 없는 이름이라 여기서 이름으로 연결)
+  // 그림이 없던 토큰: 비슷한 기존 그림을 빌려 쓴다 (전용 그림이 생기면 여기만 바꾸면 됨)
+  "오크": "images/art_drill_instructor.jpg",          // 어색해진 3대3 미팅 (훈련 교관 그림)
+  "블러드 엘프": "images/art113_018.png",            // 어색해진 3대3 미팅 (주문사수 그림)
+  "신병": "images/art_apprentice_swordsman.jpg",     // 영웅 능력 '신병 소집' (견습 검사 그림)
+  "돌 토템": "images/card_69.png",                    // 영웅 능력 '토템 소환' (속임수 토템 그림)
+  "게임 불감증": "images/ynu/ynu_r_pcbang.jpg",      // 지독한 겜태기 (PC방 그림)
   "동전": "images/token_coin.jpg",
   "당근마켓 정산금": "images/ynu/ynu_tok_carrot_coin.jpg",
   "철학 지문": "images/ynu/ynu_tok_text_philosophy.jpg",

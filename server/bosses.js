@@ -8,7 +8,7 @@ const { requireAuth, requireAdmin } = require('./auth');
 const JS = path.join(__dirname, '..', 'public', 'js');
 const { validateDeckList, HERO_POWERS: E_HP } = require(path.join(JS, 'engine.js'));
 const { BOSS_DEFAULT, advCleanFields, advCleanIcon, advBossIcon } = require(path.join(JS, 'adventure.js'));
-const { cleanCheatVals, cleanBossPower } = require(path.join(JS, 'cheats.js'));   // v162 치트 수치 · 보스 영웅 능력(치트)
+const { cleanCheatVals, cleanBossPower, cleanUnique } = require(path.join(JS, 'cheats.js'));   // v162 치트 수치 · 보스 영웅 능력(치트)
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
 const MAX_BOSSES = 60;
@@ -39,6 +39,7 @@ function cleanBoss(b, i) {
     cheatVals: cleanCheatVals(b.cheatVals),            // v162 치트마다 정한 수치
     heroPower: E_HP[b.heroPower] ? b.heroPower : '',   // v131 영웅 능력 ('' = 판마다 무작위)
     ...(cleanBossPower(b) || {}),                      // v162 'cheat:<id>' 영웅 능력 + powerMode · powerCost
+    ...cleanUnique(b),                                 // v166 고유 능력 (N수 선언 등)
     deck: b.deck.map(String),
     ...advCleanFields(b),          // v117: chapter · stage · rewardCards
   };

@@ -8,11 +8,30 @@ const Sound = (() => {
   const BASE = '/sounds/';
   // 효과음: 이름 → [파일 개수, 기본 크기]
   const SFX = {
-    draw: [8, .55], place: [4, .8], thud: [5, .5], hit: [5, .7], hit_hero: [5, .85], death: [5, .45],
-    shield_break: [5, .6], shield: [5, .45], freeze: [5, .55], armor: [5, .55], heal: [6, .45], buff: [5, .4],
-    hero_power: [3, .6], turn: [3, .55], error: [4, .45], click: [5, .3], shuffle: [1, .6], fan: [2, .6],
-    discover: [3, .6], fatigue: [2, .6], trait: [2, .35], gold: [2, .6], bet: [6, .6], pack: [2, .7],
-    spell: [3, .55], win: [1, .8], lose: [1, .8],
+    draw: [8, .5], place: [4, .7], thud: [5, .6], hit: [5, .95], hit_hero: [5, 1], death: [5, .45],
+    shield_break: [5, .7], shield: [5, .5], freeze: [5, .6], armor: [5, .55], heal: [6, .45], buff: [5, .4],
+    hero_power: [3, .55], turn: [3, .5], error: [4, .4], click: [5, .22], shuffle: [1, .55], fan: [2, .55],
+    discover: [3, .55], fatigue: [2, .55], trait: [3, .4], heal2: [2, .55], gold: [2, .55], bet: [6, .55], pack: [2, .65],
+    spell: [3, .4], win: [1, .8], lose: [1, .8],
+    // 타격감: 휘두르기 · 베기 · 영웅 신음 · 부서지며 죽기
+    swing: [1, .5], slash: [1, .6], hurt: [2, .45], crumble: [2, .7], wood: [5, .6], slime: [2, .6],
+    // 속성별 주문 명중 (같은 속성 안에서 무작위)
+    sp_fire: [3, .75], sp_frost: [3, .75], sp_lightning: [1, .75], sp_arcane: [2, .7], sp_holy: [3, .75],
+    sp_shadow: [5, .75], sp_nature: [3, .75], sp_poison: [4, .75],
+  };
+  // 주문 명중: 속성(ui.js 의 fxKindOf 와 같은 이름) → 겹쳐 낼 소리들 [이름, {크기, 음높이}]
+  const SPELL_HIT = {
+    fire: [['sp_fire']],
+    frost: [['sp_frost']],
+    lightning: [['sp_lightning']],
+    arcane: [['sp_arcane']],
+    holy: [['sp_holy']],
+    shadow: [['sp_shadow']],
+    fel: [['sp_shadow'], ['sp_fire', { rate: .85, vol: .45 }]],          // 지옥 = 어둠 + 낮은 불길
+    blood: [['sp_poison', { rate: .85 }], ['sp_shadow', { vol: .4 }]],   // 혈기 = 끈적한 소리 + 어둠
+    poison: [['sp_poison']],
+    nature: [['sp_nature'], ['wood', { vol: .4 }]],
+    spark: [['sp_arcane', { vol: .8 }]],
   };
   const BGM = { menu: 'menu', battle: 'battle', boss: 'boss', story: 'story' };
   // 컷신 배경 이름 → 분위기음 (없으면 음악만)
@@ -149,12 +168,19 @@ const Sound = (() => {
     const el = document.querySelector('.cs-bg.show, .as-bg.show'); if (!el) return null;
     const m = /([^\/"]+?)(?:\.\w+)?"?\)?$/.exec(el.style.backgroundImage || ''); return m ? m[1] : '';
   }
-  function scene() {
+  function scene() {   // v166 수능 보스(suneung.js)가 정한 음악이 있으면 그것을
+    const base = scene0(), inStory = !!document.querySelector('.cs-bg, .as-bg');
+    let ov = null; try { if (typeof window.SuneungBgm === 'function') ov = window.SuneungBgm(inStory, inStory ? storyBgName() : null); } catch (_) {}
+    if (ov && ov.music !== undefined) return { music: ov.music, amb: ov.amb !== undefined ? ov.amb : base.amb };
+    return base;
+  }
+  function scene0() {
     const inStory = !!document.querySelector('.cs-bg, .as-bg');
     if (inStory) {
       const bg = storyBgName() || '';
       const hit = AMB_OF.find(([re]) => re.test(bg));
-      return { music: BGM.story, amb: hit ? hit[1] : null };
+      const amb = hit ? hit[1] : null;
+      return { music: amb === 'crowd' ? BGM.battle : BGM.story, amb };   // 술자리·카페 장면은 주점 음악 + 웅성거림
     }
     const menu = document.getElementById('menu');
     if (menu && !menu.classList.contains('hidden')) return { music: BGM.menu, amb: null };
@@ -181,6 +207,14 @@ const Sound = (() => {
   setInterval(tick, 700);
 
   // ---------- 게임 연출에 소리 붙이기 (원래 함수는 그대로 실행) ----------
+  function attackerAtk(ev) {   // 공격하는 하수인(또는 영웅)의 공격력
+    try {
+      const S = Host.state.seats[ev.seat];
+      const m = S.board.find(x => x.id === ev.attackerId);
+      if (m) return m.atk || 0;
+      return (S.hero && (S.hero.atk || 0)) + ((S.weapon && S.weapon.atk) || 0);
+    } catch (_) { return 2; }
+  }
   const MY_SEAT = () => (typeof MY !== 'undefined' ? MY : 0);
   const watching = () => { try { return !!(game && (game.spectate || game.replay)); } catch (_) { return false; } };
   let overSeen = null;
@@ -188,13 +222,8 @@ const Sound = (() => {
     if (!ev) return;
     switch (ev.type) {
       case 'summon': play('place'); play('thud', { vol: .8, delay: 30 }); break;
-      case 'damage':
-        if (ev.cause === 'combat' || ev.immune) break;                       // 공격 피해는 부딪히는 순간에 따로
-        if (ev.absorbed) { play('shield_break'); break; }
-        if (!(ev.amount > 0)) break;
-        play(ev.target && ev.target.kind === 'hero' ? 'hit_hero' : 'hit', { vol: ev.amount >= 5 ? 1 : .8, gap: 70 }); break;
-      case 'death': play('death', { gap: 90 }); break;
-      case 'heal': play('heal', { gap: 120 }); break;
+      case 'death': play('crumble', { gap: 90 }); play('thud', { vol: .5, rate: .8, gap: 90 }); break;
+      case 'heal': play('heal2', { gap: 150 }); break;
       case 'buff': case 'handBuff': case 'heroAtk': case 'statSet': case 'deckBuff': play('buff', { gap: 120 }); break;
       case 'shieldGain': play('shield', { gap: 120 }); break;
       case 'freeze': play('freeze', { gap: 120 }); break;
@@ -224,9 +253,37 @@ const Sound = (() => {
   }
   function hook() {
     wrap('showEffect', null, ev => onEvent(ev));
-    wrap('lungeApproach', (_, ev) => {   // 공격: 부딪히는 순간
-      const hero = ev && ev.target && ev.target.kind === 'hero';
-      play(hero ? 'hit_hero' : 'hit', { vol: 1 });
+    // 공격: 달려갈 때 휙 → 부딪히는 순간 퍽(펀치 + 쿵 + 베기를 겹쳐서). 공격력이 클수록 무겁게
+    wrap('lungeApproach', (_, ev) => {
+      if (!ev) return;
+      const hero = ev.target && ev.target.kind === 'hero', atk = attackerAtk(ev);
+      const heavy = atk >= 5, mid = atk >= 3;
+      play(hero ? 'hit_hero' : 'hit', { vol: 1, gap: 0 });
+      play('thud', { vol: heavy ? 1 : .75, rate: heavy ? .75 : .95, gap: 0 });
+      if (mid || hero) play('slash', { vol: heavy ? .8 : .55, gap: 0 });
+      if (heavy) play('fatigue', { vol: .35, rate: 1.2, gap: 0 });
+      if (hero && mid) play('hurt', { vol: .7, gap: 600, delay: 60 });
+    }, ev => { if (ev) play('swing', { gap: 0 }); });
+    // 그 밖의 피해: 주문·투사체는 속성별 명중 소리, 나머지는 타격음 (fxPlay 는 투사체가 닿는 순간 불린다)
+    wrap('fxPlay', null, (ev, ctx, shot) => {
+      if (!ev || ev.type !== 'damage' || ev.cause === 'combat' || ev.immune) return;
+      if (ev.absorbed) { play('shield_break'); return; }
+      if (!(ev.amount > 0)) return;
+      const hero = ev.target && ev.target.kind === 'hero';
+      let kind = null;
+      try {
+        if (shot && shot.kind) kind = shot.kind;
+        else if (typeof fxIsSpellDmg === 'function' && fxIsSpellDmg(ev, ctx)) kind = fxKindOf(ctx.name, ctx.school);
+      } catch (_) {}
+      if (kind) {
+        const aoe = ctx && ctx.aoe, layers = SPELL_HIT[kind] || SPELL_HIT.spark;
+        for (const [nm, o] of layers) play(nm, Object.assign({ gap: 110 }, o, { vol: (o && o.vol || 1) * (aoe ? .8 : 1) }));
+        play(hero ? 'hit_hero' : 'hit', { vol: .5, gap: 110 });
+      } else {
+        play(hero ? 'hit_hero' : 'hit', { vol: ev.amount >= 5 ? 1 : .8, gap: 70 });
+        play('thud', { vol: .5, gap: 70 });
+      }
+      if (hero && ev.amount >= 3) play('hurt', { vol: .6, gap: 600, delay: 60 });
     });
     wrap('showSpellCast', null, ev => { if (ev && ev.card && ev.card.fatigue) play('fatigue'); else play('spell'); });
     wrap('flyDraw', null, (seat, n) => { for (let i = 0; i < Math.min(n || 1, 4); i++) play('draw', { delay: i * 110, gap: 0 }); });

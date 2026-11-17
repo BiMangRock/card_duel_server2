@@ -6,9 +6,27 @@
   Interface Sounds  : heal, buff, error, click
   RPG Audio         : hero_power, discover, gold
   Sci-fi Sounds     : death, shield, fatigue, trait
+  Impact Sounds     : wood (자연 속성 명중)          Sci-fi Sounds : slime (독·혈기 명중)
+타격감·속성 명중 (Pixabay)
+  swing   : freesound_community "Whoosh" (공격하러 달려갈 때)
+  slash   : daviddumaisaudio "Sword Slash and Swing" (부딪힐 때 겹침)
+  hurt    : cookiecheese "Hurt Sound 2", freesound_community "Grunt 2" (영웅이 크게 맞을 때)
+  crumble : freesound_community "Rocks" (하수인 죽음)
+속성별 주문 명중 sp_* (Pixabay, 같은 속성 안에서 무작위로 나옴)
+  sp_fire   : dragon-studio "Elemental Spell Impact Flame", "Fire Spell Impact", vrymaa "Magic Blast" 셋째 토막
+  sp_frost  : dragon-studio "Frost Spell Impact", "Ice Spell Impact", "Elemental Spell Impact Water"
+  sp_lightning: freesound_community "Lightning Strike" 첫 2초
+  sp_arcane : universfield "Magic Spell", rescopicsound "Elemental Magic Spell Impact Outgoing"
+  sp_holy   : coghezzi "Holy Healing Spell" 1·2, dragon-studio "Holy Spell Cast"
+  sp_shadow : yodguard "Dark Magic" 2·3·4·6, vadim_makes_sound "Dark Magic Curse Light Impact 2"
+  sp_nature : dragon-studio "Elemental Spell Impact Earth", "Elemental Spell Impact Wind", "Air Spell"
+  sp_poison : universfield "Slime Impact", dragon-studio "Gooey Slime Monster"(두 토막), snake(뱀 쉿 소리)
+  (지옥 = 암흑 + 낮은 화염, 혈기 = 슬라임 + 암흑 을 겹쳐 씀)
+  heal2     : coghezzi "Holy Healing Spell" 1·2 (회복)
+  trait_3   : yodguard "Dark Spell Chant 3" (상대 특성·치트 발동)
 효과음 spell_1~3  — Freesound, vrymaa "Magic Blast or Whoosh" (#802725) 를 세 토막으로 자름. 라이선스는 Freesound 페이지에서 확인
 승리 win_1        — Pixabay, emand_edroff "Victory Bell Success Fanfare"
-패배 lose_1       — Pixabay, freesound_community "Game Over Arcade"
+패배 lose_1       — Pixabay, universfield "Dramatic Sorrow Piano" 앞 8초
 
 배경음악 bgm/ — Pixabay (Pixabay Content License)
   menu   : harumachimusic "Stone Wall — Nostalgic Medieval Harp and Guitar"
@@ -22,3 +40,11 @@
   wind    : traian1984 "Ambience Wind Blowing Through Trees 01"
   dungeon : freesound_community "Dungeon Air"
   mine    : joelfazhari "Old Mine Ambience"
+
+v166 수능 보스 (시연용 · 저작권이 있는 곡이라 공개 배포 전에는 바꿔 주세요)
+  bgm/papulatus · horntail · sleepywood · friendstory · serenity — 메이플스토리 BGM (넥슨)
+  ending/cheonggaeguri — NEON 「청개구리」 (2013 OST). 3초 지점부터 52초로 자름
+  ending/bell2 · bell1 — 「수능 끝나고 종소리」 녹음에서 본령 두 소절 · 한 소절만 잘라냄
+그림 · 글꼴 (v166)
+  images/suneung/fx — Kenney "Particle Pack" (CC0, www.kenney.nl)
+  public/fonts/myeongjo — 나눔명조 (SIL Open Font License 1.1, @fontsource/nanum-myeongjo)

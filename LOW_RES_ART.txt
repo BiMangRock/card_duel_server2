@@ -1,0 +1,127 @@
+﻿그림이 작은 하수인 (가로·세로 200px 미만) — 이 파일들을 480x320 정도로 다시 만들어 같은 이름으로 덮어쓰면 전장·카드 그림이 선명해집니다.
+모두 123개 (기본 하수인 그림 160개 중). 참고: 최근 그림(art_*.jpg)은 480x320 입니다.
+
+카드 이름	파일	지금 크기
+들쥐	images/card_i2_101.png	101x110
+책벌레	images/card_i2_100.png	101x110
+은빛 신병	images/card_i2_99.png	110x116
+방패병	images/card_104.png	101x110
+매의 눈 궁수	images/card_i3_4.png	101x107
+떠돌이 치유사	images/card_i3_2.png	110x118
+대지 정령	images/card_i3_1.png	102x110
+날쌘 척후병	images/card_i2_103.png	102x108
+대마법학자 롬메스	images/card_0.png	169x185
+성소의 수습사제	images/card_i2_105.png	101x107
+분열하는 점액	images/card_i2_98.png	102x110
+요그사론	images/card_i3_0.png	101x112
+교도소 마나스톰	images/card_67.png	102x112
+대마법사 안토니다스	images/card_68.png	101x112
+속임수 토템	images/card_69.png	104x110
+대마법사 바르고스	images/card_75.png	101x112
+로데브	images/card_76.png	110x121
+노움 쩝쩝이	images/card_80.png	102x107
+혈기술사	images/card_85.png	102x107
+마우와 파우	images/card_86.png	102x112
+그훈	images/card_87.png	102x112
+분노의 여사제	images/card_88.png	101x110
+신화의 공포	images/card_89.png	101x108
+타락심장 심문관	images/card_90_0.png	101x110
+고대의 공허 사냥개	images/card_90_1.png	101x107
+원한 맺힌 소환사	images/card_77.png	101x107
+가젯잔 경매인	images/card_78.png	101x110
+비전 거인	images/card_79.png	110x116
+별 관측자	images/card_91.png	101x110
+지저왕	images/card_92.png	101x107
+지진발	images/card_93.png	101x107
+하드로녹스	images/card_94.png	101x112
+아비아나	images/card_95.png	101x112
+티란투스	images/card_96.png	101x112
+잊힌 왕 쿤	images/card_97.png	124x111
+카인 선퓨리	images/art113_004.png	89x93
+강철나무 골렘	images/art113_005.png	89x89
+여름의 평화수호자	images/art113_006.png	88x89
+늘푸른 수사슴	images/art113_007.png	89x89
+재생의 드루이드	images/art113_008.png	88x89
+토이란투스	images/art113_009.png	89x93
+날개 달린 수호자	images/art113_010.png	89x89
+사스퀙	images/art113_014.png	90x93
+골드린	images/art113_015L.png	89x93
+왕 크루쉬	images/art113_015R.png	98x100
+밴조사우루스	images/art113_016L.png	89x89
+에메리스	images/art113_016R.png	108x93
+불꽃꼬리 전사	images/art113_017.png	88x89
+주문사수	images/art113_018.png	89x89
+깊은물 기원사	images/art113_019.png	89x89
+바르덴 던그래스프	images/art113_020.png	89x93
+요그사론의 종복	images/art113_021.png	89x89
+진눈깨비 스케이터	images/art113_022.png	89x89
+시프	images/art113_024.png	89x93
+회색 현자 앵무새	images/art113_025.png	89x89
+용소환사 알라나	images/art113_027.png	89x93
+화염용	images/art113_028.png	86x88
+불굴의 토레스	images/art113_029.png	90x93
+태양지기 타림	images/art113_030.png	99x98
+성기사 에드릭	images/art113_031.png	90x93
+안녕극단	images/art113_032.png	89x89
+정신의 창조술사	images/art113_033.png	104x96
+세데크 장막직공	images/art113_034.png	88x88
+대주교 베네딕투스	images/art113_039.png	89x93
+그훈의 피	images/art113_041.png	95x96
+흑요석 석상	images/art113_042.png	102x91
+무덤괴수	images/art113_044.png	95x96
+얼굴 수집가	images/art113_047.png	89x93
+소냐 워터댄서	images/art113_048.png	89x93
+엘프 음악가	images/art113_049.png	88x89
+무역왕 갤리윅스	images/art113_050.png	100x99
+겁에 질린 조합원	images/art113_054.png	88x89
+대장군 분	images/art113_056.png	108x103
+다리우스 크롤리	images/art113_059.png	89x93
+대지조각가 이프	images/art113_060.png	89x93
+토르톨라	images/art113_061.png	98x97
+문제아	images/art113_062.png	92x91
+두억시니	images/art113_063.png	89x93
+걸어 다니는 샘	images/art113_065.png	87x89
+눈사태 수호자	images/art113_066.png	87x89
+깊은무쇠 트로그	images/art113_069.png	88x89
+교단 수련사	images/art113_070.png	97x91
+보석 박힌 딱정벌레	images/art113_071.png	86x89
+비겁한 밀고자	images/art113_072.png	89x89
+안녕로봇	images/art113_073.png	95x95
+데스윙	images/art113_074.png	98x98
+광염의 피락	images/art113_075.png	101x95
+해방된 분노 이샤라즈	images/art113_076.png	91x93
+허기진 포식자	images/art113_077.png	88x89
+부상당한 크발디르	images/art113_078.png	86x89
+부정한 알	images/art113_079.png	89x88
+불안정한 프로토타입	images/art113_080.png	88x89
+검 제작의 대가	images/art113_081.png	95x96
+공작 켈레세스	images/art113_082.png	91x93
+곰팡이술사	images/art113_083.png	89x89
+깔깔대는 발명가	images/art113_084.png	88x89
+기사대장	images/art113_086.png	95x95
+누더기골렘	images/art113_087.png	97x96
+공격대장	images/art113_088.png	87x89
+공중급수체	images/art113_089.png	88x89
+나무정령	images/art113_090.png	87x91
+지하군주	images/art113_091.png	88x89
+마력 깃든 까마귀	images/art113_092.png	95x96
+부화장 도우미	images/art113_093.png	89x89
+비명익룡 알	images/art113_094.png	89x89
+엘룬의 예언자	images/art113_095.png	89x89
+오늘의 월척	images/art113_096.png	89x89
+브롤 베어맨틀	images/art113_097.png	89x93
+그물거미	images/art113_098.png	89x89
+여명회 파수병	images/art113_099.png	95x96
+대사제 데칼	images/art113_102.png	104x102
+거품로봇	images/art113_105.png	97x93
+창심장 파수병	images/art113_106.png	89x89
+부두 토템	images/art113_107.png	88x89
+거대한 토템 아이스오르	images/art113_108.png	97x100
+불꽃의 토템	images/art113_109.png	89x89
+물 공급 토템	images/art113_110.png	89x89
+스테레오 토템	images/art113_111.png	89x89
+죄악석 토템	images/art113_112.png	89x89
+토템 골렘	images/art113_113.png	89x89
+돌장인	images/art113_114.png	89x93
+칼바람 폭풍소환사	images/art113_115.png	88x89
+바람의 군주 알아키르	images/art113_116.png	97x100

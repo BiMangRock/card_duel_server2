@@ -104,4 +104,27 @@ function rollCheats(tier, rng=Math.random){
   return out;
 }
 
-if (typeof module !== 'undefined') { module.exports = { CHEAT_TIERS, CHEATS, cheatValue, cheatCandidates, rollCheats, cheatRange, cheatValueFor, cleanCheatVals, cleanBossPower, bossPowerOf }; }
+// ---- v166 보스 페이즈에서 얻을 수 있는 것 (엔진 newGame 의 opts.phases[좌석].pool) ----
+//  게임 도중에 넣으면 아무 효과가 없는 '시작할 때만' 치트, 룬 치트(룬 카드가 없는 보스 덱), N수 선언과 겹치는 피로 면역은 뺀다
+const PHASE_EXCLUDE = new Set(['hp', 'startMana', 'startHand', 'startBoard', 'startArmor', 'costDown', 'extraDraw', 'bloodHeal', 'frostArmor', 'unholyCorpse', 'noFatigue']);
+function phaseGainPool(){
+  const E = (typeof HERO_POWERS !== 'undefined') ? { HERO_POWERS, HERO_POWER_IDS, HP_COST } : require('./engine.js');
+  const out = [];
+  for (const id of E.HERO_POWER_IDS) { const h = E.HERO_POWERS[id]; out.push({ kind: 'hero', id, name: h.name, icon: h.icon, text: h.text, cost: E.HP_COST }); }
+  for (const c of CHEATS) {
+    const v = cheatValue(c, 0);
+    if (c.active) out.push({ kind: 'active', id: c.id, value: v, cost: c.active.cost, name: c.name, icon: c.icon || '✦', text: c.active.text(v) });
+    if (!PHASE_EXCLUDE.has(c.id)) out.push({ kind: 'cheat', id: c.id, value: v, name: c.name, icon: c.icon || '✦', text: c.desc(v), global: !!c.global });
+  }
+  return out;
+}
+// v166 보스 고유 능력 (보스 편집 화면). 값이 없던 옛 저장 데이터의 수능 보스는 N수 선언을 기본으로
+const UNIQUE_LIST = [{ id: 'nsuDeclare', name: 'N수 선언', icon: '📚', text: '덱이 비면 탈진 피해 대신, 카드를 뽑을 때마다 무작위 전설·특급 카드를 얻습니다' }];
+function cleanUnique(b){
+  const u = b && b.unique;
+  if (u === undefined || u === null) return { unique: (b && b.id === 'ynu_suneung') ? 'nsuDeclare' : '' };
+  return { unique: UNIQUE_LIST.some(x => x.id === u) ? u : '' };
+}
+const uniqueOf = b => { const u = cleanUnique(b).unique; return UNIQUE_LIST.find(x => x.id === u) || null; };
+
+if (typeof module !== 'undefined') { module.exports = { CHEAT_TIERS, CHEATS, cheatValue, cheatCandidates, rollCheats, cheatRange, cheatValueFor, cleanCheatVals, cleanBossPower, bossPowerOf, PHASE_EXCLUDE, phaseGainPool, UNIQUE_LIST, cleanUnique, uniqueOf }; }

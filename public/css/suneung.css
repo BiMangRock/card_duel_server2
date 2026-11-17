@@ -1,0 +1,185 @@
+/* suneung.css — v166 수능 보스 연출 (suneung.js) */
+#snFx{position:fixed; inset:0; z-index:9700; overflow:hidden; overflow:clip; background:#000; opacity:0; transition:opacity .45s ease;
+  font-family:"Noto Sans KR", system-ui, sans-serif; color:#f3efe6; user-select:none; -webkit-user-select:none; cursor:pointer}
+#snFx.on{opacity:1}
+#snFx.ending{z-index:9850; cursor:default}
+#snFx .sn-myeong{font-family:"Nanum Myeongjo", "Noto Serif KR", serif}
+/* 무대: 배경 그림(16:9)이 화면을 덮도록 키운 상자. 안쪽 좌표는 그림 기준 %, 글자 크기는 cqw */
+#snFx .sn-stage{position:absolute; left:50%; top:50%; width:max(100vw, 177.78vh); height:max(56.25vw, 100vh); transform:translate(-50%,-50%); container-type:size}
+#snFx .sn-ui{position:absolute; inset:0; pointer-events:none}
+#snFx .sn-bg{position:absolute; inset:0; background-size:100% 100%; background-position:center}
+#snFx .sn-bg.dusk{filter:brightness(.5) saturate(1.1); animation:snDim 2.6s ease forwards}
+#snFx .sn-bg.desk{filter:brightness(.78) blur(1.5px)}
+@keyframes snDim{to{filter:brightness(.32) saturate(1.2) hue-rotate(-10deg)}}
+#snFx .sn-vig{position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.55) 100%); pointer-events:none}
+#snFx .sn-vig.strong{background:radial-gradient(ellipse at 50% 55%, transparent 25%, rgba(10,0,25,.82) 100%)}
+#snFx.shake .sn-stage{animation:snShake .5s ease}
+@keyframes snShake{0%,100%{transform:translate(-50%,-50%)} 20%{transform:translate(calc(-50% - 8px),calc(-50% + 4px))} 40%{transform:translate(calc(-50% + 7px),calc(-50% - 5px))} 60%{transform:translate(calc(-50% - 5px),calc(-50% + 3px))} 80%{transform:translate(calc(-50% + 3px),-50%)}}
+
+/* 파티클 (Kenney, 흰색 → filter 로 색) */
+#snFx .sn-p{position:absolute; transform:translate(-50%,-50%); pointer-events:none; mix-blend-mode:screen; opacity:0}
+#snFx .sn-ring{mix-blend-mode:normal; animation:snRing 1.6s ease-out infinite}
+@keyframes snRing{0%{opacity:.9; transform:translate(-50%,-50%) scale(.2)} 100%{opacity:0; transform:translate(-50%,-50%) scale(1.5)}}
+#snFx .sn-twirl{animation:snTwirl 1.4s ease-out .3s forwards}
+@keyframes snTwirl{0%{opacity:0; transform:translate(-50%,-50%) rotate(0) scale(.6)} 30%{opacity:.9} 100%{opacity:0; transform:translate(-50%,-50%) rotate(540deg) scale(1.2)}}
+#snFx .sn-fog{animation:snFog 3.4s ease-out forwards}
+@keyframes snFog{0%{opacity:0; transform:translate(-50%,-40%) scale(.8)} 40%{opacity:.75} 100%{opacity:.55; transform:translate(-50%,-62%) scale(1.25)}}
+#snFx .sn-spin{animation:snSpin 3s linear forwards, snIn .6s ease forwards}
+@keyframes snSpin{from{transform:translate(-50%,-50%) rotate(0)} to{transform:translate(-50%,-50%) rotate(140deg)}}
+@keyframes snIn{to{opacity:.95}}
+#snFx .sn-glow{animation:snGlow 1.6s ease-in-out infinite alternate}
+@keyframes snGlow{from{opacity:.35} to{opacity:.85}}
+#snFx .sn-twinkle{animation:snTwinkle .9s ease-out forwards}
+@keyframes snTwinkle{0%{opacity:0; transform:translate(-50%,-50%) scale(.2)} 40%{opacity:1} 100%{opacity:0; transform:translate(-50%,-50%) scale(1.1) rotate(45deg)}}
+#snFx .sn-flash{animation:snFlash .7s ease-out forwards}
+@keyframes snFlash{0%{opacity:1; transform:translate(-50%,-50%) scale(.3)} 100%{opacity:0; transform:translate(-50%,-50%) scale(2.2)}}
+#snFx .sn-burn{mix-blend-mode:multiply; filter:brightness(.25) !important; animation:snBurn .5s ease-out forwards}
+@keyframes snBurn{from{opacity:0; transform:translate(-50%,-50%) scale(.4)} to{opacity:.55; transform:translate(-50%,-50%) scale(1)}}
+#snFx .sn-debris{animation:snDebris .9s ease-out forwards}
+@keyframes snDebris{0%{opacity:.9; transform:translate(-50%,-50%) scale(.3)} 100%{opacity:0; transform:translate(-50%,-50%) scale(1.6)}}
+#snFx .sn-streak{mix-blend-mode:multiply; animation:snStreak .7s ease-out forwards}
+@keyframes snStreak{0%{opacity:0; transform:translate(-50%,-80%) rotate(var(--r,0deg)) scale(.6)} 40%{opacity:.8} 100%{opacity:0; transform:translate(-50%,-10%) rotate(var(--r,0deg)) scale(1)}}
+#snFx .sn-scratch{animation:snBurn .4s ease-out .2s forwards}
+
+/* 시험장 앞쪽 벽: 시계 · 칠판 글씨 */
+#snFx .sn-clock{position:absolute; left:55.2%; top:24.8%; width:7.4cqw; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%;
+  background:radial-gradient(circle, #fbf9f2 0 63%, transparent 64%), repeating-conic-gradient(from -1deg, #3a3a3a 0 2deg, transparent 2deg 30deg), #fbf9f2;
+  box-shadow:0 0 0 .38cqw #9a9a96, 0 0 0 .5cqw #6f6f6c, 0 .3cqw .8cqw rgba(0,0,0,.25)}
+#snFx .sn-clock i{position:absolute; left:50%; bottom:50%; transform-origin:50% 100%; border-radius:1cqw; background:#222; transition:transform 1.3s cubic-bezier(.4,0,.2,1)}
+#snFx .sn-clock .h{width:.42cqw; height:1.9cqw; margin-left:-.21cqw}
+#snFx .sn-clock .m{width:.28cqw; height:2.9cqw; margin-left:-.14cqw}
+#snFx .sn-clock b{position:absolute; left:50%; top:50%; width:.6cqw; height:.6cqw; margin:-.3cqw 0 0 -.3cqw; border-radius:50%; background:#c0392b}
+#snFx .sn-board{position:absolute; left:54.5%; top:49%; transform:translate(-50%,-50%); text-align:center; color:#f3f1e8; opacity:0; transition:opacity .6s ease, letter-spacing .9s ease;
+  letter-spacing:.35em; text-shadow:0 0 .25cqw rgba(255,255,255,.45), 0 .12cqw .1cqw rgba(0,0,0,.25); white-space:nowrap}
+#snFx .sn-board.show{opacity:1; letter-spacing:.12em}
+#snFx .sn-board small{display:block; font-size:2.1cqw; font-weight:700; opacity:.9}
+#snFx .sn-board b{display:block; font-size:5.2cqw; font-weight:800; line-height:1.25}
+#snFx .sn-board span{display:block; font-size:1.6cqw; opacity:.85; margin-top:.4cqw; letter-spacing:.2em}
+#snFx.last .sn-board b{color:#ffd6d6; text-shadow:0 0 .6cqw rgba(255,60,60,.7)}
+#snFx .sn-redtint{position:absolute; inset:0; background:radial-gradient(ellipse at 50% 60%, rgba(120,0,40,.0) 30%, rgba(90,0,60,.55) 100%); animation:snPulse 1.2s ease-in-out infinite alternate; pointer-events:none}
+@keyframes snPulse{from{opacity:.55} to{opacity:1}}
+
+/* 방송 자막 (advstory 의 📢 방송 과 같은 느낌) */
+#snFx .sn-cast{position:absolute; left:50%; bottom:max(4.5vh, env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(92vw, 940px); box-sizing:border-box;
+  background:rgba(12,10,22,.88); border:1px solid #c9a227; border-radius:.8rem; padding:1rem 1.25rem .95rem; box-shadow:0 .5rem 2rem rgba(0,0,0,.5); transition:opacity .5s ease}
+#snFx .sn-cast .sn-nm{position:absolute; top:-.8rem; left:1rem; background:linear-gradient(#a37b1c, #6e4f0b); border:1px solid #ffd77a; color:#fff; font-weight:700; font-size:.9rem; padding:.12rem .7rem; border-radius:.45rem}
+#snFx .sn-cast .sn-tx{margin:0; color:#ffe08a; font-weight:600; font-size:clamp(1rem, 2.2vw, 1.35rem); line-height:1.5; min-height:1.5em}
+/* 보스가 얻은 것 */
+#snFx .sn-gains{position:absolute; left:50%; bottom:calc(max(4.5vh, env(safe-area-inset-bottom)) + 5.6rem); transform:translate(-50%, 1rem); display:flex; gap:.8rem; flex-wrap:wrap; justify-content:center;
+  width:min(94vw, 980px); opacity:0; transition:opacity .45s ease, transform .45s ease}
+#snFx .sn-gains.show{opacity:1; transform:translate(-50%, 0)}
+#snFx .sn-gain{display:flex; align-items:center; gap:.7rem; background:rgba(16,13,28,.94); border:1px solid rgba(201,162,39,.75); border-radius:.75rem; padding:.6rem .85rem; max-width:30rem; box-shadow:0 .4rem 1.4rem rgba(0,0,0,.45)}
+#snFx .sn-gain.global{border-color:#e05050; box-shadow:0 0 0 1px rgba(224,80,80,.4), 0 .4rem 1.4rem rgba(0,0,0,.45)}
+#snFx .sn-gain .sn-ic{flex:0 0 auto; width:3.1rem; height:3.1rem; border-radius:.55rem; background:#2a2440 center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:1.6rem; border:1px solid rgba(255,215,122,.5)}
+#snFx .sn-gain .tx{display:flex; flex-direction:column; gap:.1rem; min-width:0}
+#snFx .sn-gain small{font-size:.74rem; color:#c9b88a}
+#snFx .sn-gain.global small{color:#ff9c9c; font-weight:700}
+#snFx .sn-gain b{font-size:1.05rem; color:#ffe7a6}
+#snFx .sn-gain em{font-style:normal; font-size:.82rem; color:#ddd6c6; line-height:1.35}
+#snFx .sn-gain.armor .sn-ic{background:#24324a}
+
+/* 카드 첫 등장: 제목 */
+#snFx .sn-title{position:absolute; left:50%; top:max(7vh, env(safe-area-inset-top)); transform:translate(-50%, -.8rem); text-align:center; opacity:0; transition:opacity .5s ease, transform .5s ease; width:94vw}
+#snFx .sn-title.show{opacity:1; transform:translate(-50%, 0)}
+#snFx .sn-title small{display:block; font-size:clamp(.85rem, 1.8vw, 1.15rem); font-weight:700; letter-spacing:.25em; color:#e9dcb8; text-shadow:0 2px 6px #000}
+#snFx .sn-title b{display:block; font-size:clamp(2.2rem, 7vw, 4.6rem); font-weight:800; letter-spacing:.06em; line-height:1.2; color:#fff4d6; text-shadow:0 .2rem 1.2rem rgba(0,0,0,.85)}
+#snFx .sn-title span{display:inline-block; margin-top:.4rem; font-size:clamp(.8rem, 1.7vw, 1rem); color:#f0e6d0; background:rgba(0,0,0,.55); padding:.2rem .8rem; border-radius:999px}
+#snFx .sn-title.purple b{color:#f3e2ff; text-shadow:0 0 1.2rem rgba(170,90,255,.95), 0 .2rem .8rem #000}
+#snFx .sn-title.red b{color:#fff1ea; text-shadow:0 0 1.1rem rgba(255,70,50,.85), 0 .2rem .8rem #000}
+/* 5교시의 악령 카드 */
+#snFx .sn-bigcard{position:absolute; left:50%; top:54%; width:21cqw; aspect-ratio:420/563; transform:translate(-50%,-50%) scale(.55) rotate(-4deg); opacity:0; border-radius:1.1cqw;
+  background:#222 center/cover no-repeat; border:.3cqw solid #d9b75a; box-shadow:0 0 3cqw rgba(170,90,255,.9), 0 0 0 .5cqw rgba(40,10,70,.6); transition:transform .7s cubic-bezier(.2,1.4,.4,1), opacity .4s ease}
+#snFx .sn-bigcard.show{opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0)}
+/* 성적통지표 */
+#snFx .sn-report{position:absolute; left:50%; top:58%; width:44cqw; transform:translate(-50%,-50%) rotate(-2deg) translateY(3cqw); opacity:0; transition:transform .55s ease, opacity .4s ease;
+  background:#fbfaf4; color:#1f1f1f; padding:1.6cqw 2cqw 1.2cqw; box-shadow:0 1.2cqw 2.4cqw rgba(0,0,0,.4); border-radius:.25cqw; font-size:1.25cqw}
+#snFx .sn-report.show{opacity:1; transform:translate(-50%,-50%) rotate(-2deg)}
+#snFx .sn-report .hd{text-align:center; font-size:2.1cqw; font-weight:800; letter-spacing:.15em; border-bottom:.2cqw double #333; padding-bottom:.7cqw; margin-bottom:.8cqw}
+#snFx .sn-report .who{display:grid; grid-template-columns:auto 1fr auto 1fr; gap:.3cqw .8cqw; margin-bottom:.9cqw; font-size:1.15cqw}
+#snFx .sn-report .who span{background:#eceae0; padding:.15cqw .5cqw}
+#snFx .sn-report table{width:100%; border-collapse:collapse; text-align:center}
+#snFx .sn-report th, #snFx .sn-report td{border:.1cqw solid #555; padding:.45cqw .3cqw}
+#snFx .sn-report th{background:#eceae0; font-weight:700}
+#snFx .sn-report .gr i{font-style:normal; font-weight:800; font-size:1.7cqw; display:inline-block; transition:transform .25s ease}
+#snFx .sn-report .gr.down i{color:#c0261f; transform:scale(1.35) rotate(-8deg)}
+#snFx .sn-report .gr.down{background:rgba(192,38,31,.08)}
+#snFx .sn-report .ft{text-align:right; margin-top:.8cqw; font-size:1cqw; color:#555}
+/* OMR 답안지 */
+#snFx .sn-omr{position:absolute; left:50%; top:54%; width:30cqw; transform:translate(-50%,-50%) rotate(2deg) translateY(3cqw); opacity:0; transition:transform .55s ease, opacity .4s ease;
+  background:#fffdf8; border:.25cqw solid #d33b3b; box-shadow:0 1.2cqw 2.4cqw rgba(0,0,0,.4); padding:1cqw 1.2cqw 1.2cqw; color:#d33b3b}
+#snFx .sn-omr.show{opacity:1; transform:translate(-50%,-50%) rotate(2deg)}
+#snFx .sn-omr .hd{display:flex; justify-content:space-between; align-items:baseline; border-bottom:.15cqw solid #d33b3b; padding-bottom:.5cqw; margin-bottom:.6cqw}
+#snFx .sn-omr .hd b{font-size:1.9cqw; letter-spacing:.3em}
+#snFx .sn-omr .hd span{font-size:.95cqw}
+#snFx .sn-omr .grid{position:relative; --rh:2.75cqw}
+#snFx .sn-omr .row{display:grid; grid-template-columns:2.6cqw repeat(5, 1fr); align-items:center; height:var(--rh); border-bottom:.08cqw solid rgba(211,59,59,.35)}
+#snFx .sn-omr .row .no{font-weight:800; font-size:1.25cqw; text-align:center; background:rgba(211,59,59,.1)}
+#snFx .sn-omr .row .bb{justify-self:center; width:1.75cqw; height:2.05cqw; border:.12cqw solid #d33b3b; border-radius:50%; font-size:.95cqw; display:flex; align-items:center; justify-content:center}
+#snFx .sn-omr .row.empty{animation:snEmpty .6s ease-in-out infinite alternate}
+@keyframes snEmpty{from{background:rgba(255,0,0,.06)} to{background:rgba(255,0,0,.22); box-shadow:inset 0 0 0 .15cqw #ff3b3b}}
+#snFx .sn-omr .row{position:relative}
+#snFx .sn-omr .sn-mk{position:absolute; border-radius:50%; background:#141414; box-sizing:border-box; transition:top .55s cubic-bezier(.5,0,.3,1.3), opacity .4s ease}
+#snFx .sn-omr .sn-mk.out{opacity:0}
+#snFx .sn-hand{position:absolute; left:50%; bottom:3.5vh; transform:translate(-50%, .6rem) rotate(-2deg); font-family:"AdvPen", cursive; font-size:clamp(1.5rem, 3.6vw, 2.5rem); color:#1b1b1b;
+  background:#fffef6; padding:.4rem 1.2rem; border-radius:.6rem; box-shadow:0 .4rem 1.2rem rgba(0,0,0,.45); opacity:0; transition:opacity .4s ease, transform .4s ease; white-space:nowrap}
+#snFx .sn-hand.show{opacity:1; transform:translate(-50%, 0) rotate(-2deg)}
+
+/* ===== 엔딩 크레딧 ===== */
+#snFx.ending .sn-stage, #snFx.ending .sn-world{transition:filter 1.5s ease}
+#snFx.ending.gray .sn-stage, #snFx.ending.gray .sn-world{filter:grayscale(1) contrast(1.06) brightness(.96)}
+#snFx.ending .sn-wall{position:absolute; inset:0}
+#snFx.ending.recall .sn-cast{opacity:0}
+#snFx .sn-world{position:absolute; inset:0; opacity:0; transition:opacity .6s ease, filter 1.5s ease}
+#snFx.recall .sn-world{opacity:1}
+#snFx .sn-scene{position:absolute; inset:0; opacity:0; transition:opacity .4s ease}
+#snFx .sn-scene.on{opacity:1}
+#snFx .sn-cam{position:absolute; inset:0; transform-origin:50% 50%}
+#snFx .sn-cam img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .12s linear}
+#snFx .sn-cam img.on{opacity:1}
+#snFx .fx-zoom108 .sn-cam{animation:snZ108 6s linear forwards}
+@keyframes snZ108{from{transform:scale(1)} to{transform:scale(1.08)}}
+#snFx .sn-flicker{position:absolute; inset:0; background:#000; opacity:0; pointer-events:none}
+#snFx .fx-zoom108 .sn-flicker{animation:snFlick 6s steps(1,end) forwards}
+@keyframes snFlick{0%{opacity:0} 21%{opacity:.35} 22%{opacity:0} 23.5%{opacity:.22} 24.5%{opacity:0} 58%{opacity:.3} 59%{opacity:0} 82%{opacity:.18} 83%{opacity:0} 83.8%{opacity:.28} 84.6%{opacity:0}}
+#snFx .fx-still .sn-cam{animation:snZ102 6s linear forwards}
+@keyframes snZ102{from{transform:scale(1)} to{transform:scale(1.02)}}
+#snFx .sn-haze{position:absolute; inset:0; background-size:cover; background-position:center; filter:url(#snHazeF); opacity:0;
+  -webkit-mask-image:linear-gradient(#000 0%, #000 22%, transparent 40%); mask-image:linear-gradient(#000 0%, #000 22%, transparent 40%)}
+#snFx .fx-still .sn-haze{opacity:1}
+#snFx .fx-pan .sn-cam{animation:snPan 6s cubic-bezier(.3,.1,.4,1) forwards}
+@keyframes snPan{from{transform:scale(1.16) translateX(5.5%)} to{transform:scale(1.16) translateX(-5.5%)}}
+#snFx .fx-hand .sn-cam{animation:snHand 2.4s ease-in-out infinite}
+@keyframes snHand{0%,100%{transform:scale(1.07) translate(0,0) rotate(0)} 15%{transform:scale(1.07) translate(-.5%,.35%) rotate(-.25deg)} 32%{transform:scale(1.07) translate(.4%,-.3%) rotate(.2deg)}
+  50%{transform:scale(1.07) translate(-.25%,-.45%) rotate(-.1deg)} 68%{transform:scale(1.07) translate(.55%,.25%) rotate(.28deg)} 84%{transform:scale(1.07) translate(-.3%,.4%) rotate(-.18deg)}}
+#snFx .fx-zoomS5 .sn-cam{animation:snZS5 3.2s ease-out forwards}
+@keyframes snZS5{from{transform:scale(1)} to{transform:scale(1.06)}}
+#snFx .sn-vig2{position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, transparent 48%, rgba(0,0,0,.55) 100%)}
+#snFx .sn-grain{position:absolute; inset:-50%; pointer-events:none; opacity:.22; mix-blend-mode:overlay; animation:snGrain .5s steps(5) infinite;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes snGrain{0%{transform:translate(0,0)} 20%{transform:translate(-4%,3%)} 40%{transform:translate(3%,-5%)} 60%{transform:translate(-2%,-3%)} 80%{transform:translate(5%,2%)} 100%{transform:translate(0,0)}}
+#snFx .sn-bar{position:absolute; left:0; right:0; height:6.5vh; background:#000; z-index:5; opacity:0; transition:opacity .6s ease}
+#snFx.recall .sn-bar{opacity:1}
+#snFx .sn-bar.top{top:0} #snFx .sn-bar.bot{bottom:0}
+#snFx .sn-shade{position:absolute; left:0; right:0; bottom:6.5vh; height:34%; z-index:3; pointer-events:none; background:linear-gradient(transparent, rgba(0,0,0,.55)); opacity:0; transition:opacity .5s ease}
+#snFx .sn-shade.on{opacity:1}
+#snFx .sn-credit{position:absolute; left:5.5%; bottom:calc(6.5vh + 4.5%); z-index:4; display:flex; flex-direction:column; gap:.7vw; opacity:0; transition:opacity .45s ease;
+  text-shadow:0 .15vw .6vw rgba(0,0,0,.95), 0 0 .2vw rgba(0,0,0,.9)}
+#snFx .sn-credit.on{opacity:1}
+#snFx .sn-credit p{margin:0; font-size:clamp(.9rem, 1.75vw, 1.6rem); color:#f1eee7; letter-spacing:.02em; white-space:nowrap}
+#snFx .sn-credit p em{font-style:normal; color:#bdb8ad; padding:0 .6vw; letter-spacing:.15em}
+#snFx .sn-credit p strong{font-weight:600; color:#fff}
+#snFx .sn-tdim{position:absolute; inset:0; background:rgba(0,0,0,.42); opacity:0; transition:opacity 1s ease; z-index:3}
+#snFx .sn-tdim.on{opacity:1}
+#snFx .sn-thanks-wrap{position:absolute; inset:0; overflow:hidden; z-index:4; pointer-events:none}
+#snFx .sn-thanks{position:absolute; left:0; right:0; top:100%; text-align:center; text-shadow:0 .15vw .7vw rgba(0,0,0,.9)}
+#snFx .sn-thanks .head{font-size:clamp(.9rem, 1.8vw, 1.5rem); letter-spacing:.5em; color:#ece6d8; margin-bottom:4.5vw}
+#snFx .sn-thanks .grp{margin-bottom:3.6vw}
+#snFx .sn-thanks .role{font-size:clamp(.8rem, 1.4vw, 1.2rem); color:#d6d0c3; letter-spacing:.12em; margin-bottom:.9vw}
+#snFx .sn-thanks .sn-name{font-size:clamp(1.1rem, 2.1vw, 1.9rem); color:#f4f1ea; line-height:1.5}
+#snFx .sn-thanks .last{margin-top:7vw; font-size:clamp(2rem, 4.6vw, 4.2rem); font-weight:800; color:#fff; letter-spacing:.06em}
+#snFx .sn-skip{position:absolute; top:calc(6.5vh + 2.2%); right:2.2%; z-index:20; font:inherit; font-size:clamp(.85rem, 1.25vw, 1.05rem); color:#fff; background:rgba(0,0,0,.45);
+  border:1px solid rgba(255,255,255,.45); border-radius:999px; padding:.45rem 1.1rem; cursor:pointer; backdrop-filter:blur(4px); pointer-events:auto}
+#snFx .sn-skip:hover{background:rgba(255,255,255,.18)}
+@media (prefers-reduced-motion: reduce){
+  #snFx *{animation-duration:.01ms !important; animation-iteration-count:1 !important}
+}
