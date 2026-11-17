@@ -1187,6 +1187,19 @@ function confirmBox(title, text, okLabel='확인', danger=false){      // v134 �
     document.body.appendChild(ov); ov.querySelector(danger?'.cb-no':'.cb-ok').focus();
   });
 }
+function alertBox(title, text, okLabel='확인'){                // v170 알림 창 (브라우저 alert 대신 — alert 는 전체화면을 풀어 버린다)
+  return new Promise(res=>{
+    let ov=$('confirmBox'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='confirmBox';
+    ov.innerHTML=`<div class="cb-panel"><h3></h3><p></p><div class="cb-btns"><button type="button" class="end-turn cb-ok"></button></div></div>`;
+    ov.querySelector('h3').textContent=title; ov.querySelector('p').textContent=text||''; ov.querySelector('.cb-ok').textContent=okLabel;
+    const done=()=>{ ov.remove(); document.removeEventListener('keydown', key, true); res(); };
+    const key=e=>{ if(e.key==='Escape' || e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); done(); } };
+    ov.querySelector('.cb-ok').onclick=done; ov.onclick=e=>{ if(e.target===ov) done(); };
+    document.addEventListener('keydown', key, true);
+    document.body.appendChild(ov); ov.querySelector('.cb-ok').focus();
+  });
+}
 function armConfirm(btn, fn, always=true){             // 실수 방지: 한 번 누르면 "확인?"으로 바뀌고, 3초 안에 한 번 더 누르면 실행
   if(!always || btn.dataset.armed){ delete btn.dataset.armed; btn.disabled=true; fn(); return; }
   btn.dataset.armed='1'; const old=btn.textContent; btn.textContent='한 번 더'; btn.classList.add('armed');
@@ -2101,7 +2114,7 @@ function renderDeckEditor(){
 }
 function updateDeckMenuDesc(){ const a=typeof DeckSlots!=='undefined' && ServerStore.decks && DeckSlots.active(); $('deckMenuDesc').textContent = a ? `덱: ${a.name}` : '덱 고르기'; }   // v135 · v167 짧게
 function openDeckEditor(){ ed.test=false; ed.boss=false; ed.adv=false; ed.slot=null; $('edClear').style.display=''; ed.counts=countsOf(DeckBook.get()); renderDeckEditor(); $('deckEditor').classList.add('show'); }
-function openAdvDeckEditor(){ if(Object.keys(ServerStore.runs).length){ alert('재학 중에는 덱을 바꿀 수 없어요. (졸업·자퇴하거나 보스에게 지면 풀려요)'); return; } ed.test=false; ed.boss=false; ed.adv=true; ed.slot=null; $('edClear').style.display=''; ed.counts=countsOf(AdvDeckBook.get()); renderDeckEditor(); $('deckEditor').classList.add('show'); }   // v117
+function openAdvDeckEditor(){ if(Object.keys(ServerStore.runs).length){ alertBox('덱을 바꿀 수 없어요', '재학 중에는 덱을 바꿀 수 없어요.\n졸업·자퇴하거나 보스에게 지면 풀려요.'); return; } ed.test=false; ed.boss=false; ed.adv=true; ed.slot=null; $('edClear').style.display=''; ed.counts=countsOf(AdvDeckBook.get()); renderDeckEditor(); $('deckEditor').classList.add('show'); }   // v117
 // ---------- v135 덱 슬롯 (여러 덱 저장) · 덱 코드 ----------
 const DeckSlots={
   isActive(slot){ const d=ServerStore.decks; return !!d && d.active===slot; },
@@ -2202,7 +2215,7 @@ $('edSave').onclick=()=>{
   if(ed.test){ if(edTotal()<1) return; testCfg.deck=listOf(ed.counts); TestBook.set(testCfg); refreshTestUI(); closeDeckEditor(); return; }
   if(ed.slot){ saveSlotFromEditor(); return; }   // v135 덱 슬롯
   if(edTotal()!==CONFIG.DECK_SIZE) return;
-  if(ed.adv){ if(!AdvDeckBook.set(listOf(ed.counts))) return alert('모험 덱에는 일반 카드만 넣을 수 있어요.'); closeDeckEditor(); if($('screen-adventure').classList.contains('show')) openAdventure(); return; }
+  if(ed.adv){ if(!AdvDeckBook.set(listOf(ed.counts))){ alertBox('저장하지 못했어요', '모험 덱에는 일반 카드만 넣을 수 있어요.'); return; } closeDeckEditor(); if($('screen-adventure').classList.contains('show')) openAdventure(); return; }
   DeckBook.set(listOf(ed.counts)); closeDeckEditor(); };
 $('edReset').onclick=()=>{ ed.counts=countsOf(defaultDeckList()); renderDeckEditor(); };
 $('edClear').onclick=()=>{ ed.counts={}; renderDeckEditor(); };
@@ -2452,7 +2465,7 @@ const ModeIntro=(function(){
     draw(); document.body.appendChild(box);
     box.addEventListener('click', e=>{ if(e.target===box) close(); });
   }
-  function onScreen(name){ const k=SCREEN[name]; if(k && !seen[k]) setTimeout(()=>open(k), 120); }
+  function onScreen(name){ }   // v170 모드에 처음 들어갈 때 안내를 자동으로 띄우지 않는다 (튜토리얼 → 가이드 → 모드 탭에서는 그대로 볼 수 있음)
   document.addEventListener('keydown', e=>{ if(e.key==='Escape' && box) close(); });
   return {open, onScreen, close, reset(){ seen={}; save(); }};
 })();
@@ -3007,13 +3020,13 @@ function openAdventure(rank){
 // ---- v117 입학하기 · 자퇴 · 잠긴 덱 보기 ----
 async function enrollRun(ch){
   const deck=AdvDeckBook.get();
-  if(!confirm(`${advChapterInfo(ch).name}에 입학할까요?\n\n지금 모험 덱 30장이 잠기고, 졸업·자퇴하거나 보스에게 질 때까지 바꿀 수 없어요.`)) return;
+  if(!await confirmBox('입학할까요?', `${advChapterInfo(ch).name.replace(/\s*입학$/,'')}에 입학합니다.\n지금 모험 덱 30장이 잠기고, 졸업·자퇴하거나 보스에게 질 때까지 바꿀 수 없어요.`, '입학하기')) return;
   const r=await ServerStore.enroll(ch, deck);
-  if(!r.ok){ alert('⚠ '+r.error); return; }
+  if(!r.ok){ alertBox('입학하지 못했어요', r.error); return; }
   advView=ch; openAdventure();
 }
 async function dropRun(ch){
-  if(!confirm('자퇴할까요? 이번 입학의 진행과 잠긴 덱(보상으로 받은 모험 전용 카드 포함)이 사라지고, 처음부터 다시 입학해야 해요.')) return;
+  if(!await confirmBox('자퇴할까요?', '이번 입학의 진행과 잠긴 덱(보상으로 받은 모험 전용 카드 포함)이 사라지고, 처음부터 다시 입학해야 해요.', '자퇴하기', true)) return;
   await ServerStore.dropRun(ch); openAdventure();
 }
 function showRunDeck(ch){
@@ -3088,7 +3101,7 @@ function openBossEdit(){
     const up=document.createElement('button'); up.className='mini'; up.textContent='▲'; up.disabled=i===0; up.onclick=()=>{ [list[i-1],list[i]]=[list[i],list[i-1]]; bossListSave(list); openBossEdit(); };
     const dn=document.createElement('button'); dn.className='mini'; dn.textContent='▼'; dn.disabled=i===list.length-1; dn.onclick=()=>{ [list[i+1],list[i]]=[list[i],list[i+1]]; bossListSave(list); openBossEdit(); };
     const del=document.createElement('button'); del.className='mini'; del.textContent='🗑'; del.disabled=list.length<=1;
-    del.onclick=()=>{ if(!confirm(`'${b.name}' 보스를 삭제할까요?`)) return; list.splice(i,1); bossListSave(list); openBossEdit(); };
+    del.onclick=async()=>{ if(!await confirmBox('보스 삭제', `'${b.name}' 보스를 삭제할까요?`, '삭제', true)) return; list.splice(i,1); bossListSave(list); openBossEdit(); };
     row.append(main, up, dn, del); box.appendChild(row);
   });
   $('bossJsonBox').style.display='none'; $('regDesc').textContent=PolicyNet.regInfo()+' · 학습 쪽 번호표가 바뀌면 새 파일을 불러오세요';
@@ -3101,7 +3114,7 @@ function bossAdd(){
   bossListSave(list); openBossForm(list.length-1);
 }
 // v117: 챕터 틀 추가 (예: 영남대 9단계). 이미 같은 id 의 보스가 있으면 건너뛴다. 덱은 추천 덱으로 채워 둔다
-function bossAddTemplate(chapter){
+async function bossAddTemplate(chapter){
   const tpl=ADV_TEMPLATES[chapter]; if(!tpl) return;
   let list=BossBook.get();
   const legacy=list.filter(b=>ADV_LEGACY_IDS.includes(b.id));                                     // v117: 예전 틀(학년별 2단계) 정리
@@ -3115,12 +3128,12 @@ function bossAddTemplate(chapter){
     if(t[4] && JSON.stringify(b.deck)===dflt) ch.push(()=>{ b.deck=t[4].slice(); b.icon=t[2]; b.desc=t[3]; b.name=t[1]; });
     else if(t[4] && JSON.stringify(b.deck)!==JSON.stringify(t[4]) && (ADV_OLD_TEMPLATE_DECKS[b.id]||[]).some(d=>JSON.stringify(d)===JSON.stringify(b.deck))) ch.push(()=>{ b.deck=t[4].slice(); b.icon=t[2]; b.desc=t[3]; });   // 예전 틀의 임시 덱 → 새 덱 (v119: 아이콘·소개도 새 틀로)
     if(ch.length) fill.push({b, ch}); }
-  if(!add.length && !fill.length && !legacy.length){ alert('이미 최신 틀이에요.'); return; }
+  if(!add.length && !fill.length && !legacy.length){ alertBox('틀 맞추기', '이미 최신 틀이에요.'); return; }
   const lines=[];
   if(legacy.length) lines.push(`지금 구조에 없는 예전 단계 보스 ${legacy.length}개(${legacy.map(b=>b.name).join(', ')})를 지웁니다`);
   if(add.length) lines.push(`새 단계 ${add.length}개(${add.map(t=>t[1]).join(', ')})를 추가합니다`);
   if(fill.length) lines.push(`이미 있는 ${fill.map(f=>f.b.name).join(', ')}의 단계 번호·임시 덱·보상 후보를 새 틀로 맞춥니다 (직접 고친 덱은 그대로)`);
-  if(!confirm(`${advChapterInfo(chapter).name} 틀을 새 구조(수능 → 1·2·3·4학년, 4학년을 이기면 졸업)로 맞출까요?\n\n· `+lines.join('\n· '))) return;
+  if(!await confirmBox(`${advChapterInfo(chapter).name} 틀을 새 구조로 맞출까요?`, '수능 → 1·2·3·4학년, 4학년을 이기면 졸업\n\n· '+lines.join('\n· '), '맞추기')) return;
   list=list.filter(b=>!ADV_LEGACY_IDS.includes(b.id));
   fill.forEach(f=>f.ch.forEach(fn=>fn()));
   add.forEach(([id,name,icon,desc,deck])=>{ const st=tpl.findIndex(t=>t[0]===id)+1; list.push({id, name, icon, desc, cheats:[], reward:0, tier:'mid', bot:'rule2', model:'', deck:(deck && !validateDeckList(deck))?deck.slice():defaultDeckList(), chapter, stage:st, rewardCards:[], rewardChoice:(ADV_TEMPLATE_REWARDS[id]||[]).slice()}); });
@@ -3254,7 +3267,7 @@ function bossFormDeck(){
 function bossDeckSaved(list){ bossDraft.deck=list; closeDeckEditor(); bossFormSave(true); refreshBossForm(); }
 function bossFormTest(){
   bossFormSave(true);
-  if(BossBook.deckError(bossDraft)){ alert('덱이 규칙에 맞지 않습니다: '+BossBook.deckError(bossDraft)); return; }
+  if(BossBook.deckError(bossDraft)){ alertBox('덱이 규칙에 맞지 않아요', BossBook.deckError(bossDraft)); return; }
   startBoss(bossDraftIdx, {devTest:true, noStory:true});
 }
 function bossExport(){
@@ -3271,7 +3284,7 @@ function bossImport(){
     BossBook.set(v); openBossEdit();
   }catch(e){ $('bossJsonMsg').textContent='⚠ 가져오기 실패: '+e.message; }
 }
-function bossResetAll(){ if(!confirm('서버에 저장된 보스 목록을 지우고 코드의 기본값(BOSS_DEFAULT)으로 되돌릴까요? 모든 유저에게 적용됩니다.')) return; BossBook.reset(); openBossEdit(); }
+async function bossResetAll(){ if(!await confirmBox('보스 목록 초기화', '서버에 저장된 보스 목록을 지우고 코드의 기본값(BOSS_DEFAULT)으로 되돌릴까요? 모든 유저에게 적용됩니다.', '되돌리기', true)) return; BossBook.reset(); openBossEdit(); }
 
 // ---------- 5단계: 상점 · 팩 개봉 ----------
 // 난수·골드 차감·카드 지급은 전부 서버(/api/shop/open)가 한다. 여기서는 확률표를 보여 주고, 서버가 준 결과를 연출만 한다.
@@ -3932,7 +3945,7 @@ function showBossBriefing(boss){
     const box=m.querySelector('.brief-traits'); list.forEach(t=>box.appendChild(traitCard(t, {isNew:!t.unique && !codexHas(t.id)})));
     const nNew=traits.filter(t=>!t.unique && !codexHas(t.id)).length;
     m.querySelector('.brief-tip').textContent = nNew ? `📖 처음 이기는 특성 ${nNew}개 — 이기면 특성 도감에 오르고 하나당 ${codexInfo().gold}골드` : (traits.filter(t=>!t.unique).length ? '📖 이 보스의 특성은 모두 도감에 있어요' : '');
-    if(window.SuneungFx && SuneungFx.isSuneung(boss)){ const w=document.createElement('p'); w.className='brief-tip sn-warn'; w.style.color='#ffb0a0'; w.textContent='⚠ 이 보스는 몰릴수록 폭주합니다'; m.querySelector('.brief-tip').after(w);
+    if(window.SuneungFx && SuneungFx.isSuneung(boss)){ const w=m.querySelector('.brief-tip');   // v170 폭주 예고 문구는 없앰 (예고 없이 폭주)
       const sb=SuneungFx.storyBonus(); if(sb){ const x=document.createElement('p'); x.className='brief-tip sn-warn'; x.style.color=sb.good?'#a8e6a0':'#ffb0a0'; x.textContent=(sb.good?'✦ ':'⚠ ')+sb.text; w.after(x); } }   // v167 컨디션   // v166
     const done=v=>{ document.removeEventListener('keydown', onKey, true); m.remove(); resolve(v); };
     const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); done(false); } };

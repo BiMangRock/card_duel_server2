@@ -174,7 +174,7 @@ const Replay = (() => {
   }
 
   // ---------- 지난 판 목록 ----------
-  function alertMsg(t) { const p = $id('pvpMsg'); if (p && $id('screen-pvp').classList.contains('show')) { p.textContent = t; p.style.display = ''; } else alert(t); }
+  function alertMsg(t) { const p = $id('pvpMsg'); if (p && $id('screen-pvp').classList.contains('show')) { p.textContent = t; p.style.display = ''; } else alertBox('알림', t); }
   function modal() {
     let box = $id('replayModal');
     if (!box) { box = document.createElement('div'); box.id = 'replayModal'; box.className = 'rank-modal'; box.onclick = e => { if (e.target === box) closeList(); }; document.body.appendChild(box); }

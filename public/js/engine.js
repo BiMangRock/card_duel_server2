@@ -2150,9 +2150,8 @@ function pickPhaseGain(s, seat){
   const ok=g=> g.kind==='hero' ? (HERO_POWERS[g.id] && P.heroPower!==g.id)
             : g.kind==='active' ? (BOSS_ACTIVE[g.id] && !(P.bossPower && P.bossPower.active && P.bossPower.id===g.id))
             : g.kind==='cheat' ? (md[g.id]==null || md[g.id]===false) : false;
-  const powers=pool.filter(g=>g.kind!=='cheat' && ok(g)), cheats=pool.filter(g=>g.kind==='cheat' && ok(g));
-  const side=!powers.length ? cheats : !cheats.length ? powers : (nextRand(s)<0.5 ? powers : cheats);
-  return side.length ? side[Math.floor(nextRand(s)*side.length)] : null;
+  const cand=pool.filter(ok);   // v170 후보 전체에서 똑같은 확률로 하나 (예전: 능력/치트 반반)
+  return cand.length ? cand[Math.floor(nextRand(s)*cand.length)] : null;
 }
 function applyPhaseGain(s, seat, g){
   const P=s.seats[seat];

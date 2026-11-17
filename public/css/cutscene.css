@@ -199,7 +199,7 @@
 
 /* 큰 글자 (정답 · 벌주 · 위기 · 나이스 캐치) */
 #cutscene .cs-bigtxt{left:50%; top:42%; transform:translate(-50%,-50%); z-index:5; white-space:nowrap;}
-#cutscene .cs-bigtxt b{display:block; font-size:clamp(1.6rem, 6vw, 3.4rem); font-weight:900; color:#fff; letter-spacing:.04em; animation:csBigIn .5s cubic-bezier(.2,1.6,.4,1); -webkit-text-stroke:2px rgba(0,0,0,.5);}
+#cutscene .cs-bigtxt b{display:block; font-size:clamp(1.6rem, 6vw, 3.4rem); font-weight:800; color:#fff; letter-spacing:.04em; animation:csBigIn .5s cubic-bezier(.2,1.6,.4,1); filter:drop-shadow(0 2px 0 rgba(0,0,0,.75)) drop-shadow(0 0 6px rgba(0,0,0,.6));}   /* v170 글자 테두리(text-stroke)가 한글 획을 끊어 보이게 해서 그림자 외곽선으로 */
 #cutscene .cs-bigtxt.good b{color:#9cff8a; text-shadow:0 0 18px rgba(80,255,80,.6);}
 #cutscene .cs-bigtxt.bad b{color:#ff6b6b; text-shadow:0 0 18px rgba(255,40,40,.6);}
 #cutscene .cs-bigtxt.gold b{color:#ffd76a; text-shadow:0 0 26px rgba(255,200,60,.9);}

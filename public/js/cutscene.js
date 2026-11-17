@@ -72,7 +72,8 @@
   })();
   window.StoryState = StoryState;
   // v167 선택지 아래의 「💪 +1」 같은 숨은 수치 표시는 보여 주지 않는다 (고른 뒤 잠깐 떠오르는 표시만). 「화면을 빠르게 연타!」 같은 안내는 그대로
-  const statOnlySub = t => /^[\s0-9+\-−🍺⭐💌📝💪✏🌱\uFE0F]+$/u.test(String(t || ''));
+  //  v170 다시 보여 주기로 함 → 숨기는 선택지 없음 (예전 판정식: /^[\s0-9+\-−🍺⭐💌📝💪✏🌱\uFE0F]+$/u)
+  const statOnlySub = () => false;
   window.statOnlySub = statOnlySub;
 
   // ===================== 대본 =====================
@@ -1005,6 +1006,16 @@
     //                 탐구 = 셋 중 무작위 한 문제에 항상 약한 확신(신의 계시 · 「②④번은 아닌 듯」 등), 컨디션 3 이상이면 강한 확신
     //   결과는 숨은 수치 flag sn_results[과목] = {label, area, ok, n, got, max} 에 쌓인다 (엔딩 성적통지표)
     const N_ = n => '①②③④⑤'[n];
+    // v170 「속마음」 대화창 + 멘트 다시 (보기 번쩍임은 그대로)
+    const HINT = {   // v171 혼잣말(괄호는 그릴 때 붙임). {a}·{b} = 「3번」 처럼
+      strong: ['이건… 확신의 {a}이다 …!', '봤다. 이건 {a}이다 …!', '손이 먼저 {a}으로 간다 …!', '머리가 맑다… {a}이다 …!'],
+      weak: ['{a}… 아니면 {b}…?', '{a}이랑 {b} 중에 하나 같은데 …', '{a}, {b}… 둘 중에 있다 …', '어디서 봤는데… {a}이었나, {b}이었나 …'],
+      tamguA: ['신의 계시다… {a} 아니면 {b} …!', '작년 선배가 찍은 게… {a}이었나, {b}이었나 …', '엄마 새벽기도 번호… {a} 아니면 {b} …!', '모르겠다… 그래도 {a}이나 {b} 느낌 …'],
+      tamguB: ['{a}, {b}은… 아닌 것 같은데 …', '{a}이랑 {b}은 함정이다. 냄새가 난다 …', '선생님이 이런 건 무조건 오답이랬어… {a}, {b} 지우자 …', '{a}, {b}은 너무 그럴듯해서 오히려 아니다 …'],
+      tamguStrong: ['찍었는데… 왠지 {a} 같다 …!', '탐구는 몰라도… 이건 {a}이다 …!'],
+    };
+    const fill = (t, a, b) => t.replace('{a}', (a + 1) + '번').replace('{b}', (b + 1) + '번');
+    const HINT_FACE = { strong: 'me_sn_relief', weak: 'me_sn_calm', tamgu: 'me_sn_panic' };   // 오른쪽에 나오는 주인공 얼굴
     const others = ans => [0, 1, 2, 3, 4].filter(i => i !== ans).sort(() => Math.random() - 0.5);
     GAMES.gichul = async st => {
       hideBox(); setFace('');
@@ -1014,8 +1025,13 @@
       const res = Object.assign({}, S().sn_results || {});
       for (let k = 0; k < items.length; k++) {
         const { q, hint } = items[k];
-        let h = null;   // v169 말(속마음) 없이 보기 번호만 번쩍인다. 약한 확신 = 정답 포함 2개, 강한 확신(컨디션 3 이상) = 정답 1개
-        if (hint) h = cond >= 3 ? { kind: 'strong', glow: [q.ans] } : { kind: 'weak', glow: [q.ans, others(q.ans)[0]].sort() };
+        let h = null;   // 약한 확신 = 정답 포함 2개 번쩍, 강한 확신(컨디션 3 이상) = 정답 1개 번쩍. 탐구는 「②④번은 아닌 듯」(오답 2개 흐리게)도
+        if (hint) {
+          const o = others(q.ans), pk = a => a[Math.floor(Math.random() * a.length)];
+          if (cond >= 3) h = { kind: 'strong', face: HINT_FACE.strong, glow: [q.ans], line: fill(pk(tamgu ? HINT.tamguStrong : HINT.strong), q.ans) };
+          else if (tamgu && Math.random() < 0.5) { const [a, b] = o.slice(0, 2).sort(); h = { kind: 'weak', face: HINT_FACE.tamgu, dim: [a, b], line: fill(pk(HINT.tamguB), a, b) }; }
+          else { const [a, b] = [q.ans, o[0]].sort(); h = { kind: 'weak', face: tamgu ? HINT_FACE.tamgu : HINT_FACE.weak, glow: [a, b], line: fill(pk(tamgu ? HINT.tamguA : HINT.weak), a, b) }; }
+        }
         const r = await gichulOne(q, { k, n: items.length, hint: h, quit: true });
         if (r === 'quit' || skipped) break;
         const key = tamgu || q.area === '한국사' || q.area === '한문' ? (q.sub || q.area) : q.area;
@@ -1027,16 +1043,21 @@
     async function gichulOne(q, o) {
       const ms = Gichul.timeFor(q.pts), label = q.area === '사회' ? '사회탐구' : q.area === '과학' ? '과학탐구' : q.area === '한문' ? '제2외국어/한문' : q.area;
       const pickN = await until(finish => {
-        const p = ui('cs-gquiz gx' + (q.lead ? ' has-lead' : ''), `
+        const p = ui('cs-gquiz gx' + (q.lead ? ' has-lead' : '') + (o.hint ? ' has-say' : ''), `
           <div class="g-paper">
             <div class="g-subj"><b>${esc(label)}</b> 영역${q.sub ? ` · ${esc(q.sub)}` : ''} · ${q.no}번 <i class="gx-pts">${q.pts}점</i><span class="g-cnt">${o.k + 1} / ${o.n}</span></div>
             <div class="gx-body">${q.lead ? `<div class="gx-scroll gx-lead-col"><img class="gx-lead" src="${q.lead}" alt="지문"></div>` : ''}<div class="gx-scroll gx-q-col"><img class="gx-q" src="${q.img}" alt="${esc(label)} ${q.no}번 문제"></div></div>
             <div class="gx-opts">${[0, 1, 2, 3, 4].map(i => `<button type="button" data-i="${i}">${N_(i)}</button>`).join('')}</div>
             <div class="g-rope"><i style="animation-duration:${ms}ms"></i></div>
             <div class="gx-row"><span class="gx-time"></span><button type="button" class="g-guess" data-i="2">모르겠다… 3번으로 찍는다</button>${o.quit ? '<button type="button" class="g-quit" data-quit="1">그만 풀기</button>' : ''}</div>
-          </div>`);
+          </div>
+          ${o.hint ? `<img class="gx-face" src="/images/cutscene/ynu1/${o.hint.face}.webp" alt=""><div class="gx-think ${o.hint.kind}"><b>나</b><span></span></div>` : ''}`);
         const opts = [...p.querySelectorAll('.gx-opts button')];
-        if (o.hint) setTimeout(() => (o.hint.glow || []).forEach(n => opts[n].classList.add('flash', o.hint.kind)), 700);
+        if (o.hint) {   // v171 「나」 대화창에 혼잣말을 한 글자씩 → 다 나오면 보기가 번쩍 (탐구 「아닌 듯」은 그 두 개를 흐리게)
+          const say = p.querySelector('.gx-think span'), line = '(' + (o.hint.line || '') + ')'; let i = 0;
+          const ty = () => { if (!say.isConnected) return; say.textContent = line.slice(0, ++i); if (i < line.length) setTimeout(ty, 34); }; setTimeout(ty, 500);
+          setTimeout(() => { (o.hint.glow || []).forEach(n => opts[n].classList.add('flash', o.hint.kind)); (o.hint.dim || []).forEach(n => opts[n].classList.add('dim')); }, 500 + line.length * 34);
+        }
         // 지문 · 문제 칸: 아래로 더 있으면 「아래로 더 있어요」 (끝까지 내리면 사라짐)
         p.querySelectorAll('.gx-scroll').forEach(sc => {
           const more = document.createElement('div'); more.className = 'gx-more'; more.textContent = sc.classList.contains('gx-lead-col') ? '지문이 아래로 더 있어요 ↓' : '아래로 더 있어요 ↓'; sc.appendChild(more);

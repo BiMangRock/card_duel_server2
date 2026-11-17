@@ -118,6 +118,16 @@ function phaseGainPool(){
   }
   return out;
 }
+// v170 수능 보스가 폭주할 때 실제로 뽑는 후보 (등급표의 최상급·상급·중급만 — 「신병 소집」처럼 보스에게 도움 안 되는 건 뺀다)
+//   사용형: 무덤지기 · 도박사의 손 / 지속(비용 없음): 아래 목록. 이 중에서 똑같은 확률로 하나
+const PHASE_PICK = new Set([
+  'active:graveKeeper', 'active:gambler',
+  'cheat:manaBonus', 'cheat:spellOverload', 'cheat:spellCopy', 'cheat:gambler', 'cheat:graveKeeper',                                  // 최상급
+  'cheat:spellDown', 'cheat:mirror', 'cheat:infiniteLoop', 'cheat:burn', 'cheat:shieldAll', 'cheat:chargeAll', 'cheat:phoenix',     // 상급
+  'cheat:regen', 'cheat:armor', 'cheat:firstMinion', 'cheat:legion', 'cheat:reinforce', 'cheat:buff', 'cheat:atkUp', 'cheat:doubleBattlecry',
+  'cheat:rommath', 'cheat:recycle2', 'cheat:ironLegion', 'cheat:youMe', 'cheat:bloodPact',                                             // 중급
+]);
+const phasePickPool = () => phaseGainPool().filter(g => PHASE_PICK.has(g.kind + ':' + g.id));
 // v166 보스 고유 능력 (보스 편집 화면). 값이 없던 옛 저장 데이터의 수능 보스는 N수 선언을 기본으로
 const UNIQUE_LIST = [{ id: 'nsuDeclare', name: 'N수 선언', icon: '📚', text: '덱이 비면 탈진 피해 대신, 카드를 뽑을 때마다 무작위 전설·특급 카드를 얻습니다' }];
 function cleanUnique(b){
@@ -127,4 +137,4 @@ function cleanUnique(b){
 }
 const uniqueOf = b => { const u = cleanUnique(b).unique; return UNIQUE_LIST.find(x => x.id === u) || null; };
 
-if (typeof module !== 'undefined') { module.exports = { CHEAT_TIERS, CHEATS, cheatValue, cheatCandidates, rollCheats, cheatRange, cheatValueFor, cleanCheatVals, cleanBossPower, bossPowerOf, PHASE_EXCLUDE, phaseGainPool, UNIQUE_LIST, cleanUnique, uniqueOf }; }
+if (typeof module !== 'undefined') { module.exports = { CHEAT_TIERS, CHEATS, cheatValue, cheatCandidates, rollCheats, cheatRange, cheatValueFor, cleanCheatVals, cleanBossPower, bossPowerOf, PHASE_EXCLUDE, phaseGainPool, PHASE_PICK, phasePickPool, UNIQUE_LIST, cleanUnique, uniqueOf }; }

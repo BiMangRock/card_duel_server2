@@ -87,3 +87,20 @@
 #snFx .sn-myrep table th{font-size:1.05cqw}
 #snFx .sn-myrep table th.sb{font-weight:600; background:#f3f1e8}
 #snFx .sn-myrep table td{font-size:1.2cqw}
+/* v171 기출 힌트: 컷신처럼 「나」 대화창(혼잣말) + 오른쪽 얼굴. 문제지는 왼쪽 위로 좁혀서 얼굴·대화창과 안 겹치게 */
+#cutscene .cs-gquiz.gx .gx-opts button.dim{opacity:.3}
+#cutscene .cs-gquiz.gx.has-say{flex-direction:row; align-items:flex-start; justify-content:flex-start; padding:3.3rem 0 0 1vw; box-sizing:border-box}
+#cutscene .cs-gquiz.gx.has-say .g-paper{width:min(1080px, 67vw); max-height:calc(100vh - 3.3rem - 205px)}
+#cutscene .cs-gquiz.gx.has-say.has-lead .g-paper{height:calc(100vh - 3.3rem - 205px)}
+#cutscene .cs-gquiz.gx .gx-face{position:absolute; right:max(2vw, 10px); bottom:0; height:min(72vh, 660px); max-width:34vw; object-fit:contain; object-position:bottom right; pointer-events:none; animation:gxFaceIn .4s ease both}
+#cutscene .cs-gquiz.gx .gx-think{position:absolute; left:1vw; bottom:14px; width:min(1080px, 67vw); box-sizing:border-box; padding:30px 28px 26px; z-index:2;
+  background:rgba(18,16,24,.72); border:2px solid rgba(214,180,120,.6); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.6); animation:gxFaceIn .3s ease both}
+#cutscene .cs-gquiz.gx .gx-think b{position:absolute; top:-16px; left:22px; padding:3px 16px; border-radius:7px; font-size:1rem; font-weight:700; color:#fff;
+  background:linear-gradient(#3a8fd0, #1f5f99); border:2px solid #9fd3ff; box-shadow:0 3px 8px rgba(0,0,0,.5)}
+#cutscene .cs-gquiz.gx .gx-think span{display:block; min-height:1.6em; color:#7fd7ff; font-size:clamp(1rem, 2.1vw, 1.3rem); line-height:1.6; word-break:keep-all; font-family:var(--font-u, system-ui, sans-serif)}
+@keyframes gxFaceIn{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
+@media (max-aspect-ratio: 1/1){
+  #cutscene .cs-gquiz.gx .gx-face{display:none}
+  #cutscene .cs-gquiz.gx.has-say .g-paper, #cutscene .cs-gquiz.gx .gx-think{width:98vw}
+  #cutscene .cs-gquiz.gx.has-say{padding-left:1vw}
+}

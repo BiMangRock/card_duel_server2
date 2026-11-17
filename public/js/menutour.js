@@ -113,7 +113,7 @@ const MenuTour = (() => {
     els.coach.innerHTML = `<div class="mt-head"><span class="mt-badge"></span><b class="mt-title"></b><button type="button" class="mt-x" title="그만두기">✕</button></div>
       <div class="mt-chap"></div><div class="mt-chat"></div><div class="mt-task"></div>
       <div class="mt-btns"><button type="button" class="mt-next">다음</button></div>`;
-    els.coach.querySelector('.mt-x').onclick = () => { if (done || confirm('메뉴 둘러보기를 그만둘까요? (처음부터 다시 할 수 있어요)')) stop(); };
+    els.coach.querySelector('.mt-x').onclick = async () => { if (done || await confirmBox('메뉴 둘러보기를 그만둘까요?', '처음부터 다시 할 수 있어요.', '그만두기')) stop(); };
     els.coach.querySelector('.mt-next').onclick = () => { if (Q.length) { flush(); return; } if (step() && step().type === 'info') next(); };
     [els.t, els.b, els.l, els.r, els.hole].forEach(e => { e.onclick = ev => { ev.stopPropagation(); ev.preventDefault(); poke(); }; });
     return els;

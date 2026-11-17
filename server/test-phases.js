@@ -120,4 +120,15 @@ assert.deepStrictEqual(C.cleanUnique({ id: 'ynu_1', unique: 'hack' }), { unique:
   }
   console.log('봇 대전', done, '판 OK');
 }
+// v170 수능 보스가 실제로 쓰는 후보: 등급표(최상·상·중급) 27개만, 영웅 능력(신병 소집 등)은 없음, 고르게 뽑힘
+{
+  const PP = C.phasePickPool();
+  assert.strictEqual(PP.length, 27);
+  assert(!PP.some(g => g.kind === 'hero'), '영웅 능력은 후보 아님');
+  assert(PP.some(g => g.kind === 'active' && g.id === 'gambler') && PP.some(g => g.kind === 'cheat' && g.id === 'manaBonus'));
+  const seen = new Set();
+  for (let i = 0; i < 300; i++) { let s = game({ pool: PP }); s = hitBossTo(s, 19).state; seen.add(s.seats[1].phaseGains[0].kind + ':' + s.seats[1].phaseGains[0].id); }
+  assert(seen.size >= 20, '여러 가지가 고르게 나옴: ' + seen.size);
+  assert([...seen].every(k => C.PHASE_PICK.has(k)));
+}
 console.log('test-phases OK');

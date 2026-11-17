@@ -983,7 +983,7 @@ body.boss-portrait #aiAvatar>span{background-size:cover; background-position:cen
 }
 
 /* ===== v134 확인 창 · 일괄 추출 ===== */
-#confirmBox{position:fixed; inset:0; z-index:9500; background:rgba(10,8,18,.78); display:flex; align-items:center; justify-content:center; padding:1rem;}
+#confirmBox{position:fixed; inset:0; z-index:9800; background:rgba(10,8,18,.78); display:flex; align-items:center; justify-content:center; padding:1rem;}
 #confirmBox .cb-panel{width:min(420px,92vw); background:linear-gradient(180deg,#241f38,#181428); border:1px solid var(--gold-d); border-radius:12px; padding:1.1rem 1.2rem; box-shadow:0 10px 30px rgba(0,0,0,.6); animation:bubbleIn .2s ease-out;}
 #confirmBox .cb-panel.danger{border-color:#c0574a; box-shadow:0 0 0 1px #7a1f1f, 0 10px 30px rgba(0,0,0,.6);}
 #confirmBox h3{margin:0 0 .6rem; color:var(--gold); font-size:1.1rem;} #confirmBox .danger h3{color:#ff9a8a;}

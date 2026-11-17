@@ -28,9 +28,9 @@ const SuneungFx = (() => {
   const START_CLOCK = [8, 40];
   // 엔진 newGame 의 opts.phases[보스 좌석]. 수능 보스만
   function phasesFor(boss) {
-    if (!isSuneung(boss) || typeof phaseGainPool !== 'function') return null;
+    if (!isSuneung(boss) || typeof phasePickPool !== 'function') return null;
     preload();
-    return { at: PHASES.map(p => p.at), armor: 5, pool: phaseGainPool() };
+    return { at: PHASES.map(p => p.at), armor: 5, pool: phasePickPool() };
   }
 
   // v167 컷신 선택 → 보스전 시작: 컨디션(전야 · 아침 · 쉬는 시간 선택의 합)
