@@ -1,0 +1,127 @@
+/* uiskin.css — 메뉴 버튼을 손그림 이미지로 (images/ui/*). style.css · polish.css 다음에 읽는다.
+   마우스를 올리면 어둡게, 누르면 더 어둡게 + 살짝 눌림. 이미지는 하나만 쓰고 상태는 filter 로 만든다. */
+
+/* ---------- 왼쪽 메뉴 줄: 나무 판 + 동그란 소켓 아이콘 ---------- */
+#screen-main .mm-rail{width:236px; gap:.28rem; padding-left:calc(.7rem + env(safe-area-inset-left,0px)); padding-right:.7rem;
+  background:linear-gradient(90deg, rgba(14,10,6,.92), rgba(20,14,9,.88)); border-right:1px solid rgba(201,162,39,.25);}
+#screen-main .mm-logo{width:120px;}
+#screen-main .mm-item{width:206px; min-height:0; aspect-ratio:720/188; flex-direction:row; justify-content:flex-start; gap:0; isolation:isolate;
+  padding:0 14px 6px 60px; border:0; border-radius:0; background:none; color:#f3e3bb;
+  font:600 .95rem var(--font-u); letter-spacing:.02em; text-shadow:0 1px 0 #000, 0 2px 4px rgba(0,0,0,.8); transition:transform .12s ease;}
+/* 판은 ::before 에 깔아서, 어둡게 할 때 말풍선(.desc)까지 어두워지지 않게 */
+#screen-main .mm-item::before{content:''; position:absolute; inset:0; z-index:-1; background:url(/images/ui/rail_plate.webp) center/100% 100% no-repeat;
+  transition:filter .15s ease;}
+#screen-main .mm-item .mm-ic{position:absolute; left:14.7%; top:45%; width:44px; height:44px; object-fit:contain; transform:translate(-50%,-50%);
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.6)); pointer-events:none; transition:transform .15s ease, filter .15s ease;}
+#screen-main .mm-item .mm-label{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .15s ease;}
+#screen-main .mm-item:hover, #screen-main .mm-item:focus-visible{background:none; border:0; outline:none;}
+#screen-main .mm-item:hover .mm-ic{transform:translate(-50%,-50%);}
+#screen-main .mm-item.mm-sub{color:#d9c9a4;}
+#screen-main .mm-item.mm-sub::before{filter:saturate(.6) brightness(.86);}
+#screen-main .mm-item.mm-sub .mm-ic{filter:drop-shadow(0 2px 2px rgba(0,0,0,.6)) saturate(.75);}
+#screen-main .mm-item .fr-badge{top:2px; right:8px; z-index:2;}
+@media (hover:hover){
+  #screen-main .mm-item:hover::before{filter:brightness(.72);}
+  #screen-main .mm-item.mm-sub:hover::before{filter:saturate(.6) brightness(.64);}
+  #screen-main .mm-item:hover .mm-ic{transform:translate(-50%,-50%) scale(1.08); filter:drop-shadow(0 2px 2px rgba(0,0,0,.6)) brightness(.85);}
+  #screen-main .mm-item:hover .mm-label{color:#d8c39a;}
+}
+#screen-main .mm-item:active{transform:translateY(1px) scale(.98);}
+#screen-main .mm-item:active::before{filter:brightness(.58);}
+#screen-main .mm-item:focus-visible::before{filter:drop-shadow(0 0 2px #ffe08a);}
+
+/* 화면이 낮으면 판을 조금 줄인다 */
+@media (max-height:840px){
+  #screen-main .mm-rail{width:206px; gap:.15rem;}
+  #screen-main .mm-item{width:180px; min-height:0; padding-left:52px; font-size:.86rem;}
+  #screen-main .mm-item .mm-ic{width:38px; height:38px;}
+  #screen-main .mm-logo{width:96px; max-height:none;}
+}
+@media (max-height:700px){
+  #screen-main .mm-rail{width:180px; gap:.1rem;}
+  #screen-main .mm-item{width:156px; padding-left:45px; font-size:.78rem;}
+  #screen-main .mm-item .mm-ic{width:33px; height:33px;}
+  #screen-main .mm-logo{width:72px;}
+}
+/* 폰 가로 · 아주 낮은 화면: 판 없이 아이콘 + 작은 글자 (예전 배치) */
+@media (orientation:landscape) and (max-height:540px){
+  #screen-main .mm-rail{width:80px; gap:0; padding-left:calc(.3rem + env(safe-area-inset-left,0px)); padding-right:.3rem;}
+  #screen-main .mm-logo{width:52px;}
+  #screen-main .mm-item, #screen-main .mm-item:hover, #screen-main .mm-item:focus-visible{width:68px; aspect-ratio:auto; min-height:44px; flex-direction:column; justify-content:center; gap:.05rem;
+    padding:.2rem .1rem; background:none; font-size:.62rem;}
+  #screen-main .mm-item::before{display:none;}
+  #screen-main .mm-item .mm-ic{position:static; width:26px; height:26px; transform:none;}
+  #screen-main .mm-item:hover .mm-ic{transform:scale(1.08);}
+}
+
+/* ---------- 메인 모드 3개: 술집 벽 액자 + 아래 게시판에 글자 ---------- */
+#screen-main .mm-modes{align-items:stretch; gap:clamp(.6rem, 1.8vw, 1.6rem);}
+#screen-main .mm-mode, #screen-main .mm-mode:hover, #screen-main .mm-mode:focus-visible{
+  container-type:size; display:flex; align-items:flex-end; justify-content:center; overflow:visible;
+  background:none; border:0; border-radius:0; box-shadow:none; outline:none;}
+#screen-main .mm-mode.ai{--ar:760/1039; --tt:75.5%; --tl:11%; --tr:15%; --tb:5%;}
+#screen-main .mm-mode.pvp{--ar:760/1115; --tt:72.5%; --tl:11%; --tr:10%; --tb:5%;}
+#screen-main .mm-mode.adv{--ar:760/1146; --tt:78.5%; --tl:10%; --tr:10%; --tb:4.5%;}
+#screen-main .mm-mode .mm-art,
+#screen-main .mm-mode.ai .mm-art, #screen-main .mm-mode.pvp .mm-art, #screen-main .mm-mode.adv .mm-art{
+  position:relative; flex:0 0 auto; min-height:0; width:min(100cqw, calc(100cqh * var(--ar))); aspect-ratio:var(--ar);
+  background:center/100% 100% no-repeat; animation:none; transform:none; container-type:inline-size;
+  filter:drop-shadow(0 14px 18px rgba(0,0,0,.55)); transition:filter .15s ease;}
+#screen-main .mm-mode.ai .mm-art{background-image:url(/images/ui/mode_ai.webp);}
+#screen-main .mm-mode.pvp .mm-art{background-image:url(/images/ui/mode_pvp.webp);}
+#screen-main .mm-mode.adv .mm-art{background-image:url(/images/ui/mode_adv.webp);}
+#screen-main .mm-mode .mm-txt{position:absolute; top:var(--tt); left:var(--tl); right:var(--tr); bottom:var(--tb); margin:0; padding:0;
+  display:flex; flex-direction:column; justify-content:center; gap:1cqi; overflow:hidden;}
+#screen-main .mm-mode .mm-txt > *{flex:none; margin:0;}
+#screen-main .mm-mode .mm-tag{font-size:clamp(.5rem, 2.8cqi, .78rem); padding:.02rem .5rem;}
+#screen-main .mm-mode b{font-size:clamp(.85rem, 7cqi, 2.1rem); color:#f6e6b8; text-shadow:0 2px 0 #000, 0 3px 8px rgba(0,0,0,.8);}
+#screen-main .mm-mode .mm-desc{font-size:clamp(.56rem, 3.4cqi, .95rem); line-height:1.3; color:#d8c9a6;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+#screen-main .mm-mode .mm-gold{font-size:clamp(.55rem, 3.2cqi, .86rem);}
+/* 액자가 작으면 꼬리표는 빼고, 더 작으면 설명도 한 줄로 */
+@container (max-width:360px){ #screen-main .mm-mode .mm-tag{display:none} #screen-main .mm-mode .mm-desc{-webkit-line-clamp:1} }
+@container (max-width:230px){ #screen-main .mm-mode .mm-desc{display:none} }
+@media (hover:hover){
+  #screen-main .mm-mode:hover .mm-art{filter:drop-shadow(0 18px 22px rgba(0,0,0,.6)) brightness(.8);}
+}
+#screen-main .mm-mode:active .mm-art{filter:drop-shadow(0 8px 10px rgba(0,0,0,.6)) brightness(.68);}
+#screen-main .mm-mode:hover:not(.tilt){transform:translateY(-5px);}
+#screen-main .mm-mode.tilt::after{display:none;}
+#screen-main .mm-mode:focus-visible .mm-art{filter:drop-shadow(0 0 3px #ffe08a) drop-shadow(0 14px 18px rgba(0,0,0,.55));}
+/* 세로 화면에서도 3장을 나란히 (액자는 세로로 긴 모양이라) */
+@media (orientation:portrait) and (max-width:820px){
+  #screen-main .mm-modes{grid-template-columns:repeat(3, minmax(0,1fr)); grid-auto-rows:auto; align-content:start;}
+  #screen-main .mm-mode{flex-direction:row; aspect-ratio:var(--ar);}
+  #screen-main .mm-mode .mm-txt{margin:0; padding:0; flex:none;}
+}
+/* 낮은 화면: 설명은 한 줄 */
+@media (orientation:landscape) and (max-height:540px){
+  #screen-main .mm-mode .mm-desc{-webkit-line-clamp:1;}
+  #screen-main .mm-mode .mm-txt{margin-top:0; padding:0;}
+}
+
+/* ---------- 일반 버튼(.menu-btn): 9-slice 판 ----------
+   끝 장식이 늘어나 보이지 않게, 세로로 늘어나는 한 줄은 장식이 없는 줄(나무 판 79·87번째 줄 등)로 골랐다.
+   border-image-width 는 실제 테두리 두께와 따로라서 글자 자리는 padding 으로 정한다. */
+.menu-btn:not(.dev){background:none; border:1px solid transparent; border-radius:0; box-shadow:none; min-height:58px;
+  border-image:url(/images/ui/btn_plate.webp) 62 105 135 105 fill / 18px 31px 40px 31px stretch;
+  padding:.5rem 2.1rem; color:#f3e3bb; text-shadow:0 1px 0 #000, 0 2px 4px rgba(0,0,0,.7);
+  transition:filter .15s ease, transform .12s ease;}
+.menu-btn:not(.dev) .desc{color:#d8c9a6;}
+.menu-btn.primary:not(.dev){min-height:64px; padding:.5rem 3rem; background:none;
+  border-image:url(/images/ui/btn_primary.webp) 205 150 29 150 fill / 56px 41px 8px 41px stretch;
+  color:#3a2306; text-shadow:0 1px 0 rgba(255,236,170,.6);}
+.menu-btn.back:not(.dev){min-height:56px; padding:.4rem 2rem; background:none;
+  border-image:url(/images/ui/btn_back.webp) 86 95 117 95 fill / 24px 26px 32px 26px stretch;
+  color:#2b2420; text-shadow:0 1px 0 rgba(255,255,255,.35);}
+.menu-btn:hover:not(:disabled):not(.dev){transform:translateY(-1px); box-shadow:none; filter:brightness(.78);}
+.menu-btn:active:not(:disabled):not(.dev){transform:translateY(1px) scale(.985); filter:brightness(.64);}
+.menu-btn:focus-visible:not(.dev){outline:2px solid #ffe08a; outline-offset:2px;}
+.menu-btn img.mi{margin-left:-.6rem;}
+
+/* ---------- 왼쪽 위 뒤로가기 동그라미 ---------- */
+#navBack{background:url(/images/ui/nav_back.webp) center/contain no-repeat; border:0; box-shadow:none; width:3.1rem; height:3.1rem;
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.6)); transition:filter .15s ease, transform .12s ease;}
+#navBack svg{display:none;}
+#navBack:hover{filter:drop-shadow(0 4px 6px rgba(0,0,0,.6)) brightness(.75); box-shadow:none;}
+#navBack:active{filter:drop-shadow(0 2px 3px rgba(0,0,0,.6)) brightness(.62); transform:scale(.93);}
