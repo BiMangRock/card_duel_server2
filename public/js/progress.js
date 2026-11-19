@@ -51,7 +51,7 @@ const PROGRESS = {
   ],
   EMOTE_GAP_MS: 1500,         // 감정 표현 사이 최소 간격
 };
-const craftableCard = c => !!(c && c.type && PROGRESS.CRAFT[c.rarity] != null && !(c.scope === 'adventure' || c.scope === 'boss') && !c.unlock);   // 상점 팩에서 나오는 일반 카드만
+const craftableCard = c => !!(c && c.type && PROGRESS.CRAFT[c.rarity] != null && !(c.scope === 'adventure' || c.scope === 'boss') && !c.unlock && !c.custom);   // 상점 팩에서 나오는 일반 카드만 (직접 만든 카드 제외)
 function cleanStats(raw) {                                   // 화면이 보낸 한 판 기록 → 상한을 넘지 않는 정수
   const out = {};
   for (const [k, cap] of Object.entries(PROGRESS.STAT_CAP)) { const v = Math.floor(Number(raw && raw[k]) || 0); out[k] = Math.max(0, Math.min(cap, v)); }

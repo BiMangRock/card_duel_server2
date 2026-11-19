@@ -19,6 +19,8 @@ const app = express();
 app.disable('x-powered-by');
 if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY === '1' ? 1 : process.env.TRUST_PROXY);  // 터널/프록시 뒤에서 실제 IP·https 인식
 app.use('/api/bosses', express.json({ limit: '1mb' }));      // 보스 목록은 덱이 여러 개라 크다 (개발자 전용 저장 경로만 크게 허용)
+app.use('/api/cardai', express.json({ limit: '400kb' }));       // 카드 제안 (그림 data URL 포함)
+app.use('/api/customcards', express.json({ limit: '2mb' }));     // 직접 만든 카드 (카드·소환수 그림 data URL 포함)
 app.use(express.json({ limit: '20kb' }));
 
 // 기본 보안 헤더
@@ -41,6 +43,8 @@ app.use('/api', require('./quiz').router);              // v168 수능 기출 �
 app.use('/api', require('./decks').router);           // v135 덱 슬롯 여러 개        // v132 카드 제작·분해 · 일일 퀘스트
 app.use('/api', pvp.router);                             // 유저 대전: /api/pvp/ws(웹소켓, attachWs) · stream(SSE) · queue · cancel · mulligan · action · status
 app.use('/api', require('./social').createSocialRouter({ core: pvp.core, onRename: () => require('./pvp-db').invalidateBoard() }));   // v136 닉네임 · 친구
+app.use('/api', require('./cardai').router);             // 카드 제안 (카드 PR): Gemini 변환 · 개발자 승인
+app.use('/api', require('./customcards').router);        // 카드 직접 만들기 (규칙 기반) · 승인(PR) 페이지 review.html
 app.use('/api', (req, res) => res.status(404).json({ error: '없는 API예요.' }));
 
 // 게임 화면은 로그인한 사람만. 아니면 로그인 화면으로.

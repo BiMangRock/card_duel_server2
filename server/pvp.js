@@ -34,6 +34,10 @@ function makeRoom(pvp, uid) {
 }
 
 function makeHandlers(pvp) {
+  const customBlock = uid => {                    // 승인 전 직접 만든 카드가 사용 중 덱에 있으면 유저 대전 불가
+    const l = require('./customcards').unapprovedInDeckOf(uid);
+    return l.length ? { ok: false, error: `승인 전 직접 만든 카드(${l.join(', ')})가 덱에 있어 유저 대전에 쓸 수 없어요. AI 대전·모험에서는 쓸 수 있어요.` } : null;
+  };
   const actionOk = makeBucket(60, 10000), queueOk = makeBucket(20, 10000);
   const tooMany = res => res.status(429).json({ error: '요청이 너무 빨라요. 잠시 뒤 다시 해 주세요.' });
   return {
@@ -65,7 +69,7 @@ function makeHandlers(pvp) {
     // GET /pvp/status — 페이지를 새로 열었을 때 진행 중인 판이 있는지 (있으면 화면이 스트림을 열어 이어서 한다)
     status(req, res) { res.set('Cache-Control', 'no-store'); res.json({ state: pvp.stateOf(req.user.id) }); },
     // POST /pvp/queue · /pvp/cancel
-    queue(req, res) { if (!queueOk(req.user.id)) return tooMany(res); const r = pvp.queueJoin(req.user.id, (req.body || {}).mode, (req.body || {}).heroPower); res.status(r.ok ? 200 : 400).json(r); },   // v127 {mode:'normal'|'rank'}
+    queue(req, res) { if (!queueOk(req.user.id)) return tooMany(res); { const cb = customBlock(req.user.id); if (cb) return res.status(400).json(cb); } const r = pvp.queueJoin(req.user.id, (req.body || {}).mode, (req.body || {}).heroPower); res.status(r.ok ? 200 : 400).json(r); },   // v127 {mode:'normal'|'rank'}
     cancel(req, res) { const r = pvp.queueCancel(req.user.id); res.status(r.ok ? 200 : 400).json(r); },
     // POST /pvp/mulligan {matchId, ids}
     mulligan(req, res) {
@@ -84,11 +88,12 @@ function makeHandlers(pvp) {
       if (!queueOk(req.user.id)) return tooMany(res);
       const b = req.body || {}, to = Number(b.to);
       if (!Number.isInteger(to) || !areFriends(req.user.id, to)) return res.status(400).json({ ok: false, error: '친구에게만 대전을 신청할 수 있어요.' });
+      { const cb = customBlock(req.user.id); if (cb) return res.status(400).json(cb); }
       const r = pvp.invite(req.user.id, to, b.heroPower); res.status(r.ok ? 200 : 400).json(r);
     },
     inviteRespond(req, res) {
       if (!queueOk(req.user.id)) return tooMany(res);
-      const b = req.body || {}; const r = pvp.respond(req.user.id, String(b.id || ''), !!b.accept, b.heroPower);
+      const b = req.body || {}; if (b.accept) { const cb = customBlock(req.user.id); if (cb) return res.status(400).json(cb); } const r = pvp.respond(req.user.id, String(b.id || ''), !!b.accept, b.heroPower);
       res.status(r.ok ? 200 : 400).json(r);
     },
     inviteCancel(req, res) { const r = pvp.inviteCancel(req.user.id); res.status(r.ok ? 200 : 400).json(r); },

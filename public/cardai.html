@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카드 제안 (카드 PR)</title>
+<style>
+  :root { --bg:#14161c; --panel:#1e222b; --line:#343a47; --text:#e8e9ee; --mute:#9aa0ad; --acc:#e0b04a; --ok:#4cc38a; --bad:#e5675f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 "Malgun Gothic",system-ui,sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:26px 0 10px; color:var(--acc); }
+  p.sub { color:var(--mute); margin:0 0 16px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  label { display:block; font-size:13px; color:var(--mute); margin:10px 0 4px; }
+  input, select, textarea { width:100%; background:#12151b; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:8px; font:inherit; }
+  textarea { min-height:70px; resize:vertical; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; } .row > div { flex:1 1 90px; }
+  button { background:var(--acc); color:#1a1a1a; border:0; border-radius:6px; padding:9px 16px; font:inherit; font-weight:700; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  button.ok { background:var(--ok); } button.bad { background:var(--bad); color:#fff; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .msg { margin-top:10px; font-size:14px; } .err { color:var(--bad); } .good { color:var(--ok); }
+  .card { display:flex; gap:12px; border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; background:#181b22; }
+  .card img { width:84px; height:84px; object-fit:cover; border-radius:8px; background:#0e1014; flex:none; }
+  .card .body { flex:1; min-width:0; } .card h3 { margin:0 0 2px; font-size:16px; }
+  .tag { display:inline-block; font-size:12px; border-radius:20px; padding:1px 9px; margin-right:6px; border:1px solid var(--line); color:var(--mute); }
+  .tag.pending { color:var(--acc); border-color:var(--acc); } .tag.approved { color:var(--ok); border-color:var(--ok); } .tag.rejected { color:var(--bad); border-color:var(--bad); }
+  .warn { color:var(--acc); font-size:13px; } pre { background:#0e1014; border:1px solid var(--line); border-radius:6px; padding:8px; overflow:auto; font-size:12px; margin:6px 0; }
+  .nav { float:right; font-size:13px; } a { color:var(--acc); }
+  #admin { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="nav"><a href="/">게임으로</a></div>
+  <h1>카드 제안 <small style="color:var(--mute);font-weight:400">(카드 PR)</small></h1>
+  <p class="sub">카드 아이디어를 글로 쓰면 AI가 게임 카드로 바꾸고, 개발자가 검토해서 승인합니다. 코드는 쓰지 않아도 돼요.</p>
+
+  <div id="needLogin" class="panel" style="display:none">로그인이 필요해요. <a href="/login.html">로그인하러 가기</a></div>
+
+  <section id="user" style="display:none">
+    <div class="panel">
+      <div class="row">
+        <div style="flex:3 1 200px"><label>카드 이름 (20자 이내)</label><input id="name" maxlength="20"></div>
+        <div><label>종류</label><select id="type"><option value="minion">하수인</option><option value="spell">주문</option></select></div>
+        <div><label>코스트 (0~10)</label><input id="cost" type="number" min="0" max="10" value="3"></div>
+        <div class="stat"><label>공격력</label><input id="atk" type="number" min="0" max="12" value="3"></div>
+        <div class="stat"><label>체력</label><input id="hp" type="number" min="1" max="12" value="3"></div>
+      </div>
+      <label>효과 설명 — 말로 쓰면 돼요 (예: 낼 때 카드 2장을 뽑는다 / 두 플레이어의 덱을 서로 바꾼다)</label>
+      <textarea id="text" maxlength="200"></textarea>
+      <label>카드 그림 (선택, 작게 줄여서 올려요)</label>
+      <input id="img" type="file" accept="image/*">
+      <div style="margin-top:12px"><button id="send">AI에게 변환 요청</button></div>
+      <div id="msg" class="msg"></div>
+    </div>
+    <h2>내 제안</h2>
+    <div id="mine"></div>
+  </section>
+
+  <section id="admin">
+    <h2>개발자 검토</h2>
+    <div id="adminList"></div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const STATUS = { pending:'검토 대기', approved:'승인됨', rejected:'반려됨' };
+let imageData = null;
+
+async function api(path, opt) {
+  const r = await fetch(path, opt && opt.body ? { ...opt, headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(opt.body) } : opt);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(d.error || ('오류 ' + r.status)), { status: r.status });
+  return d;
+}
+
+function cardHtml(p, admin) {
+  const c = p.card, inp = p.input, chk = p.check;
+  const stats = c.type === 'minion' ? ` · ${c.atk}/${c.hp}` : ' · 주문';
+  const kw = ['taunt','shield','charge','rush','elusive','lifesteal','stealth','windfury'].filter(k => c[k]).join(', ');
+  let h = `<div class="card">${p.image ? `<img src="${esc(p.image)}" alt="">` : '<img alt="">'}<div class="body">
+    <h3>${esc(c.name)} <span class="tag ${p.status}">${STATUS[p.status] || p.status}</span><span class="tag">${p.mode === 'data' ? '기존 효과' : '새 효과(코드)'}</span></h3>
+    <div>코스트 ${c.cost}${stats} · ${esc(c.rarity)}${kw ? ' · ' + esc(kw) : ''} · 효과 <b>${esc(c.effect.type)}</b> (${esc(c.effect.value)})</div>
+    <div style="color:var(--mute)">유저 설명: ${esc(inp.text)}${p.by ? ' — ' + esc(p.by) : ''}</div>`;
+  if (chk) h += `<div>봇 대전 점검 ${chk.games}판: 오류 ${chk.errors} · 멈춤 ${chk.stalled} · 승 ${chk.wins}/${chk.games} · 판정 <b>${esc(chk.verdict)}</b></div>`;
+  if (p.effect) h += `<div>카드 문장: ${esc(p.effect.text)}</div><pre>${esc(p.effect.code)}</pre>`;
+  for (const f of p.flags) h += `<div class="warn">${esc(f)}</div>`;
+  if (p.note) h += `<div style="color:var(--mute)">개발자 메모: ${esc(p.note)}</div>`;
+  if (admin && p.status === 'pending') h += `<div style="margin-top:8px"><input id="note${p.id}" placeholder="메모 (반려 사유 등)" style="margin-bottom:6px">
+    <button class="ok" onclick="review(${p.id},'approved')">승인</button> <button class="bad" onclick="review(${p.id},'rejected')">반려</button></div>`;
+  return h + '</div></div>';
+}
+
+async function loadMine() { const d = await api('/api/cardai/mine'); $('mine').innerHTML = d.proposals.map(p => cardHtml(p, false)).join('') || '<p class="sub">아직 없어요.</p>'; }
+async function loadAdmin() { const d = await api('/api/cardai/admin/list'); $('adminList').innerHTML = d.proposals.map(p => cardHtml(p, true)).join('') || '<p class="sub">제안이 없어요.</p>'; }
+async function review(id, decision) {
+  try { await api('/api/cardai/admin/' + id + '/review', { method:'POST', body:{ decision, note: ($('note' + id) || {}).value || '' } }); await loadAdmin(); await loadMine(); }
+  catch (e) { alert(e.message); }
+}
+
+$('type').onchange = () => document.querySelectorAll('.stat').forEach(e => e.style.display = $('type').value === 'spell' ? 'none' : '');
+$('img').onchange = e => {                                       // 256px 로 줄여 data URL 로 만든다
+  const f = e.target.files[0]; imageData = null; if (!f) return;
+  const url = URL.createObjectURL(f), im = new Image();
+  im.onload = () => { const s = 256, k = Math.min(1, s / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+    cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+    imageData = cv.toDataURL('image/webp', 0.8); URL.revokeObjectURL(url); };
+  im.src = url;
+};
+$('send').onclick = async () => {
+  const b = $('send'), m = $('msg'); b.disabled = true; m.className = 'msg'; m.textContent = 'AI가 변환하고 봇 대전으로 점검하는 중… (10~20초)';
+  try {
+    const d = await api('/api/cardai/draft', { method:'POST', body:{ name:$('name').value, type:$('type').value, cost:+$('cost').value, atk:+$('atk').value, hp:+$('hp').value, text:$('text').value, image:imageData } });
+    m.className = 'msg good'; m.textContent = '제출됐어요. 개발자 검토를 기다리는 중이에요. AI 설명: ' + (d.reason || '');
+    await loadMine(); if (!$('admin').style.display || $('admin').style.display === 'block') loadAdmin().catch(() => {});
+  } catch (e) { m.className = 'msg err'; m.textContent = e.message; }
+  b.disabled = false;
+};
+
+(async () => {
+  try {
+    const me = await api('/api/me'); const u = me.user || me;
+    $('user').style.display = 'block'; await loadMine();
+    if (u.isAdmin || u.is_admin) { $('admin').style.display = 'block'; await loadAdmin(); }
+  } catch (e) { $('needLogin').style.display = 'block'; }
+})();
+</script>
+</body>
+</html>

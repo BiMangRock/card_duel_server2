@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카드 승인 요청 — 카드 결투</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+  :root{--bg:#0f0d1a; --panel:#1a1730; --line:#2e2a4a; --text:#ece6d6; --dim:#a69f8a; --gold:#c9a227; --green:#3fae6a; --red:#d0544a; --blue:#4a8fd0; --amber:#d0a03a;}
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Pretendard', system-ui, sans-serif; font-size:14px;}
+  header{display:flex; align-items:center; gap:.8rem; padding:.9rem 1.4rem; border-bottom:1px solid var(--line); background:#14122a;}
+  header h1{font-size:1.15rem; margin:0; color:var(--gold);}
+  header .me{margin-left:auto; color:var(--dim); font-size:.85rem;}
+  header a{color:var(--dim);}
+  main{display:grid; grid-template-columns:380px 1fr; min-height:calc(100vh - 56px);}
+  @media (max-width:860px){ main{grid-template-columns:1fr;} }
+  .side{border-right:1px solid var(--line); display:flex; flex-direction:column;}
+  .tabs{display:flex; gap:.2rem; padding:.7rem; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .tabs button{background:none; border:1px solid transparent; color:var(--dim); padding:.35rem .7rem; border-radius:6px; cursor:pointer; font:inherit;}
+  .tabs button.on{border-color:var(--line); background:var(--panel); color:var(--text); font-weight:700;}
+  .tabs em{font-style:normal; background:var(--line); border-radius:999px; padding:0 .45rem; margin-left:.25rem; font-size:.75rem;}
+  .list{overflow-y:auto; flex:1;}
+  .pr{display:flex; gap:.7rem; padding:.75rem 1rem; border-bottom:1px solid var(--line); cursor:pointer;}
+  .pr:hover{background:#1d1a35;} .pr.sel{background:#24204a;}
+  .pr .ic{font-size:1.1rem; line-height:1.2;}
+  .pr b{display:block;} .pr small{color:var(--dim);}
+  .pill{display:inline-block; font-size:.72rem; padding:.1rem .55rem; border-radius:999px; font-weight:700; vertical-align:middle;}
+  .s-pending{background:#1f5a34; color:#c8f5d0;} .s-approved{background:#4a2a7a; color:#e2d0ff;} .s-rejected{background:#6a2a2a; color:#ffc8c0;} .s-made{background:#33304d; color:#d8d8ff;}
+  .detail{padding:1.2rem 1.6rem; overflow-y:auto;}
+  .empty{color:var(--dim); padding:2rem; text-align:center;}
+  h2{margin:0 0 .3rem; font-size:1.5rem;} h2 .num{color:var(--dim); font-weight:400;}
+  .meta{color:var(--dim); margin-bottom:1rem;}
+  .grid{display:grid; grid-template-columns:240px 1fr; gap:1.2rem; align-items:start;}
+  @media (max-width:1100px){ .grid{grid-template-columns:1fr;} }
+  .box{background:var(--panel); border:1px solid var(--line); border-radius:8px; margin-bottom:1rem;}
+  .box h3{margin:0; padding:.6rem .9rem; border-bottom:1px solid var(--line); font-size:.95rem; background:#1f1c38; border-radius:8px 8px 0 0;}
+  .box .in{padding:.8rem .9rem;}
+  table{width:100%; border-collapse:collapse;} td,th{padding:.4rem .5rem; border-bottom:1px solid var(--line); text-align:left; vertical-align:top;}
+  th{color:var(--dim); font-weight:400; font-size:.8rem;}
+  td.n{text-align:right; white-space:nowrap; font-family:monospace; font-size:.95rem;}
+  .add{color:#9fe0a8;} .del{color:#ff9a8a;}
+  .tier{font-size:.72rem; padding:.05rem .45rem; border-radius:999px;}
+  .t1{background:#2f5a3a;} .t2{background:#5a4a1f;} .t3{background:#6a2a2a;} .t-1{background:#2a3a5a;}
+  .warn{color:#ffcf7a; margin:.2rem 0;}
+  .ok{color:#9fe0a8;} .bad{color:#ff9a8a;}
+  /* 카드 미리보기 (게임 카드와 비슷한 모양) */
+  .card{width:220px; height:306px; border-radius:14px; background:linear-gradient(160deg,#efe4c4,#d6c69a); border:3px solid #2a2418; color:#2a2418; position:relative; padding:10px; display:flex; flex-direction:column; gap:6px; box-shadow:0 8px 24px rgba(0,0,0,.5);}
+  .card.r1{border-color:#3b6fb5;} .card.r2{border-color:#8a4fc2;} .card.r3{border-color:#d08a1a;}
+  .card .cost{position:absolute; top:-10px; left:-10px; width:42px; height:42px; border-radius:50%; background:#2f5fb0; color:#fff; font-weight:800; font-size:1.3rem; display:flex; align-items:center; justify-content:center; border:2px solid #fff;}
+  .card .art{height:118px; border-radius:8px; background:#171629 center/cover no-repeat; border:1px solid #8a6f1c;}
+  .card .nm{font-weight:800; text-align:center; font-size:1.05rem;}
+  .card .tags{display:flex; flex-wrap:wrap; gap:3px; justify-content:center;}
+  .card .tags span{font-size:.68rem; background:#2a2418; color:#efe4c4; border-radius:4px; padding:1px 5px;}
+  .card .fx{font-size:.78rem; text-align:center; line-height:1.3; flex:1; overflow:hidden;}
+  .card .st{display:flex; justify-content:space-between;}
+  .card .st b{width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.2rem; border:2px solid #fff;}
+  .card .st .a{background:#b5892a;} .card .st .h{background:#b33a2a;}
+  .tk{display:flex; gap:.7rem; align-items:center; padding:.45rem; border:1px solid var(--line); border-radius:8px; margin:.35rem 0; background:#15132a;}
+  .tk.d2{border-color:#3a4a7a;} .tk.d3{border-color:#7a6a3a;}
+  .tk-sub{margin-left:1.6rem; border-left:2px dashed var(--line); padding-left:.6rem;}
+  .tk-art{width:56px; height:56px; border-radius:8px; background:#26233f center/cover no-repeat; flex:0 0 56px; border:1px solid #8a6f1c;}
+  .tk-info small{display:block; color:var(--dim);} .tk-info p{margin:.2rem 0 0; color:var(--dim); font-size:.82rem;}
+  .tk-st{font-family:monospace; color:var(--gold);} .tg{font-size:.7rem; background:#2a2418; color:#efe4c4; border-radius:4px; padding:1px 5px; margin-right:2px;}
+  .diff{font-family:monospace; font-size:.85rem; border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-top:.4rem;}
+  .dl{padding:.25rem .6rem;} .dl.del{background:rgba(208,84,74,.18); color:#ffb4aa;} .dl.add{background:rgba(63,174,106,.18); color:#b4f0c4;} .dl.same{color:var(--dim);}
+  .box h3 select{background:#100e20; color:var(--text); border:1px solid var(--line); border-radius:4px; margin-left:.3rem;}
+  textarea{width:100%; min-height:80px; background:#100e20; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:.6rem; font:inherit; resize:vertical;}
+  .btns{display:flex; gap:.6rem; margin-top:.6rem; flex-wrap:wrap;}
+  button.act{border:none; border-radius:6px; padding:.6rem 1.1rem; font:inherit; font-weight:700; cursor:pointer; color:#fff;}
+  .approve{background:var(--green);} .reject{background:var(--red);} .ghost{background:var(--line);}
+  button.act:disabled{opacity:.5; cursor:default;}
+  .timeline{border-left:2px solid var(--line); margin-left:.5rem; padding-left:1rem;}
+  .timeline p{margin:.4rem 0; color:var(--dim);}
+  .gate{max-width:520px; margin:4rem auto; text-align:center; line-height:1.7;}
+  code{background:#100e20; padding:.15rem .4rem; border-radius:4px;}
+</style>
+</head>
+<body>
+<header><h1>🛠 카드 승인 요청</h1><span style="color:var(--dim)">유저가 만든 카드를 보고 승인(merge)하거나 반려해요</span><span class="me" id="me"></span></header>
+<div id="gate" class="gate" hidden></div>
+<main id="app" hidden>
+  <section class="side"><div class="tabs" id="tabs"></div><div class="list" id="list"></div></section>
+  <section class="detail" id="detail"><div class="empty">왼쪽에서 요청을 고르세요</div></section>
+</main>
+<script>
+(() => {
+  const q = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const when = t => { if (!t) return ''; const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const TABS = [['pending', '🟢 열린 요청'], ['made', '만들기만 함'], ['approved', '🟣 승인됨'], ['rejected', '🔴 반려됨'], ['all', '전체'], ['gold', '💰 골드 관리']];
+  const ICON = { pending: '🟢', approved: '🟣', rejected: '🔴', made: '⚪' };
+  const KW = { taunt: '도발', shield: '보호막', rush: '속공', charge: '돌진', lifesteal: '생명력 흡수', stealth: '은신', windfury: '질풍', poison: '독성', revive: '환생', elusive: '모면' };
+  const TIER = { 1: '하', 2: '중', 3: '상', '-1': '단점' };
+  const RAR = { '일반': 0, '희귀': 1, '특급': 2, '전설': 3 };
+  let data = { cards: [], counts: {} }, tab = 'pending', selId = null;
+
+  async function api(method, url, body) {
+    const r = await fetch(url, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 401) { location.href = '/login.html'; throw new Error('login'); }
+    return { status: r.status, ok: r.ok, data: await r.json().catch(() => ({})) };
+  }
+  async function load() {
+    const r = await api('GET', '/api/customcards/admin/list');
+    if (r.status === 403) {
+      q('gate').hidden = false;
+      q('gate').innerHTML = `<h2>개발자 계정만 볼 수 있어요</h2><p>서버 컴퓨터에서 아래 명령으로 내 계정을 개발자로 만든 뒤, 다시 로그인해 주세요.</p><p><code>npm run make-admin 내아이디</code></p><p><a href="/" style="color:var(--gold)">게임으로 돌아가기</a></p>`;
+      return;
+    }
+    data = r.data; q('app').hidden = false; renderTabs(); renderList();
+    if (selId) renderDetail();
+  }
+  function renderTabs() {
+    q('tabs').innerHTML = '';
+    for (const [k, label] of TABS) {
+      const n = k === 'gold' ? null : k === 'all' ? data.cards.length : (data.counts[k] || 0);
+      const b = document.createElement('button'); b.className = tab === k ? 'on' : '';
+      b.innerHTML = `${label}${n === null ? '' : `<em>${n}</em>`}`; b.onclick = () => { tab = k; renderTabs(); if (k === 'gold') loadUsers(); else { renderList(); renderDetail(); } };
+      q('tabs').appendChild(b);
+    }
+  }
+  function renderList() {
+    if (tab === 'gold') return renderUsers();
+    const box = q('list'); box.innerHTML = '';
+    const list = data.cards.filter(c => tab === 'all' || c.status === tab);
+    if (!list.length) { box.innerHTML = `<div class="empty">${tab === 'pending' ? '열린 승인 요청이 없어요 🎉' : '없어요'}</div>`; return; }
+    for (const c of list) {
+      const el = document.createElement('div'); el.className = 'pr' + (c.id === selId ? ' sel' : '');
+      el.innerHTML = `<span class="ic">${ICON[c.status]}</span><div><b>${esc(c.name)} <span class="pill s-${c.status}">${esc(c.statusLabel)}</span></b>
+        <small>#${c.id} · ${esc(c.creator)} · ${c.status === 'made' ? '만듦 ' + when(c.createdAt) : '요청 ' + when(c.requestedAt || c.createdAt)} · ${c.card.cost}코 ${c.card.atk}/${c.card.hp}</small></div>`;
+      el.onclick = () => { selId = c.id; renderList(); renderDetail(); };
+      box.appendChild(el);
+    }
+  }
+  function cardHtml(c) {
+    const tags = Object.keys(KW).filter(k => c[k]).map(k => `<span>${KW[k]}</span>`).join('');
+    return `<div class="card r${RAR[c.rarity] || 0}"><div class="cost">${c.cost}</div>
+      <div class="art" style="${c.art ? `background-image:url('${esc(c.art)}')` : ''}"></div>
+      <div class="nm">${esc(c.name)}</div><div class="tags">${tags}</div>
+      <div class="fx">${esc(c.customText || '')}</div>
+      <div class="st"><b class="a">${c.atk}</b><small style="align-self:center;color:#6a5a30">${esc(c.rarity)}</small><b class="h">${c.hp}</b></div></div>`;
+  }
+  function renderDetail() {
+    if (tab === 'gold') return renderGoldDetail();
+    const c = data.cards.find(x => x.id === selId), box = q('detail');
+    if (!c) { box.innerHTML = '<div class="empty">왼쪽에서 요청을 고르세요</div>'; return; }
+    const b = c.budget, ck = c.check;
+    const open = c.status === 'pending' || c.status === 'made';
+    box.innerHTML = `
+      <h2>${esc(c.name)} <span class="num">#${c.id}</span>${c.version > 1 ? ` <span class="pill s-made">v${c.version}</span>` : ''}</h2>
+      <div class="meta"><span class="pill s-${c.status}">${ICON[c.status]} ${esc(c.statusLabel)}</span>
+        &nbsp;<b>${esc(c.creator)}</b> 님이 ${when(c.createdAt)}에 만들었어요${c.requestedAt ? ` · ${when(c.requestedAt)}에 승인 요청` : ''}${c.reviewedAt ? ` · ${when(c.reviewedAt)}에 처리됨` : ''}</div>
+      <div class="grid">
+        <div>${cardHtml(c.card)}</div>
+        <div>
+          <div class="box"><h3>📄 변경 내용 — 카드 데이터</h3><div class="in">
+            <table><tr><th>항목</th><th>등급</th><th style="text-align:right">예산</th></tr>
+              <tr><td>공격력 ${c.card.atk} + 체력 ${c.card.hp}</td><td></td><td class="n del">-${c.card.atk + c.card.hp}</td></tr>
+              ${c.lines.map(l => `<tr><td>${esc(l.text)}</td><td><span class="tier t${l.tier}">${TIER[l.tier]}</span></td><td class="n ${l.cost < 0 ? 'add' : 'del'}">${l.cost < 0 ? '+1' : '-' + l.cost}</td></tr>`).join('')}
+              <tr><td><b>합계</b> (예산 = 코스트 ${c.card.cost} × 3)</td><td></td><td class="n ${b.over ? 'bad' : 'ok'}"><b>${b.used} / ${b.limit}</b></td></tr>
+            </table>
+            ${(c.warns || []).map(w => `<p class="warn">⚠ ${esc(w)}</p>`).join('')}
+            <details style="margin-top:.6rem"><summary style="cursor:pointer;color:var(--dim)">카드 데이터(JSON) 보기</summary><pre style="white-space:pre-wrap;font-size:.78rem;color:#cfc8b0">${esc(JSON.stringify(stripCard(c.card), null, 2))}</pre></details>
+          </div></div>
+          ${diffHtml(c)}
+          ${(c.card.csum || []).length ? `<div class="box"><h3>🐾 소환수 디자인</h3><div class="in">${summonsHtml(c.card.csum, 1)}</div></div>` : ''}
+          <div class="box"><h3>🤖 자동 점검 — 봇 대전</h3><div class="in" id="ckBox">${checkHtml(ck)}</div></div>
+          <div class="box"><h3>💬 검토</h3><div class="in">
+            <div class="timeline">
+              <p>⚪ ${when(c.createdAt)} 카드 생성 (${esc(c.creator)})</p>
+              ${(c.versions || []).filter(v => v.version > 1).map(v => `${v.statusBefore === 'rejected' ? `<p>🔴 반려됨${v.noteBefore ? ` — “${esc(v.noteBefore)}”` : ''}</p>` : ''}<p>✏️ ${when(v.at)} v${v.version}로 수정${v.statusBefore === 'rejected' ? ' → 다시 승인 요청' : ''}</p>`).join('')}
+              ${c.requestedAt ? `<p>🟢 ${when(c.requestedAt)} 승인 요청</p>` : ''}
+              ${c.reviewedAt ? `<p>${ICON[c.status]} ${when(c.reviewedAt)} ${esc(c.statusLabel)}${c.note ? ` — “${esc(c.note)}”` : ''}</p>` : ''}
+            </div>
+            <textarea id="note" placeholder="메모 (반려 사유 등 — 만든 사람에게 보여요)">${esc(c.note || '')}</textarea>
+            <div class="btns">
+              <button class="act approve" id="bApprove">✓ 승인 (Merge)</button>
+              <button class="act reject" id="bReject">✕ 반려</button>
+              <button class="act ghost" id="bRecheck">🤖 다시 점검 (10판)</button>
+            </div>
+            ${!open ? '<p style="color:var(--dim);margin:.5rem 0 0">이미 처리된 요청이에요. 다시 승인·반려할 수도 있어요.</p>' : ''}
+            ${c.status === 'made' ? '<p style="color:var(--dim);margin:.5rem 0 0">아직 만든 사람이 승인 요청을 보내지 않았지만, 바로 승인할 수 있어요.</p>' : ''}
+          </div></div>
+        </div>
+      </div>`;
+    q('bApprove').onclick = () => review('approved');
+    q('bReject').onclick = () => review('rejected');
+    q('bRecheck').onclick = async () => {
+      q('bRecheck').disabled = true; q('ckBox').innerHTML = '점검 중…';
+      const r = await api('POST', `/api/customcards/admin/${c.id}/recheck`);
+      if (r.ok) c.check = r.data.check; q('ckBox').innerHTML = checkHtml(c.check); q('bRecheck').disabled = false;
+    };
+  }
+  const WHEN = { bc: '전투의 함성', death: '죽음의 메아리', end: '내 턴이 끝날 때' };
+  function summonsHtml(list, depth) {             // 소환수 → 소환수 … (최대 3단계)
+    return list.map(cs => { const t = cs.token || {};
+      const tags = Object.keys(KW).filter(k => t[k]).map(k => `<span class="tg">${KW[k]}</span>`).join('');
+      return `<div class="tk d${depth}"><div class="tk-art" style="${t.art ? `background-image:url('${esc(t.art)}')` : ''}"></div>
+        <div class="tk-info"><small>${WHEN[cs.when]} · ${cs.count}마리</small><b>${esc(t.name)}</b> <span class="tk-st">${t.atk}/${t.hp}</span> ${tags}
+        ${t.customText ? `<p>${esc(t.customText)}</p>` : ''}</div></div>${(t.csum || []).length ? `<div class="tk-sub">${summonsHtml(t.csum, depth + 1)}</div>` : ''}`; }).join('');
+  }
+  // ---------- 버전 비교 (GitHub 의 Files changed 처럼) ----------
+  let baseVer = {};                                 // 카드 id → 비교 기준 버전
+  function diffHtml(c) {
+    const vs = c.versions || [];
+    if (vs.length < 2) return '';
+    const cur = vs[vs.length - 1], bv = baseVer[c.id] || vs[vs.length - 2].version, base = vs.find(v => v.version === bv) || vs[vs.length - 2];
+    const rows = [];
+    for (const [k, label] of [['cost', '코스트'], ['atk', '공격력'], ['hp', '체력']]) if (base.card[k] !== cur.card[k]) rows.push(`<tr><td>${label}</td><td class="n del">${base.card[k]}</td><td class="n add">${cur.card[k]}</td></tr>`);
+    const kwB = Object.keys(KW).filter(k => base.card[k]), kwC = Object.keys(KW).filter(k => cur.card[k]);
+    const tB = base.lines.filter(l => !l.id.startsWith('kw:')).map(l => l.text), tC = cur.lines.filter(l => !l.id.startsWith('kw:')).map(l => l.text);
+    const minus = [...kwB.filter(k => !kwC.includes(k)).map(k => KW[k]), ...tB.filter(t => !tC.includes(t))];
+    const plus = [...kwC.filter(k => !kwB.includes(k)).map(k => KW[k]), ...tC.filter(t => !tB.includes(t))];
+    const same = [...kwC.filter(k => kwB.includes(k)).map(k => KW[k]), ...tC.filter(t => tB.includes(t))];
+    const artChanged = (base.card.art || '') !== (cur.card.art || '');
+    return `<div class="box"><h3>🔀 바뀐 점 <select id="baseSel">${vs.slice(0, -1).map(v => `<option value="${v.version}"${v.version === base.version ? ' selected' : ''}>v${v.version}</option>`).join('')}</select> → v${cur.version}</h3><div class="in">
+      ${rows.length ? `<table><tr><th>능력치</th><th style="text-align:right">전</th><th style="text-align:right">후</th></tr>${rows.join('')}</table>` : '<p style="color:var(--dim);margin:0 0 .4rem">코스트·능력치는 그대로예요</p>'}
+      <div class="diff">${minus.map(t => `<div class="dl del">- ${esc(t)}</div>`).join('')}${plus.map(t => `<div class="dl add">+ ${esc(t)}</div>`).join('')}${same.map(t => `<div class="dl same">&nbsp; ${esc(t)}</div>`).join('')}</div>
+      ${!minus.length && !plus.length ? '<p style="color:var(--dim);margin:.3rem 0 0">효과는 그대로예요</p>' : ''}
+      <p style="color:var(--dim);margin:.4rem 0 0">예산 ${base.budget.used}/${base.budget.limit} → ${cur.budget.used}/${cur.budget.limit}${artChanged ? ' · 그림 바뀜' : ''}</p></div></div>`;
+  }
+  document.addEventListener('change', ev => { if (ev.target && ev.target.id === 'baseSel') { baseVer[selId] = Number(ev.target.value); renderDetail(); } });
+
+  // ---------- 골드 관리 ----------
+  let users = { users: [], log: [], me: null }, selUser = null, uq = '';
+  async function loadUsers() {
+    const r = await api('GET', '/api/customcards/admin/users?q=' + encodeURIComponent(uq));
+    if (r.ok) users = r.data; renderUsers(); renderGoldDetail();
+  }
+  function renderUsers() {
+    const box = q('list');
+    box.innerHTML = `<div style="padding:.7rem"><input id="uq" placeholder="🔍 닉네임·아이디 검색" value="${esc(uq)}" style="width:100%;background:#100e20;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:.5rem"></div>`;
+    for (const u of users.users) {
+      const el = document.createElement('div'); el.className = 'pr' + (u.id === selUser ? ' sel' : '');
+      el.innerHTML = `<span class="ic">${u.isAdmin ? '🛠' : '👤'}</span><div><b>${esc(u.nickname || u.username)}${u.id === users.me ? ' (나)' : ''}</b><small>${esc(u.username)} · 💰 ${u.gold.toLocaleString('ko-KR')}</small></div>`;
+      el.onclick = () => { selUser = u.id; renderUsers(); renderGoldDetail(); };
+      box.appendChild(el);
+    }
+    const inp = q('uq'); let tm = 0;
+    inp.oninput = () => { uq = inp.value; clearTimeout(tm); tm = setTimeout(loadUsers, 300); };
+    if (document.activeElement !== inp && uq) { inp.focus(); inp.setSelectionRange(uq.length, uq.length); }
+  }
+  function renderGoldDetail() {
+    const box = q('detail'), u = users.users.find(x => x.id === selUser);
+    const logHtml = `<div class="box"><h3>📜 최근 골드 변경 기록</h3><div class="in">${users.log.length ? `<table>${users.log.map(l => `<tr><td>${when(l.at)}</td><td>${esc(l.admin)} → ${esc(l.user)}</td><td class="n">${l.before.toLocaleString('ko-KR')} → <b>${l.after.toLocaleString('ko-KR')}</b></td></tr>`).join('')}</table>` : '<span style="color:var(--dim)">기록이 없어요</span>'}</div></div>`;
+    if (!u) { box.innerHTML = `<div class="empty">왼쪽에서 유저를 고르세요</div>${logHtml}`; return; }
+    box.innerHTML = `<h2>💰 ${esc(u.nickname || u.username)} <span class="num">${esc(u.username)}</span></h2>
+      <div class="box"><h3>골드 바꾸기</h3><div class="in">
+        <p style="margin:0 0 .6rem">지금 골드: <b style="color:var(--gold);font-size:1.2rem">${u.gold.toLocaleString('ko-KR')}</b></p>
+        <div class="btns" style="margin:0"><input id="gIn" type="number" min="0" placeholder="골드" style="background:#100e20;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:.55rem;width:160px">
+          <button class="act approve" id="gSet">이 값으로 설정</button>
+          ${[100, 1000, 10000].map(n => `<button class="act ghost" data-add="${n}">+${n.toLocaleString('ko-KR')}</button>`).join('')}
+          <button class="act reject" data-add="-1000">-1,000</button></div>
+        <p id="gMsg" style="margin:.6rem 0 0;color:var(--dim)">${u.id === users.me ? '내 골드는 게임 메인의 「💰 내 골드 설정」에서 바꾸면 게임 화면에 바로 반영돼요.' : '그 유저가 게임을 켜 둔 채라면 새로고침해야 바뀐 골드가 보여요.'}</p>
+      </div></div>${logHtml}`;
+    const send = async body => {
+      const r = await api('POST', '/api/customcards/admin/gold', { userId: u.id, ...body });
+      if (!r.ok) { q('gMsg').textContent = '⚠ ' + (r.data.error || '실패'); return; }
+      await loadUsers(); q('gMsg').innerHTML = `<span class="ok">✅ ${r.data.before.toLocaleString('ko-KR')} → ${r.data.after.toLocaleString('ko-KR')}</span>`;
+    };
+    q('gSet').onclick = () => send({ gold: Number(q('gIn').value) });
+    box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => send({ add: Number(b.dataset.add) }));
+  }
+
+  const stripCard = c => { const o = { ...c }; for (const k of ['flavor', 'creator', 'customStatus', 'customId', 'art']) delete o[k]; return o; };
+  function checkHtml(ck) {
+    if (!ck) return '<span style="color:var(--dim)">점검 기록이 없어요</span>';
+    const cls = ck.errors ? 'bad' : ck.verdict === '이상 없음' ? 'ok' : 'warn';
+    return `<p class="${cls}" style="margin:0 0 .4rem;font-weight:700">${ck.errors ? '❌' : ck.verdict === '이상 없음' ? '✅' : '⚠'} ${esc(ck.verdict)}</p>
+      <table><tr><th>대전</th><th>이 카드를 넣은 쪽 승리</th><th>카드를 낸 횟수</th><th>평균 턴</th><th>오류</th></tr>
+      <tr><td>${ck.games}판</td><td>${ck.wins}판 (${Math.round(ck.wins / ck.games * 100)}%)</td><td>${ck.played ?? '-'}번</td><td>${ck.avgTurns}</td><td class="${ck.errors ? 'bad' : ''}">${ck.errors}${ck.firstError ? ' — ' + esc(ck.firstError) : ''}</td></tr></table>`;
+  }
+  async function review(decision) {
+    const c = data.cards.find(x => x.id === selId); if (!c) return;
+    if (decision === 'rejected' && !q('note').value.trim() && !confirm('반려 사유 없이 반려할까요?')) return;
+    q('bApprove').disabled = q('bReject').disabled = true;
+    const r = await api('POST', `/api/customcards/admin/${c.id}/review`, { decision, note: q('note').value });
+    if (!r.ok) { alert(r.data.error || '처리하지 못했어요'); q('bApprove').disabled = q('bReject').disabled = false; return; }
+    await load();
+  }
+  api('GET', '/api/me').then(r => { if (r.ok && r.data) q('me').textContent = r.data.user ? '👤 ' + (r.data.user.name || r.data.user.username) : ''; }).catch(() => {});
+  load();
+  setInterval(() => { if (!document.hidden && tab !== 'gold') load(); }, 15000);   // 새 요청이 오면 15초 안에 목록에 보인다
+})();
+</script>
+</body>
+</html>

@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS deck_meta (
 );
 `);
 
-const byName = new Map(CARD_POOL.map(c => [c.name, c]));
+const cardNamed = n => CARD_POOL.find(c => c.name === n);
+const byName = { has: n => !!cardNamed(n), get: cardNamed };   // 직접 만든 카드는 서버가 켜진 뒤에도 늘어나므로 그때그때 찾는다
 const cleanName = s => String(s == null ? '' : s).replace(/[\u0000-\u001f]/g, '').trim().slice(0, 24) || '새 덱';
 const cleanPower = h => (h && HERO_POWERS[h]) ? h : '';
 // 슬롯에 넣을 수 있는 목록인지 (느슨한 검사): 있는 카드 · 30장 이하 · 같은 카드 2장 이하 · 일반 카드(개발자는 전부)

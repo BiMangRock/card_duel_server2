@@ -76,7 +76,7 @@ function loadDeck(uid) {
   if (d) {
     try {
       const list = JSON.parse(d.deck_json);
-      if (!E.validateDeckList(list) && !validateDeckOwned(list, collectionOf(uid)) && !validateDeckScope(list, E.CARD_POOL, 'normal')) return list;   // v117: 모험·보스 전용 카드가 섞인 덱은 대전 불가
+      if (!E.validateDeckList(list) && !validateDeckOwned(list, collectionOf(uid)) && !validateDeckScope(list, E.CARD_POOL, 'normal') && !require('./customcards').unapprovedIn(list).length) return list;   // 승인 전 직접 만든 카드가 있으면 대전 불가   // v117: 모험·보스 전용 카드가 섞인 덱은 대전 불가
     } catch (_) {}
   }
   return E.defaultDeckList();

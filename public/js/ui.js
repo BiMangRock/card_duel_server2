@@ -3448,7 +3448,7 @@ $('pkFlipAll').onclick=()=>{ if(!pk) return; const p=pk.r.packs[pk.i]; document.
 
 // ---------- 시작: 메뉴 화면부터 ----------
 ServerStore.ready.then(() => {
-  if(isDev()){ $('btnBossEdit').style.display=''; $('btnTest').style.display=''; }   // 서버에서 개발자 여부를 받은 뒤에 개발자 메뉴 표시
+  if(isDev()){ $('btnBossEdit').style.display=''; $('btnTest').style.display=''; const rv=$('btnCardReview'); if(rv) rv.style.display=''; const gt=$('btnGoldTool'); if(gt) gt.style.display=''; }   // 서버에서 개발자 여부를 받은 뒤에 개발자 메뉴 표시
   // (아래는 서버에서 내 저장 데이터를 불러온 뒤에 시작)
 Economy.load();
 buildDifficultyButtons();
