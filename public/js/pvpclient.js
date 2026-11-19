@@ -147,7 +147,7 @@ const PvpClient = (() => {
       el('pvpToday').textContent = st.rewardsToday || 0;
       setGauge(st.rewardsToday || 0);
       const w = S.mode === 'rank' ? (st.waitingRank || 0) : (st.waiting || 0);
-      el('pvpWaiting').textContent = st.state === 'queue' ? `${w}명 (나 포함)` : `${w}명`;
+      el('pvpWaiting').textContent = st.state === 'queue' ? `나 포함 ${w}명` : `${w}명`;
       renderRank(st.rank);
     }
     document.querySelectorAll('#pvpModes button').forEach(x => { x.classList.toggle('on', x.dataset.mode === S.mode); x.disabled = !!(st && st.state === 'queue'); });
@@ -157,7 +157,7 @@ const PvpClient = (() => {
     const b = el('pvpFindBtn'), q = st && st.state === 'queue';
     b.disabled = S.replaced ? false : (!S.esOpen || !st);                // v148 자리를 넘긴 탭: 누르면 이 탭으로 다시 가져온다
     b.classList.toggle('waiting', !!q && !S.replaced);
-    el('pvpFindTxt').textContent = S.replaced ? '🔄 다른 탭(기기)에서 열려 있어요 · 눌러서 여기서 하기' : !S.esOpen ? '서버에 연결하는 중…' : q ? `${S.mode === 'rank' ? '랭크전' : '일반전'} 상대를 찾는 중… ${sec(Date.now() - S.queuedAt)}초 (누르면 취소)` : (S.mode === 'rank' ? '🏆 랭크전 상대 찾기' : '⚔️ 일반전 상대 찾기');
+    el('pvpFindTxt').textContent = S.replaced ? '다른 탭에서 열려 있어요. 눌러서 여기로 가져오기' : !S.esOpen ? '서버에 연결하는 중…' : q ? `${S.mode === 'rank' ? '랭크전' : '일반전'} 상대를 찾는 중… ${sec(Date.now() - S.queuedAt)}초 · 누르면 취소` : (S.mode === 'rank' ? '랭크전 상대 찾기' : '일반전 상대 찾기');
     el('pvpSpin').style.display = q && !S.replaced ? '' : 'none';
     document.querySelectorAll('.pvpWinGold').forEach(x => { x.textContent = PVP.WIN_GOLD; });
   }
@@ -193,13 +193,13 @@ const PvpClient = (() => {
     if (!rk) return;
     el('pvpRankBadge').innerHTML = rankLine(rk);
     el('pvpRankSub').textContent = rk.tier >= RANK.LEGEND ? `전설 승수 ${rk.legendWins}승 · 승수가 많을수록 순위가 올라가요` :
-      `이기면 별 +1${rk.streak >= RANK.STREAK_BONUS_FROM - 1 ? ' (연승 중! 다음 승리는 별 +2)' : ''} · 지면 별 -1${rk.tier === 0 ? ' (브론즈는 안 줄어요)' : ''}${rk.streak ? ` · ${rk.streak}연승` : ''}`;
+      `이기면 별 +${rk.streak >= RANK.STREAK_BONUS_FROM - 1 ? 2 : 1}${rk.tier === 0 ? '' : ' · 지면 별 -1'}${rk.streak ? ` · ${rk.streak}연승` : ''}`;
     el('pvpRankBar').style.width = Math.round(ladderIndex(rk) / ladderIndex({ tier: RANK.LEGEND }) * 100) + '%';
   }
   async function openBoard() {
     let box = el('rankModal');
     if (!box) { box = document.createElement('div'); box.id = 'rankModal'; box.className = 'rank-modal'; box.onclick = e => { if (e.target === box) box.classList.remove('show'); }; document.body.appendChild(box); }
-    box.innerHTML = '<div class="rank-panel"><h3>🏆 순위표</h3><p class="sub">불러오는 중…</p></div>'; box.classList.add('show');
+    box.innerHTML = '<div class="rank-panel"><h3>순위표</h3><p class="sub">불러오는 중…</p></div>'; box.classList.add('show');
     const r = await fetch('/api/pvp/ranking', { credentials: 'same-origin' }).then(x => x.json()).catch(() => null);
     if (!r) { box.querySelector('.sub').textContent = '순위표를 불러오지 못했어요.'; return; }
     const B = r.board || { total: 0, rows: [], counts: r.counts }, mine = r.myRow;
@@ -208,7 +208,7 @@ const PvpClient = (() => {
     let rows = B.rows.map(line).join('') || '<tr><td colspan="4">아직 아무도 없어요.</td></tr>';
     if (mine && !B.rows.some(x => x.place === mine.place)) rows += `<tr class="gap"><td colspan="4">⋯</td></tr>${line(mine)}`;
     const counts = RANK.TIERS.map((t, i) => `<span>${RANK.ICONS[i]} ${t} <b>${(B.counts || [])[i] || 0}</b></span>`).join('');
-    box.innerHTML = `<div class="rank-panel"><h3>🏆 순위표</h3><p class="sub">내 등급: ${rankLine(r.me)}${mine ? ` · 전체 ${B.total}명 중 <b>${mine.place}위</b>` : ''}</p>
+    box.innerHTML = `<div class="rank-panel"><h3>순위표</h3><p class="sub">내 등급: ${rankLine(r.me)}${mine ? ` · 전체 ${B.total}명 중 <b>${mine.place}위</b>` : ''}</p>
       <table class="rank-table"><tr><th>순위</th><th>이름</th><th>등급</th><th>랭크 승/패</th></tr>${rows}</table>
       <h4>등급별 인원</h4><div class="rank-counts">${counts}</div>
       <p class="sub">로그인 없이 보는 공개 순위: <a href="/ranking" target="_blank" rel="noopener">${location.origin}/ranking</a></p>
@@ -241,17 +241,17 @@ const PvpClient = (() => {
     ui.selected = null; ui.pending = null; ui.busy = true; stopArrow(); closeDeck(); resetSurrenderBtn();
     $('logList').innerHTML = ''; $('overlay').classList.remove('show'); $('overlayReward').innerHTML = ''; $('overlayArt').innerHTML = ''; el('pvpAgainBtn').style.display = 'none'; el('specLeaveBtn').style.display = m.spectate ? '' : 'none'; el('pvpReplayBtn').style.display = 'none';
     $('verBadge').textContent = VERSION;
-    S.badgeBase = m.spectate ? `👁 관전 중 · ${m.me.name} vs ${m.opp.name}${m.friendly ? ' · 친구 대전' : m.ranked ? ' · 랭크전' : ''}`
-      : m.friendly ? '👥 친구 대전 · 보상 없음' : `${m.ranked ? '🏆 랭크전' : '유저 대전 · 일반전'} · 승리 +${PVP.WIN_GOLD}G`;
+    S.badgeBase = m.spectate ? `관전 중 · ${m.me.name} vs ${m.opp.name}${m.friendly ? ' · 친구 대전' : m.ranked ? ' · 랭크전' : ''}`
+      : m.friendly ? '친구 대전 · 보상 없음' : `${m.ranked ? '랭크전' : '유저 대전 · 일반전'} · 승리 +${PVP.WIN_GOLD}G`;
     $('menu').classList.add('hidden'); updateWallet();
     document.querySelector('#aiHero .name').textContent = m.opp.name;
     document.querySelector('#playerHero .name').textContent = m.spectate ? m.me.name : '나';
     { const lb = document.querySelectorAll('.board > .row .label'); if (lb.length >= 2) { lb[0].textContent = m.spectate ? `${m.opp.name} 필드` : '상대 필드'; lb[1].textContent = m.spectate ? `${m.me.name} 필드` : '내 필드'; } }
     document.body.classList.add('pvp-mode'); document.body.classList.toggle('pvp-spectate', !!m.spectate);
     setAvatar('aiAvatar', m.opp.name); setAvatar('playerAvatar', m.spectate ? m.me.name : (S.meName || '나'));
-    if (m.spectate) { logLine(`👁 관전 시작: ${m.me.name} vs ${m.opp.name}`); logLine(`관전 중에는 양쪽 손패가 보이지 않아요. 전투 기록의 '당신'은 ${m.me.name} 쪽이에요.`); }
+    if (m.spectate) { logLine(`관전 시작: ${m.me.name} vs ${m.opp.name}`); logLine(`관전 중에는 양쪽 손패가 보이지 않아요. 전투 기록의 '당신'은 ${m.me.name} 쪽이에요.`); }
     else {
-      logLine(`대전 시작! 상대: ${m.opp.name}${m.friendly ? ' (친구 대전 · 골드·랭크·전적 없음)' : ''}`);
+      logLine(`대전 시작! 상대: ${m.opp.name}${m.friendly ? ' · 친구 대전' : ''}`);
       logLine(view.first === MY ? `당신이 선공입니다. 후공(상대) 보너스: 시작 손패 +${CONFIG.SECOND_HAND}장 · 동전 1장.` : `상대가 선공입니다. 후공(당신) 보너스: 시작 손패 +${CONFIG.SECOND_HAND}장 · 동전 1장.`);
     }
     S.badgeBase += m.spectate ? '' : view.first === MY ? ' · 선공' : ' · 후공';
@@ -264,7 +264,7 @@ const PvpClient = (() => {
       await Preload.ensure();                                            // v138 보통은 이미 받아 둔 상태 (새로고침해서 판에 다시 들어올 때만 로딩 화면)
       const left = (m.introMs || 0) - (Date.now() - (m._at || Date.now()));
       if (!m.spectate && m.phase === 'mulligan' && left > 800 && typeof MatchIntro !== 'undefined') {   // v147 「매칭 성공!」 → 서서히 판 화면으로
-        const mode = m.friendly ? '친구 대전' : m.ranked ? '🏆 랭크전' : '⚔️ 일반전';
+        const mode = m.friendly ? '친구 대전' : m.ranked ? '랭크전' : '일반전';
         await MatchIntro.play({ me: S.meName || '나', opp: m.opp.name, mode }, left, () => beginMatchUi(m));
       } else beginMatchUi(m);
     }
@@ -281,7 +281,7 @@ const PvpClient = (() => {
     ui.selected = null; ui.pending = null; ui.place = null; stopArrow();
     if (evs.length) { ui.busy = true; render(); try { await playEvents(evs); } catch (e) { console.error('[pvp] 연출 오류', e); } }
     view = m.view; S.lastSeq = m.seq; syncShim(view);
-    if (m.timeoutSeat !== undefined) logLine(m.timeoutSeat === MY ? `⏱ 시간 초과! 턴이 자동으로 넘어갔습니다. (연속 ${m.timeouts}/${m.maxTimeouts}, 다 차면 패배)` : '⏱ 상대가 시간 초과로 턴이 넘어갔습니다.');
+    if (m.timeoutSeat !== undefined) logLine(m.timeoutSeat === MY ? `시간 초과로 턴이 넘어갔어요. 연속 ${m.timeouts}/${m.maxTimeouts}번째예요.` : '상대 시간 초과로 턴이 넘어왔어요.');
     if (m.result) finishUi(m);
     ui.busy = !!S.spectate && !m.result; render(); tickHud();          // v136 관전자는 계속 "바쁨" (아무것도 못 누른다)
   }
@@ -312,7 +312,7 @@ const PvpClient = (() => {
           before.forEach((c, i) => { if (ids.includes(c.id) && after[i] && after[i].id !== c.id) pairs.push({ oldId: c.id, card: after[i] }); });
           try { await mullAnimate(pairs); } catch (e) { console.error(e); }
           modal.classList.remove('show');
-        } else { ok.disabled = false; if (r.data && r.data.error) logLine('⚠ ' + r.data.error); }
+        } else { ok.disabled = false; if (r.data && r.data.error) logLine('' + r.data.error); }
       } finally { S.mullAnim = null; release(); }
     };
   }
@@ -329,7 +329,7 @@ const PvpClient = (() => {
       return;
     }
     if (r.status === 409) { ui.busy = false; resync(); return; }            // 내 화면이 낡았음 → 최신 상태를 다시 받는다
-    { const msg = (r.data && r.data.error) || '행동을 처리하지 못했어요.'; if (typeof warn === 'function') warn(msg); else logLine('⚠ ' + msg); }   // v145 경고창
+    { const msg = (r.data && r.data.error) || '행동을 처리하지 못했어요.'; if (typeof warn === 'function') warn(msg); else logLine('' + msg); }   // v145 경고창
     ui.busy = false;
   }
 
@@ -347,15 +347,15 @@ const PvpClient = (() => {
       error: '보상 처리 중 문제가 생겨 골드가 지급되지 않았어요',
     })[r.why] || '';
     let top = '', sub = '';
-    if (r.friendly) top = '<span>👥 친구 대전 · 골드·랭크·전적 변동 없음</span>';   // v136
+    if (r.friendly) top = '<span>친구 대전</span>';   // v136
     else if (r.reward > 0) { top = sign(r.reward); sub = r.rewardsToday > 0 ? `오늘 ${r.rewardsToday}번째 승리` : ''; }
     else if (r.youWon) { top = '<span>획득 골드 없음</span>'; sub = why; }
     else if (r.draw || r.void) top = '<span>골드 변동 없음</span>';
     let rk = '';                                                              // v127 랭크전: 별 변화
     if (r.ranked && r.rank) { const a = r.rank.after, g = r.rank.gained;
       const what = a.tier >= RANK.LEGEND && !r.rank.toLegend ? (g > 0 ? `전설 승수 +1 (${a.legendWins}승)` : '전설 승수 그대로') : g > 0 ? `별 +${g}` : g < 0 ? '별 -1' : '별 변화 없음';
-      rk = `<span class="sub2 rank-line">🏆 ${rankLine({ ...a, place: r.rank.place })} · ${what}${r.rank.toLegend ? ' · 👑 전설 달성!' : r.rank.promoted ? ' · ⬆ 승급!' : r.rank.demoted ? ' · ⬇ 강등' : ''}</span>`; }
-    return `<span class="sub2">${r.friendly ? '👥 친구 대전 · ' : r.ranked ? '🏆 랭크전 · ' : ''}${r.oppName ? 'vs ' + escHtml(r.oppName) : ''}${reasonText ? ' · ' + reasonText : ''}</span>${top}${rk}${sub ? `<span class="sub2">${sub}</span>` : ''}<span class="sub2">보유 골드 ${fmt(Economy.get().gold)}</span>`;
+      rk = `<span class="sub2 rank-line">${rankLine({ ...a, place: r.rank.place })} · ${what}${r.rank.toLegend ? ' · 👑 전설 달성!' : r.rank.promoted ? ' · ⬆ 승급!' : r.rank.demoted ? ' · ⬇ 강등' : ''}</span>`; }
+    return `<span class="sub2">${r.friendly ? '친구 대전 · ' : r.ranked ? '랭크전 · ' : ''}${r.oppName ? 'vs ' + escHtml(r.oppName) : ''}${reasonText ? ' · ' + reasonText : ''}</span>${top}${rk}${sub ? `<span class="sub2">${sub}</span>` : ''}<span class="sub2">보유 골드 ${fmt(Economy.get().gold)}</span>`;
   }
   function finishUi(m) {
     const r = m.result; S.over = true; clearTimeout(S.waitTimer);
@@ -364,7 +364,7 @@ const PvpClient = (() => {
       game.pvpTitle = r.void ? '판이 취소되었습니다' : r.draw ? '무승부' : `${r.winnerName} 승리!`;
       game.pvpArt = r.void ? `<img src="/images/pvp/void.webp" alt="무효 판">` : r.draw ? `<span class="draw-art"><img src="/images/pvp/draw.webp" alt=""><span>무승부</span></span>` : '';
       const why = ({ surrender: '항복', timeout: '시간 초과', disconnect: '연결 끊김', turnlimit: `${PVP.MAX_TURNS}턴 초과` })[r.reason];
-      game.pvpHTML = `<span class="sub2">👁 관전 · ${escHtml((r.names || []).join(' vs '))}${why ? ' · ' + why : ''} · ${r.turns}턴</span>`;
+      game.pvpHTML = `<span class="sub2">관전 · ${escHtml((r.names || []).join(' vs '))}${why ? ' · ' + why : ''} · ${r.turns}턴</span>`;
       el('pvpAgainBtn').style.display = 'none'; el('specLeaveBtn').style.display = 'none';
       el('pvpTimer').style.display = 'none'; el('pvpRope').style.display = 'none'; banner(null);
       logLine(r.void ? '판이 취소되었습니다.' : r.draw ? '무승부' : `${r.winnerName} 승리!`);
@@ -466,8 +466,8 @@ const PvpClient = (() => {
       t.innerHTML = `<b class="tn">${sec(left)}초</b><small>${who}${S.timeouts && !S.spectate ? ` · 초과 ${S.timeouts}/${S.maxTimeouts}` : ''}</small>`;
       ropeSet(left, cfgOf().turnMs);
     } else { t.style.display = 'none'; rope.style.display = 'none'; }
-    if (S.replaced) banner('⚠ 같은 계정을 다른 탭(기기)에서 열어서 이 탭의 연결을 넘겼어요. 여기서 계속하려면 새로고침해 주세요.', true);
-    else if (!S.esOpen) banner('⚠ 서버와 연결이 끊겼어요. 다시 연결하는 중… (시간 안에 돌아오면 이어서 할 수 있어요)', true);
+    if (S.replaced) banner('다른 탭에서 같은 계정이 열렸어요. 여기서 하려면 새로고침해 주세요.', true);
+    else if (!S.esOpen) banner('서버와 연결이 끊겼어요. 다시 연결하는 중이에요.', true);
     else if (S.oppOffAt && !S.spectate) banner(`상대의 연결이 끊겼어요. ${sec(S.reconnectMs - (Date.now() - S.oppOffAt))}초 안에 돌아오지 않으면 승리합니다.`, false);
     else banner(null);
   }
@@ -484,6 +484,6 @@ const PvpClient = (() => {
     loadMe(); open();                                                      // v136 접속 상태 · 친구 대전 신청을 받으려고 스트림은 항상 연다 (진행 중인 판이 있으면 서버가 이어서 보내 준다)
   });
 
-  async function emote(id) { if (!S.matchId || S.over || S.spectate) return; const r = await post('/api/pvp/emote', { matchId: S.matchId, id }); if (!r.ok && r.data && r.data.error) logLine('⚠ ' + r.data.error); }   // v132
+  async function emote(id) { if (!S.matchId || S.over || S.spectate) return; const r = await post('/api/pvp/emote', { matchId: S.matchId, id }); if (!r.ok && r.data && r.data.error) logLine('' + r.data.error); }   // v132
   return { openScreen, act, afterMatch, emote, spectate, leaveSpectate, invite, respondInvite, cancelInvite, open, inMatch: () => !!S.matchId && !S.over, _state: S };
 })();

@@ -28,9 +28,9 @@ const Replay = (() => {
         st = r.state; evs = r.events;
         let what = ACT[step.a.type] || step.a.type;
         if (step.a.type === 'PLAY_CARD') { const prev = states[states.length - 1].seats[step.s].hand.find(c => c.id === step.a.cardId); if (prev) what = `「${prev.name}」`; }
-        label = `${R.names[step.s]} · ${what}${step.auto ? ' (시간 초과 자동)' : ''}`;
+        label = `${R.names[step.s]} · ${what}${step.auto ? ' · 시간 초과' : ''}`;
       } else if (step.end) {
-        st = structuredClone(st); st.over = true; st.winner = step.winner ?? null; label = step.end === 'turnlimit' ? '턴 수 초과 — 무승부' : '판 종료';
+        st = structuredClone(st); st.over = true; st.winner = step.winner ?? null; label = step.end === 'turnlimit' ? '턴 수 초과로 무승부' : '판 종료';
       } else continue;
       states.push(structuredClone(st)); events.push(evs); labels.push(label);
     }
@@ -126,7 +126,7 @@ const Replay = (() => {
   }
   function bar() {
     const b = barEl(), last = R.states.length - 1, st = R.states[R.i];
-    b.querySelector('.rb-title').textContent = `🎞 ${R.names[0]} vs ${R.names[1]}`;
+    b.querySelector('.rb-title').textContent = `${R.names[0]} vs ${R.names[1]}`;
     let stepTxt = `${R.i} / ${last} · ${st ? st.turnNo : 0}턴`;
     if (st && st.over) stepTxt += st.winner === null || st.winner === undefined ? ' · 무승부' : ` · 🏆 ${R.names[st.winner]} 승리${REASON[R.rep.reason] ? ` (${REASON[R.rep.reason]})` : ''}`;
     else if (R.labels[R.i]) stepTxt += ' · ' + R.labels[R.i];
@@ -134,7 +134,7 @@ const Replay = (() => {
     const rg = b.querySelector('.rb-range'); rg.max = last; rg.value = R.i;
     b.querySelector('.rb-play').textContent = R.playing ? '⏸ 멈춤' : '▶ 재생';
     b.querySelector('.rb-speed').textContent = '속도: ' + SPEEDS.find(x => x.k === R.speed).label;
-    b.querySelector('.rb-note').textContent = R.mismatch ? '⚠ 그 판 이후 카드·규칙이 바뀌어서 실제 판과 다르게 재생될 수 있어요 (중간에 멈출 수 있어요).' : '양쪽 손패가 모두 보여요 · 시점 버튼으로 위아래를 바꿀 수 있어요';
+    b.querySelector('.rb-note').textContent = R.mismatch ? '그 판 이후 카드나 규칙이 바뀌어서 실제와 다르게 재생될 수 있어요.' : '시점 버튼으로 위아래를 바꿀 수 있어요.';
     b.classList.toggle('warn', R.mismatch);
   }
 
@@ -149,7 +149,7 @@ const Replay = (() => {
     await Preload.ensure();                                                // v138
     const rep = data.replay;
     R.rep = rep; R.matchId = matchId; R.mySeat = data.mySeat; R.seat = data.mySeat; R.names = (rep.names || ['플레이어 1', '플레이어 2']).slice();
-    let b; try { b = build(rep); } catch (e) { console.error('[replay]', e); alertMsg('이 리플레이를 다시 만들지 못했어요. (그 판 이후 카드·규칙이 바뀌었을 수 있어요)'); return; }
+    let b; try { b = build(rep); } catch (e) { console.error('[replay]', e); alertMsg('이 리플레이를 재생하지 못했어요. 그 판 이후 카드나 규칙이 바뀌었을 수 있어요.'); return; }
     R.states = b.states; R.events = b.events; R.labels = b.labels; R.mismatch = b.bad || (rep.engine && typeof VERSION !== 'undefined' && rep.engine !== VERSION);
     R.i = 0; R.playing = false; R.token++; R.speed = 1;
     closeList();
@@ -158,9 +158,9 @@ const Replay = (() => {
     $id('menu').classList.add('hidden'); $id('overlay').classList.remove('show'); $id('logList').innerHTML = '';
     document.body.classList.add('pvp-mode', 'pvp-replay');
     $id('verBadge').textContent = typeof VERSION !== 'undefined' ? VERSION : '';
-    $id('diffBadge').textContent = `🎞 리플레이 · ${rep.friendly ? '친구 대전' : rep.ranked ? '랭크전' : '일반전'}`;
+    $id('diffBadge').textContent = `리플레이 · ${rep.friendly ? '친구 대전' : rep.ranked ? '랭크전' : '일반전'}`;
     applySeat();
-    logLine(`🎞 리플레이: ${R.names[0]} vs ${R.names[1]} — 양쪽 손패가 모두 보여요.`);
+    logLine(`리플레이: ${R.names[0]} vs ${R.names[1]}`);
     barEl().style.display = '';
     draw(0);
   }
@@ -185,12 +185,12 @@ const Replay = (() => {
   const when = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
   async function list() {
     const box = modal();
-    box.innerHTML = '<div class="rank-panel"><h3>🎞 지난 판 다시 보기</h3><p class="sub">불러오는 중…</p></div>'; box.classList.add('show');
+    box.innerHTML = '<div class="rank-panel"><h3>지난 판 다시 보기</h3><p class="sub">불러오는 중…</p></div>'; box.classList.add('show');
     let r; try { r = await fetch('/api/pvp/replays', { credentials: 'same-origin', cache: 'no-store' }).then(x => x.json()); } catch (_) { r = null; }
     if (!r || !r.list) { box.querySelector('.sub').textContent = '목록을 불러오지 못했어요.'; return; }
-    const rows = r.list.map(x => `<tr><td>${when(x.at)}</td><td>${esc(x.oppName)}</td><td>${x.friendly ? '👥 친구' : x.ranked ? '🏆 랭크' : '⚔ 일반'}</td><td>${RES[x.result] || ''}${REASON[x.reason] ? ` <small>${REASON[x.reason]}</small>` : ''}</td><td>${x.turns}턴</td>
+    const rows = r.list.map(x => `<tr><td>${when(x.at)}</td><td>${esc(x.oppName)}</td><td>${x.friendly ? '친구' : x.ranked ? '랭크' : '일반'}</td><td>${RES[x.result] || ''}${REASON[x.reason] ? ` <small>${REASON[x.reason]}</small>` : ''}</td><td>${x.turns}턴</td>
       <td><button type="button" class="end-turn rp-go" data-id="${esc(x.matchId)}">▶ 보기</button></td></tr>`).join('');
-    box.innerHTML = `<div class="rank-panel replay-panel"><h3>🎞 지난 판 다시 보기</h3>
+    box.innerHTML = `<div class="rank-panel replay-panel"><h3>지난 판 다시 보기</h3>
       <table class="rank-table"><tr><th>날짜</th><th>상대</th><th>모드</th><th>결과</th><th>길이</th><th></th></tr>${rows || '<tr><td colspan="6">아직 다시 볼 판이 없어요. 유저 대전을 한 판 해 보세요.</td></tr>'}</table>
       <button type="button" class="menu-btn back">닫기</button></div>`;
     box.querySelector('.back').onclick = closeList;

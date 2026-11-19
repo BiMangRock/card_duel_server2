@@ -42,7 +42,7 @@ const Friends = (() => {
     $id('frMyId').textContent = D.me.username; $id('frMyName').textContent = D.me.name;
     $id('frNickForm').hidden = !!D.me.nickname;                     // v141 닉네임은 한 번 정하면 못 바꾼다
     $id('frNickNote').innerHTML = D.me.nickname ? '닉네임은 대전 상대·친구·순위표에 보이는 이름이에요. <b>닉네임은 바꿀 수 없어요.</b>'
-      : '아직 닉네임이 없어서 아이디로 보여요. <b class="fr-warn">⚠ 한 번 정하면 바꿀 수 없어요.</b>';
+      : '아직 닉네임이 없어서 아이디로 보여요. <b class="fr-warn">한 번 정하면 바꿀 수 없어요.</b>';
     // 받은 요청
     $id('frIncomingSec').hidden = !D.incoming.length;
     $id('frIncoming').innerHTML = D.incoming.map(u => `<div class="fr-item"><span class="fr-who">${who(u)}</span><span class="fr-btns">
@@ -57,10 +57,10 @@ const Friends = (() => {
       const st = f.state || 'offline', on = st !== 'offline';
       const label = st === 'match' ? `대전 중 · ${MODE[f.mode] || ''}${f.spectators ? ` · 👁 ${f.spectators}` : ''}` : STATE[st] || st;
       const sent = S.sent && S.sent.toId === f.id;
-      const btns = [`<button type="button" class="end-turn fr-chat" data-act="chat" data-id="${f.id}">💬 채팅${f.unread ? `<b class="fr-unread">${f.unread > 99 ? '99+' : f.unread}</b>` : ''}</button>`];
-      if (st === 'match') btns.push(`<button type="button" class="end-turn" data-act="watch" data-id="${f.id}">👁 관전</button>`);
+      const btns = [`<button type="button" class="end-turn fr-chat" data-act="chat" data-id="${f.id}">채팅${f.unread ? `<b class="fr-unread">${f.unread > 99 ? '99+' : f.unread}</b>` : ''}</button>`];
+      if (st === 'match') btns.push(`<button type="button" class="end-turn" data-act="watch" data-id="${f.id}">관전</button>`);
       else if (f.online) btns.push(sent ? `<button type="button" class="end-turn sub" data-act="uninvite">신청 취소 (${sec(S.sent.until - Date.now())})</button>`
-                                         : `<button type="button" class="end-turn" data-act="invite" data-id="${f.id}">⚔ 대전 신청</button>`);
+                                         : `<button type="button" class="end-turn" data-act="invite" data-id="${f.id}">대전 신청</button>`);
       btns.push(`<button type="button" class="end-turn sub fr-del${S.armed === f.id ? ' armed' : ''}" data-act="remove" data-id="${f.id}">${S.armed === f.id ? '정말 삭제?' : '삭제'}</button>`);
       return `<div class="fr-item${on ? ' on' : ''}"><span class="fr-dot ${st}"></span><span class="fr-who">${who(f)}<small class="fr-st">${esc(label)}</small></span><span class="fr-btns">${btns.join('')}</span></div>`;
     }).join('') : '<p class="fr-empty">아직 친구가 없어요. 위에서 아이디나 닉네임으로 친구 요청을 보내 보세요.</p>';
@@ -99,14 +99,14 @@ const Friends = (() => {
   let nickArmed = '';
   async function saveNick(nickname) {
     msg('');
-    if (nickArmed !== nickname) { nickArmed = nickname; $id('frNickSave').textContent = `「${nickname}」 확정 (다시 누르기)`; msg('닉네임은 한 번 정하면 바꿀 수 없어요. 맞으면 버튼을 한 번 더 눌러 주세요.'); return; }
+    if (nickArmed !== nickname) { nickArmed = nickname; $id('frNickSave').textContent = `「${nickname}」 확정하기`; msg('닉네임은 한 번 정하면 바꿀 수 없어요. 맞으면 버튼을 한 번 더 눌러 주세요.'); return; }
     nickArmed = ''; $id('frNickSave').textContent = '닉네임 정하기';
     const r = await call('PUT', '/api/profile/nickname', { nickname });
     if (!r.ok) { msg(r.data.error || '닉네임을 저장하지 못했어요.'); return; }
     msg(`닉네임을 「${r.data.me.nickname}」(으)로 정했어요.`, true);
     const gate = $id('nickGate'); if (gate) gate.remove();
     if (window.CURRENT_USER) Object.assign(window.CURRENT_USER, r.data.me);
-    const un = document.querySelector('#userBar .uname'); if (un) un.textContent = '👤 ' + r.data.me.name;
+    const un = document.querySelector('#userBar .uname'); if (un) un.textContent = '' + r.data.me.name;
     if (PvpClient._state) PvpClient._state.meName = r.data.me.name;
     load();
   }
@@ -241,7 +241,7 @@ const Friends = (() => {
     }
     if (m.mine) return;
     bumpUnread(other);
-    const t = toast(`<div class="ft-title">💬 <b>${esc(m.from.name)}</b></div><div class="ft-sub ft-chat">${esc(m.msg.text.length > 80 ? m.msg.text.slice(0, 80) + '…' : m.msg.text)}</div>
+    const t = toast(`<div class="ft-title"><b>${esc(m.from.name)}</b></div><div class="ft-sub ft-chat">${esc(m.msg.text.length > 80 ? m.msg.text.slice(0, 80) + '…' : m.msg.text)}</div>
       <div class="ft-btns"><button type="button" class="end-turn">답장</button></div>`, 7000);
     t.dataset.chat = other;
     t.querySelector('button').onclick = () => { t.remove(); openChat(other); };
@@ -270,7 +270,7 @@ const Friends = (() => {
   function showInvite(m) {
     if (S.invites.has(m.id)) S.invites.get(m.id).el.remove();
     const until = Date.now() + (m.remainMs || 0);
-    const el = toast(`<div class="ft-title">⚔ <b>${esc(m.from.name)}</b>님이 친구 대전을 신청했어요</div><div class="ft-sub"></div>
+    const el = toast(`<div class="ft-title"><b>${esc(m.from.name)}</b>님이 친구 대전을 신청했어요</div><div class="ft-sub"></div>
       <div class="ft-btns"><button type="button" class="end-turn" data-v="1">수락</button><button type="button" class="end-turn sub" data-v="0">거절</button></div>`, 0);
     el.classList.add('invite');
     const iv = { id: m.id, until, el, from: m.from };
@@ -292,7 +292,7 @@ const Friends = (() => {
     for (const iv of S.invites.values()) {
       const left = iv.until - now; const sub = iv.el.querySelector('.ft-sub');
       if (left <= 0) { iv.el.remove(); S.invites.delete(iv.id); continue; }
-      sub.textContent = `${iv.note ? iv.note + ' · ' : ''}${sec(left)}초 안에 답해 주세요${iv.note ? '' : ' · 골드·랭크 변동 없는 연습 대전'}`;
+      sub.textContent = `${iv.note ? iv.note + ' · ' : ''}${sec(left)}초 안에 답해 주세요${iv.note ? '' : ' · 연습 대전'}`;
     }
     if (S.sent) {
       const left = S.sent.until - now;
@@ -308,7 +308,7 @@ const Friends = (() => {
     if (!n) { n = document.createElement('p'); n.id = 'frConn'; n.className = 'fr-conn'; n.hidden = true; scr.insertBefore(n, scr.children[1] || null);
       n.addEventListener('click', e => { if (e.target.closest('button')) { PvpClient.open(); connNotice(); } }); }
     const P = PvpClient._state || {};
-    const txt = P.replaced ? '⚠ 같은 계정이 다른 탭(기기)에서 열려 있어서, 친구 대전 신청은 그쪽으로 가요. <button type="button" class="end-turn sub">여기서 받기</button>'
+    const txt = P.replaced ? '다른 탭에서 같은 계정이 열려 있어서 대전 신청이 그쪽으로 가요. <button type="button" class="end-turn sub">여기서 받기</button>'
       : !P.esOpen ? '서버에 다시 연결하는 중… 연결되면 친구의 접속 상태와 대전 신청이 보여요.' : '';
     if (n.dataset.t !== txt) { n.dataset.t = txt; n.innerHTML = txt; n.hidden = !txt; }
   }
@@ -320,7 +320,7 @@ const Friends = (() => {
     if (m.t === 'invite') showInvite(m);
     else if (m.t === 'inviteSent') {
       if (S.sent) S.sent.el.remove();
-      const el = toast(`<div class="ft-title">⚔ <b>${esc(m.to.name)}</b>님에게 친구 대전 신청</div><div class="ft-sub"></div><div class="ft-btns"><button type="button" class="end-turn sub">취소</button></div>`, 0);
+      const el = toast(`<div class="ft-title"><b>${esc(m.to.name)}</b>님에게 친구 대전 신청</div><div class="ft-sub"></div><div class="ft-btns"><button type="button" class="end-turn sub">취소</button></div>`, 0);
       el.querySelector('button').onclick = () => PvpClient.cancelInvite();
       S.sent = { id: m.id, toId: m.to.id, until: Date.now() + (m.remainMs || 0), el };
       tickInvites(); if (shown()) render();
@@ -330,9 +330,9 @@ const Friends = (() => {
       if (m.mine && GONE[m.why]) toast(`<div class="ft-title">${esc(m.name)}${GONE[m.why]}</div>`);
       if (!m.mine && m.why === 'cancelled') toast(`<div class="ft-title">${esc(m.name)}님이 대전 신청을 취소했어요.</div>`, 2500);
     } else if (m.t === 'friends') {
-      if (m.why === 'request') toast(`<div class="ft-title">📩 <b>${esc(m.name)}</b>님이 친구 요청을 보냈어요</div><div class="ft-btns"><button type="button" class="end-turn sub">친구 화면</button></div>`, 6000)
+      if (m.why === 'request') toast(`<div class="ft-title"><b>${esc(m.name)}</b>님이 친구 요청을 보냈어요</div><div class="ft-btns"><button type="button" class="end-turn sub">친구 화면</button></div>`, 6000)
         .querySelector('button').onclick = e => { e.target.closest('.fr-toast').remove(); if ($id('menu').classList.contains('hidden')) return; open(); };
-      else if (m.why === 'accepted') toast(`<div class="ft-title">🤝 <b>${esc(m.name)}</b>님과 친구가 되었어요!</div>`);
+      else if (m.why === 'accepted') toast(`<div class="ft-title"><b>${esc(m.name)}</b>님과 친구가 되었어요!</div>`);
       load().then(() => {                                           // 채팅 중인 친구가 나를 삭제했으면 창을 닫는다
         if (S.chat && S.data && !friendById(S.chat.fid)) { closeChat(); toast('<div class="ft-title">친구 목록에서 빠져서 대화를 닫았어요.</div>', 3000); }
         else if (S.chat) chatHead();
