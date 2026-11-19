@@ -834,7 +834,8 @@ function finishGame(){
   if(game.mode!=='test' && !game.devTest){ const md=game.mode, bt=(game.beatenIds||[]).slice(); setTimeout(()=>QStats.finish(winner===MY, md, bt), 0); }   // v132 퀘스트 기록 (골드 정산이 저장 대기열에 들어간 뒤에 보낸다)
   if(game.mode==='adventure'){                         // v114 모험: 이기면 등급별 골드 보상 (첫 클리어 전액, 재도전은 일부)
     if(winner===MY){
-      if(window.SuneungFx && SuneungFx.isSuneung(game.boss) && !game.replay && !game.spectate) SuneungFx.queueEnding();   // v166 수능 보스: 이길 때마다 엔딩 크레딧 (개발자 보스 건너뛰기 포함)
+      if(window.SuneungFx && SuneungFx.isSuneung(game.boss) && !game.replay && !game.spectate){ SuneungFx.queueEnding();   // v166 수능 보스: 이길 때마다 엔딩 크레딧 (개발자 보스 건너뛰기 포함)
+        const g=game; SuneungFx.afterEnding(()=>{ g.snEndDone=true; if(game===g) render(); }); }   // v169 결과 창은 엔딩이 끝난 뒤에
       if(game.devTest){ logLine('시험 대전 종료: 승리 (기록·보상 없음)'); }
       else {
         const first=!AdventureBook.has(game.boss.id), full=bossReward(game.boss), amount=first?full:bossRepeatGold(game.boss);   // v123 마지막 단계 재클리어는 100골드
@@ -1936,8 +1937,10 @@ function render(){
   $('aiHero').onclick = pending ? (opHeroTarget ? ()=>resolvePending(opHeroT) : null) : ()=>attackTarget(opHeroT);
 
   if(v.over && !(game && game.replay)){   // v137 리플레이는 결과 창 대신 아래 조작 막대에 결과를 보여 준다
-    if(!$('overlay').classList.contains('show') && v.winner!==null) fxSprite(v.winner===MY?'victory':'defeat',innerWidth/2,innerHeight*.26,Math.min(innerWidth*.8,520),{dur:3400,z:300,kf:fxPop});   // v89: 승리·패배 연출
-    $('overlay').classList.add('show');
+    const snHold = !!(game && game.mode==='adventure' && v.winner===MY && !game.spectate && !game.snEndDone && window.SuneungFx && SuneungFx.isSuneung(game.boss));   // v169 수능 보스를 이기면 VICTORY·결과 창 없이 바로 엔딩 (몰입), 결과 창은 엔딩 뒤
+    if(snHold && !SuneungFx.endingActive()){ const g=game; SuneungFx.queueEnding(); SuneungFx.afterEnding(()=>{ g.snEndDone=true; if(game===g) render(); }); }   // 정산보다 먼저 그려져도 엔딩이 꼭 돌고, 끝나면 결과 창이 뜬다
+    if(!snHold && !$('overlay').classList.contains('show') && v.winner!==null) fxSprite(v.winner===MY?'victory':'defeat',innerWidth/2,innerHeight*.26,Math.min(innerWidth*.8,520),{dur:3400,z:300,kf:fxPop});   // v89: 승리·패배 연출
+    if(!snHold) $('overlay').classList.add('show');
     $('overlayText').textContent = (game && game.mode==='pvp') ? game.pvpTitle : v.winner===null ? '무승부' : (v.winner===MY ? '승리했습니다!' : '패배했습니다...');
     $('overlayReward').innerHTML = rewardHTML();
     $('overlayArt').innerHTML = (game && game.mode==='pvp') ? (game.pvpArt||'') : '';   // 유저 대전 결과 일러스트 (골드·보상 없음·무승부·무효)

@@ -3,7 +3,7 @@
 //       같은 입학(모험) 안에서 처음이면 그 교시 컷신(cutscene.js suneung_math · suneung_english · suneung_lang2) → 교시 배너
 //       이미 봤으면 교시 배너만. 배너 끝에 보스가 얻은 것(방어도 +5 · 새 능력)을 보여 준다
 //   · 카드 첫 등장 연출 (한 판에 카드마다 한 번): 5교시의 악령 · 물수능 컷 폭발 · OMR 카드 밀려쓰기
-//   · 엔딩 크레딧 (이길 때마다, 개발자 보스 건너뛰기 포함): 본령 + 퇴실 방송 → 회색 회상 S1~S5 → Special Thanks → 보상 화면
+//   · 엔딩 크레딧 (이길 때마다, 개발자 보스 건너뛰기 포함): 본령 + 퇴실 방송 → (v169) 교실 둘러보기 · 눈 깜박임 · 암전 → 회색 회상 S1~S5 → Special Thanks → 보상 화면
 //       건너뛰기는 누구나 언제든 (바로 보상 화면)
 //   · 수능 브금: 전야 슬리피우드 · 아침 프렌즈스토리 · 시험(필적 확인란 · 1교시 · 교시 컷신) 세레니티 · 보스전 파풀라투스 → 5교시 혼테일
 //   그림: /images/suneung (배경 3장 · 회상 S1~S5 · Kenney 파티클 CC0) · 소리: /sounds/ending · /sounds/bgm
@@ -294,12 +294,21 @@ const SuneungFx = (() => {
     { role: '급식실', names: ['급식 이모님'] },
   ];
   const THANKS_LAST = '엄마, 아빠';
-  const T = { cast: 1200, gray: 7000, song: 8000, scene0: 8500, sceneLen: 6000, roll: 8500, hold: 1500, songFade: 1500 };
+  // v169 1.5막: 퇴실 방송 뒤 1인칭으로 교실을 둘러본다 (컷을 고개 돌리는 방향으로 휙 넘김) → 창밖 노을에서 눈 깜박임 2번 → 암전 → 노래 → 눈을 뜨면 회색 회상
+  //   from = 새 컷이 들어오는 쪽 (고개를 돌리는 방향). 그림: /images/suneung/ending/look_a~e.jpg
+  const LOOK = [
+    { f: 'a', ms: 1500, from: 'fade' },    // 정면: 감독관이 답안지를 정리
+    { f: 'b', ms: 1200, from: 'right' },   // 오른쪽: 기지개 · 웃는 친구들
+    { f: 'c', ms: 1200, from: 'right' },   // 뒤: 뒷문으로 나가는 친구들
+    { f: 'd', ms: 1400, from: 'down' },    // 아래: 내 빈 책상
+    { f: 'e', ms: 2900, from: 'left' },    // 왼쪽 창밖 노을 → 깜박임
+  ];
+  const T = { cast: 1200, look: 4600, blink1: 1100, blink2: 2000, gray: 12700, song: 12900, scene0: 14200, sceneLen: 6000, roll: 8500, hold: 1500, songFade: 1500 };   // blink1·2 = 마지막 컷(창밖) 시작부터
   let endingOn = false, endingQueued = false; const after = [];
   function queueEnding() {
     if (endingQueued || endingOn) return; endingQueued = true;
     preloadEnding();
-    setTimeout(() => { ending().finally(() => { endingQueued = false; }); }, 2600);   // 승리 효과음이 지나간 뒤
+    setTimeout(() => { ending().finally(() => { endingQueued = false; }); }, 1100);   // v169 승리 문구 없이 마지막 일격만 보고 바로 본령으로
   }
   const endingActive = () => endingOn || endingQueued;
   function afterEnding(fn) { if (!endingActive()) { try { fn(); } catch (_) {} return; } after.push(fn); }
@@ -309,7 +318,7 @@ const SuneungFx = (() => {
     preloadEnding();
     const r = open('ending'), st = stageOf(r), ui = uiOf(r);
     const timers = []; const at = (ms, fn) => timers.push(setTimeout(fn, ms));
-    let song = null, bell = null, skipped = false, resolveDone;
+    let song = null, bell = null, amb = null, skipped = false, resolveDone;
     const done = new Promise(res => { resolveDone = res; });
     // --- 1막: 본령 + 퇴실 방송 (시험장 앞쪽 벽, 컬러) ---
     const wall = el(st, 'sn-wall', null);
@@ -319,6 +328,9 @@ const SuneungFx = (() => {
     at(T.cast, () => { castBox(ui, '수고하셨습니다. 문제지와 답안지를 제출하고 퇴실하세요.'); });
     // --- 2막: 회상 (회색) ---
     el(r, '', `<svg width="0" height="0" style="position:absolute"><filter id="snHazeF" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.06" numOctaves="2" seed="3" result="t"><animate attributeName="baseFrequency" dur="3s" values="0.008 0.06;0.009 0.075;0.008 0.06" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" in2="t" scale="9" xChannelSelector="R" yChannelSelector="G"/></filter></svg>`);
+    // --- 1.5막: 교실 둘러보기 (컬러, 1인칭) ---
+    const look = el(r, 'sn-look', null);
+    const cuts = LOOK.map(c => { const w = el(look, 'sn-lk', null); const im = el(w, '', null, 'img'); im.alt = ''; im.src = `${IMG}ending/look_${c.f}.jpg`; return w; });
     const world = el(r, 'sn-world', null);
     const scenesEl = el(world, 'sn-scenes', null);
     SCENES.forEach(s => {
@@ -335,6 +347,7 @@ const SuneungFx = (() => {
     const tw = el(r, 'sn-thanks-wrap', null);
     const th = el(tw, 'sn-thanks', `<div class="head">SPECIAL THANKS</div>${THANKS.map(g => `<div class="grp"><div class="role">${esc(g.role)}</div>${g.names.map(n => `<div class="sn-name">${esc(n)}</div>`).join('')}</div>`).join('')}<div class="last sn-myeong">${esc(THANKS_LAST)}</div>`);
     el(r, 'sn-bar top', null); el(r, 'sn-bar bot', null);
+    const lidT = el(r, 'sn-lid top', null), lidB = el(r, 'sn-lid bot', null);   // v169 눈꺼풀
     const skip = el(r, 'sn-skip', '건너뛰기 ▸▸', 'button'); skip.type = 'button';
     let cur = -1;
     const setFrame = (i, f) => { const sc = scenesEl.children[i]; const imgs = sc.querySelectorAll('img'); imgs.forEach((im, k) => im.classList.toggle('on', k === f)); const h = sc.querySelector('.sn-haze'); if (h) h.style.backgroundImage = `url("${imgs[f].src}")`; };
@@ -343,6 +356,36 @@ const SuneungFx = (() => {
       if (cur >= 0) { const old = scenesEl.children[cur]; credits[cur].classList.remove('on'); shade.classList.remove('on'); setTimeout(() => old.classList.remove('on'), 420); }
       cur = i;
     };
+    // --- 1.5막 진행: 컷 넘기기 · 눈 깜박임 ---
+    const OFF = { right: ['14%', '0'], left: ['-14%', '0'], down: ['0', '14%'] };   // 새 컷이 들어오는 자리 (헌 컷은 반대로 나간다)
+    const DRIFT = { fade: ['0', '0'], right: ['-1.6%', '0'], left: ['1.6%', '0'], down: ['0', '-1.6%'] };   // 컷이 보이는 동안 고개가 조금 더 돌아간다
+    const tr = (x, y, s) => `translate(${x}, ${y}) scale(${s})`;
+    const neg = v => v === '0' ? '0' : v[0] === '-' ? v.slice(1) : '-' + v;
+    let lookCur = -1;
+    const showLook = i => {
+      const c = LOOK[i], w = cuts[i], im = w.firstChild, still = reduce();
+      w.classList.add('on');
+      if (still) w.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, fill: 'forwards' });
+      else if (c.from === 'fade') w.animate([{ opacity: 0, filter: 'blur(14px) brightness(1.4)', transform: 'scale(1.05)' }, { opacity: 1, filter: 'blur(0) brightness(1)', transform: 'scale(1)' }], { duration: 650, easing: 'ease-out', fill: 'forwards' });
+      else { const [x, y] = OFF[c.from]; w.animate([{ opacity: .3, filter: 'blur(12px)', transform: `translate(${x}, ${y})` }, { opacity: 1, filter: 'blur(0)', transform: 'translate(0, 0)' }], { duration: 260, easing: 'cubic-bezier(.3,0,.2,1)', fill: 'forwards' }); }
+      if (!still) { const [dx, dy] = DRIFT[c.from]; im.animate([{ transform: tr(0, 0, 1.06) }, { transform: tr(dx, dy, 1.06) }], { duration: c.ms + 600, easing: 'ease-out', fill: 'forwards' }); }
+      if (lookCur >= 0) { const old = cuts[lookCur];
+        if (still || !OFF[c.from]) old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
+        else { const [x, y] = OFF[c.from]; old.animate([{ opacity: 1, filter: 'blur(0)', transform: 'translate(0, 0)' }, { opacity: 0, filter: 'blur(12px)', transform: `translate(${neg(x)}, ${neg(y)})` }], { duration: 260, easing: 'cubic-bezier(.3,0,.2,1)', fill: 'forwards' }); }
+        setTimeout(() => old.classList.remove('on'), 320); }
+      lookCur = i;
+    };
+    // 눈꺼풀: shut = true 감기 / false 뜨기
+    const lids = (shut, ms, ease) => [[lidT, '-115%'], [lidB, '115%']].forEach(([l, open]) => {
+      const now = getComputedStyle(l).transform; l.animate([{ transform: now === 'none' ? `translateY(${open})` : now }, { transform: `translateY(${shut ? '0' : open})` }], { duration: ms, easing: ease || 'ease-in-out', fill: 'forwards' }); });
+    let tl = T.look;
+    LOOK.forEach((c, i) => { at(tl, () => showLook(i)); if (i < LOOK.length - 1) tl += c.ms; });
+    at(T.look, () => { r.classList.add('look');
+      amb = playAudio('/sounds/amb/crowd.mp3', 0); if (amb) { amb.loop = true; fadeAudio(amb, vol('sfx') * .3, 900); } });   // 의자 · 웅성거림
+    at(tl + T.blink1, () => { lids(true, 130, 'ease-in'); look.animate([{ filter: 'blur(0)' }, { filter: 'blur(2px)' }, { filter: 'blur(.8px)' }], { duration: 900, fill: 'forwards' }); });   // 깜박 1: 짧게
+    at(tl + T.blink1 + 200, () => lids(false, 280, 'ease-out'));
+    at(tl + T.blink2, () => { lids(true, 700, 'cubic-bezier(.5,0,.6,1)'); fadeAudio(amb, 0, 900); fadeAudio(bell, 0, 900); });   // 깜박 2: 천천히 감고 그대로 암전
+    at(T.scene0, () => { lids(false, 1200, 'cubic-bezier(.25,.1,.25,1)'); setTimeout(() => { look.style.display = 'none'; }, 700); });   // 눈을 뜨면 회색 회상
     at(T.gray, () => { r.classList.add('gray'); });
     at(T.song, () => { song = playAudio(SND + 'cheonggaeguri.mp3', 0); if (song) fadeAudio(song, vol('music') * .9, 2000); });
     SCENES.forEach((s, i) => {
@@ -367,7 +410,7 @@ const SuneungFx = (() => {
     } else at(tEnd, () => finish(false));
     async function finish(bySkip) {
       if (skipped) return; skipped = true; timers.forEach(clearTimeout);
-      await Promise.all([fadeAudio(song, 0, bySkip ? 600 : T.songFade), fadeAudio(bell, 0, 400)]);
+      await Promise.all([fadeAudio(song, 0, bySkip ? 600 : T.songFade), fadeAudio(bell, 0, 400), fadeAudio(amb, 0, 400)]);
       await close(); resolveDone();
     }
     skip.onclick = e => { e.stopPropagation(); finish(true); };
@@ -490,6 +533,7 @@ const SuneungFx = (() => {
   function preloadEnding() {
     if (preloadedEnd) return; preloadedEnd = true;
     SCENES.forEach(s => 'abcde'.split('').forEach(f => img(`${IMG}ending/${s.id}_${f}.jpg`)));
+    LOOK.forEach(c => img(`${IMG}ending/look_${c.f}.jpg`));   // v169
   }
 
   window.SuneungBgm = bgm;

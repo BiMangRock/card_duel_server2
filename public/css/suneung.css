@@ -129,6 +129,17 @@
 #snFx.ending.gray .sn-stage, #snFx.ending.gray .sn-world{filter:grayscale(1) contrast(1.06) brightness(.96)}
 #snFx.ending .sn-wall{position:absolute; inset:0}
 #snFx.ending.recall .sn-cast{opacity:0}
+/* v169 1.5막: 교실 둘러보기 (1인칭 컷) + 눈꺼풀 */
+#snFx.ending.look .sn-cast{opacity:0}
+#snFx .sn-look{position:absolute; inset:0; overflow:hidden; background:#000; opacity:0; transition:opacity .5s ease}
+#snFx.look .sn-look{opacity:1}
+#snFx .sn-lk{position:absolute; inset:0; opacity:0; visibility:hidden; will-change:transform, opacity, filter}
+#snFx .sn-lk.on{visibility:visible}
+#snFx .sn-lk img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scale(1.06); filter:saturate(.92) contrast(1.03)}   /* 컷마다 다른 색감을 한 장면처럼 */
+#snFx .sn-look::after{content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%)}
+#snFx .sn-lid{position:absolute; left:-10%; right:-10%; height:58%; background:#000; z-index:6; pointer-events:none; will-change:transform}
+#snFx .sn-lid.top{top:0; transform:translateY(-115%); border-radius:0 0 50% 50% / 0 0 30% 30%; box-shadow:0 1.5vh 3vh 1vh #000}
+#snFx .sn-lid.bot{bottom:0; transform:translateY(115%); border-radius:50% 50% 0 0 / 30% 30% 0 0; box-shadow:0 -1.5vh 3vh 1vh #000}
 #snFx .sn-world{position:absolute; inset:0; opacity:0; transition:opacity .6s ease, filter 1.5s ease}
 #snFx.recall .sn-world{opacity:1}
 #snFx .sn-scene{position:absolute; inset:0; opacity:0; transition:opacity .4s ease}
