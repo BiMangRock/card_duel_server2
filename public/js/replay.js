@@ -190,12 +190,11 @@ const Replay = (() => {
     if (!r || !r.list) { box.querySelector('.sub').textContent = '목록을 불러오지 못했어요.'; return; }
     const rows = r.list.map(x => `<tr><td>${when(x.at)}</td><td>${esc(x.oppName)}</td><td>${x.friendly ? '👥 친구' : x.ranked ? '🏆 랭크' : '⚔ 일반'}</td><td>${RES[x.result] || ''}${REASON[x.reason] ? ` <small>${REASON[x.reason]}</small>` : ''}</td><td>${x.turns}턴</td>
       <td><button type="button" class="end-turn rp-go" data-id="${esc(x.matchId)}">▶ 보기</button></td></tr>`).join('');
-    box.innerHTML = `<div class="rank-panel replay-panel"><h3>🎞 지난 판 다시 보기</h3><p class="sub">최근 유저 대전 ${PVP.REPLAY_KEEP}판까지 보관해요. 끝난 판이라 양쪽 손패가 모두 보여요.</p>
+    box.innerHTML = `<div class="rank-panel replay-panel"><h3>🎞 지난 판 다시 보기</h3>
       <table class="rank-table"><tr><th>날짜</th><th>상대</th><th>모드</th><th>결과</th><th>길이</th><th></th></tr>${rows || '<tr><td colspan="6">아직 다시 볼 판이 없어요. 유저 대전을 한 판 해 보세요.</td></tr>'}</table>
       <button type="button" class="menu-btn back">닫기</button></div>`;
     box.querySelector('.back').onclick = closeList;
     box.querySelectorAll('.rp-go').forEach(b => b.onclick = () => { b.disabled = true; open(b.dataset.id).finally(() => { b.disabled = false; }); });
   }
-  { const k = $id('pvpReplayKeep'); if (k) k.textContent = PVP.REPLAY_KEEP; }
   return { open, exit, list, _state: R };
 })();

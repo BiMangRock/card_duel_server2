@@ -75,7 +75,8 @@
     <div style="min-width:140px;"></div>
   </div>
 </div>
-<div class="controls"><div id="pvpTimer" class="pvp-timer" style="display:none"></div><div id="pvpRope" class="pvp-rope" style="display:none"><img class="rope-head" src="/images/pvp/rope.webp" alt=""><div class="rope-body" id="pvpRopeBody"></div></div><button class="end-turn sub" id="specLeaveBtn" style="display:none">관전 나가기</button><button class="end-turn sub" id="deckBtn" onclick="openDeck()">덱 보기</button><button class="end-turn sub dev-skip" id="devSkipBtn" style="display:none" title="개발자 전용: 이 보스전을 바로 승리로 끝냅니다">⏭ 보스 건너뛰기</button><button class="end-turn sub" id="surrenderBtn">항복</button><button class="end-turn" id="endTurnBtn">턴 종료</button></div>
+<div id="pvpRope" class="pvp-rope" style="display:none"><img class="rope-head" src="/images/pvp/rope.webp" alt=""><div class="rope-body" id="pvpRopeBody"></div></div>
+<div class="controls"><div id="pvpTimer" class="pvp-timer" style="display:none"></div><button class="end-turn sub" id="specLeaveBtn" style="display:none">관전 나가기</button><button class="end-turn sub" id="deckBtn" onclick="openDeck()">덱 보기</button><button class="end-turn sub dev-skip" id="devSkipBtn" style="display:none" title="개발자 전용: 이 보스전을 바로 승리로 끝냅니다">⏭ 보스 건너뛰기</button><button class="end-turn sub" id="surrenderBtn">항복</button><button class="end-turn" id="endTurnBtn">턴 종료</button></div>
 <!-- v155 마나: 하스스톤처럼 오른쪽 위(상대) · 오른쪽 아래(나)에 수정으로 -->
 <div class="mana-bar opp" title="상대 마나"><div class="crystals" id="aiCrystals"></div><div class="mana"><span id="aiManaText"></span></div></div>
 <div class="mana-bar me" title="내 마나"><div class="mana"><span id="manaText"></span></div><div class="crystals" id="crystals"></div></div>
@@ -115,7 +116,7 @@
     <div class="deck-head"><h3 id="deckListTitle">내 덱</h3>
       <div class="ed-btns"><button class="end-turn sub" id="dlNew" type="button" onclick="newDeck()">＋ 새 덱</button><button class="end-turn sub" id="dlImport" type="button" onclick="importDeckCode()">코드로 가져오기</button><button class="end-turn" type="button" onclick="closeDeckList()">닫기</button></div>
     </div>
-    <p class="note" id="deckListNote">덱을 여러 개 저장해 두고 골라 쓸 수 있어요. [사용하기]를 누른 덱이 AI 대전·유저 대전에 쓰입니다. [📋 코드]로 덱을 친구에게 보낼 수 있어요.</p>
+    <p class="note" id="deckListNote">[사용하기]를 누른 덱으로 대전해요.</p>
     <div class="dslots" id="deckSlots"></div>
   </div>
 </div>
@@ -145,16 +146,16 @@
   <div class="screen show" id="screen-main">
     <nav class="mm-rail" aria-label="메뉴">
       <img class="mm-logo" src="/images/intro/logo.webp" alt="카드 결투">
-      <button type="button" class="mm-item" onclick="openShop()"><img class="mm-ic" src="/images/ui/ic_shop.webp" alt="" draggable="false"><span class="mm-label">상점</span><span class="desc" id="shopMenuDesc">카드 팩을 열어 새 카드를 모읍니다 · 남는 카드는 분해해 가루로</span></button>
-      <button type="button" class="mm-item" onclick="openDeckList()"><img class="mm-ic" src="/images/ui/ic_deck.webp" alt="" draggable="false"><span class="mm-label">내 덱</span><span class="desc">덱을 여러 개 저장하고 골라 씁니다 · 덱 코드로 공유</span></button>
-      <button type="button" class="mm-item" onclick="openCraft()"><img class="mm-ic" src="/images/ui/ic_craft.webp" alt="" draggable="false"><span class="mm-label">카드 제작</span><span class="desc" id="craftMenuDesc">카드를 분해해 가루를 모으고, 원하는 카드를 만듭니다</span></button>
-      <button type="button" class="mm-item" onclick="showScreen('power')"><img class="mm-ic" src="/images/ui/ic_power.webp" alt="" draggable="false"><span class="mm-label">영웅 능력</span><span class="desc">비용 1 · 턴마다 한 번 쓰는 기본 능력을 고릅니다</span></button>
+      <button type="button" class="mm-item" onclick="openShop()"><img class="mm-ic" src="/images/ui/ic_shop.webp" alt="" draggable="false"><span class="mm-label">상점</span><span class="desc" id="shopMenuDesc">카드 팩 열기</span></button>
+      <button type="button" class="mm-item" onclick="openDeckList()"><img class="mm-ic" src="/images/ui/ic_deck.webp" alt="" draggable="false"><span class="mm-label">내 덱</span><span class="desc">덱 저장 · 공유</span></button>
+      <button type="button" class="mm-item" onclick="openCraft()"><img class="mm-ic" src="/images/ui/ic_craft.webp" alt="" draggable="false"><span class="mm-label">카드 제작</span><span class="desc" id="craftMenuDesc">분해 · 제작</span></button>
+      <button type="button" class="mm-item" onclick="showScreen('power')"><img class="mm-ic" src="/images/ui/ic_power.webp" alt="" draggable="false"><span class="mm-label">영웅 능력</span><span class="desc">기본 능력 고르기</span></button>
       <button type="button" class="mm-item" onclick="openQuests()"><img class="mm-ic" src="/images/ui/ic_quest.webp" alt="" draggable="false"><span class="mm-label">퀘스트</span><b class="fr-badge" id="questBadge" hidden></b><span class="desc" id="questMenuDesc">매일 새 퀘스트 · 끝내면 골드</span></button>
       <button type="button" class="mm-item" onclick="openCodex()"><img class="mm-ic" src="/images/ui/ic_codex.webp" alt="" draggable="false"><span class="mm-label">특성 도감</span><span class="desc" id="codexMenuDesc">처음 이긴 특성마다 100골드</span></button>
-      <button type="button" class="mm-item" onclick="Friends.open()"><img class="mm-ic" src="/images/ui/ic_friends.webp" alt="" draggable="false"><span class="mm-label">친구</span><b class="fr-badge" id="friendBadge" hidden></b><span class="desc" id="friendMenuDesc">친구 추가 · 채팅 · 친구와 대전 · 친구 판 관전</span></button>
+      <button type="button" class="mm-item" onclick="Friends.open()"><img class="mm-ic" src="/images/ui/ic_friends.webp" alt="" draggable="false"><span class="mm-label">친구</span><b class="fr-badge" id="friendBadge" hidden></b><span class="desc" id="friendMenuDesc">친구 · 채팅 · 대전</span></button>
       <button type="button" class="mm-item" onclick="SuneungFx.mockExam()"><img class="mm-ic" src="/images/ui/ic_exam.webp" alt="" draggable="false"><span class="mm-label">모의고사</span><span class="desc">전 과목 30문제</span></button>   <!-- v167 -->
       <span class="mm-gap"></span>
-      <button type="button" class="mm-item mm-sub" onclick="openTutorials()"><img class="mm-ic" src="/images/ui/ic_tutorial.webp" alt="" draggable="false"><span class="mm-label">튜토리얼</span><b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc">처음이라면 여기부터 · 첫 완료 보상 1,000골드 + 전설 카드 · 📖 가이드는 맨 밑</span></button>
+      <button type="button" class="mm-item mm-sub" onclick="openTutorials()"><img class="mm-ic" src="/images/ui/ic_tutorial.webp" alt="" draggable="false"><span class="mm-label">튜토리얼</span><b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc">첫 완료 보상 1,000골드</span></button>
       <button type="button" class="mm-item mm-sub" onclick="openSettings()"><img class="mm-ic" src="/images/ui/ic_settings.webp" alt="" draggable="false"><span class="mm-label">설정</span><span class="desc">전체 화면</span></button>
     </nav>
     <div class="mm-body">
@@ -226,7 +227,7 @@
     <div class="boss-list" id="bossList"></div>
     <button class="menu-btn primary" id="advOfferBtn" style="display:none" onclick="showOffer(ServerStore.offers[0])"></button>
     <button class="menu-btn" id="advDeckBtn" onclick="openAdvDeckEditor()">모험 덱 편집<span class="desc" id="advDeckDesc"></span></button>
-    <p class="sub" id="advFreeNote" style="display:none">자유 보스전은 '덱 편집'에서 만든 일반 덱으로 싸웁니다. (모험 전용 카드는 영남대 입학에서만 쓸 수 있어요)</p>
+    <p class="sub" id="advFreeNote" style="display:none">자유 보스전은 일반 덱으로 싸워요.</p>
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
   </div>
   <div class="screen" id="screen-bossedit">
@@ -290,7 +291,7 @@
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
     <div class="tut-guide">
       <p class="tut-guide-h">가이드 <small>튜토리얼을 깨지 않아도 언제든 볼 수 있어요</small></p>
-      <button class="menu-btn" onclick="openGuide()">가이드 열기<span class="desc">효과 설명(애니메이션) · 카드 읽는 법 · 게임 규칙 · 🎮 모드</span></button>
+      <button class="menu-btn" onclick="openGuide()">가이드 열기</button>
     </div>
   </div>
   <div class="screen" id="screen-quests">
@@ -356,16 +357,14 @@
     <div class="pvp-gauge" id="pvpGauge" title="오늘 거둔 승리 (10승마다 한 바퀴)">
       <img src="/images/pvp/gauge.webp" alt=""><div class="gbar"><i id="pvpGaugeFill"></i></div><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i>
     </div>
-    <p class="sub gcap">오늘 거둔 승리 <b id="pvpToday">0</b>승 · 승리마다 <span class="pvpWinGold">50</span>골드, 횟수 제한 없음</p>
+    <p class="sub gcap">오늘 <b id="pvpToday">0</b>승</p>
     <div class="bet-box">
       <div class="row2"><span>대기 중인 사람</span><b id="pvpWaiting">-</b></div>
     </div>
     <p class="notice warn" id="pvpMsg" style="display:none"></p>
     <button class="menu-btn" id="pvpFallbackBtn" style="display:none">랭크전 상대가 없어요 — 일반전으로 바꾸기</button>
     <button class="menu-btn primary" id="pvpFindBtn" disabled><img id="pvpSpin" class="pvp-spin" src="/images/pvp/pvp_spinner.webp" alt="" style="display:none"><span id="pvpFindTxt">서버에 연결하는 중…</span></button>
-    <p class="sub">저장된 내 덱으로 대전해요.</p>
-    <button class="menu-btn" id="pvpReplaysBtn">지난 판 다시 보기<span class="desc">최근 유저 대전 <span id="pvpReplayKeep">20</span>판 · 양쪽 손패까지 전부 보여요</span></button>
-    <p class="notice" id="pvpRules"></p>
+    <button class="menu-btn" id="pvpReplaysBtn">지난 판 다시 보기</button>
     <button class="menu-btn back" id="pvpBackBtn">뒤로</button>
   </div>
   <div class="screen" id="screen-friends">
@@ -388,7 +387,7 @@
     <div class="fr-section" id="frIncomingSec" hidden><h4>받은 친구 요청</h4><div class="fr-list" id="frIncoming"></div></div>
     <div class="fr-section"><h4>친구 <small id="frCount"></small></h4><div class="fr-list" id="frList"><p class="fr-empty">불러오는 중…</p></div></div>
     <div class="fr-section" id="frOutgoingSec" hidden><h4>보낸 요청</h4><div class="fr-list" id="frOutgoing"></div></div>
-    <p class="notice">💬 채팅은 친구끼리만 할 수 있고, 친구를 삭제하면 대화도 지워져요. ⚔ 친구 대전은 연습용이라 골드·랭크·전적·일일 퀘스트에 반영되지 않아요. 👁 관전할 때는 양쪽 손패가 보이지 않아요.</p>
+    <p class="notice">친구 대전은 보상·랭크에 반영되지 않아요.</p>
     <button class="menu-btn back" onclick="Friends.close()">뒤로</button>
   </div>
   <div class="screen" id="screen-difficulty">
@@ -417,7 +416,7 @@
       </div>
       <div class="bet-result" id="betResult"></div>
     </div>
-    <p class="notice warn">배팅 금액은 게임 시작 즉시 차감됩니다. 도중에 나가면 돌려받을 수 없습니다. 배당 200% 이상은 게임 시작 때 상대 AI에게 치트가 추첨됩니다.</p>
+    <p class="notice warn">시작하면 바로 차감 · 중간에 나가면 환불 없음 · 200% 이상은 상대 AI에 치트</p>
     <button class="menu-btn primary" id="betGo" onclick="confirmBet()">배팅하고 시작</button>
     <button class="menu-btn back" onclick="showScreen('playmode')">뒤로</button>
   </div>

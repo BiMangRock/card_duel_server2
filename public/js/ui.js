@@ -1050,9 +1050,9 @@ function updateTutorialMenuDesc(){
   const T=PROGRESS.TUTORIALS, left=T.filter(t=>tutState(t.id)!=='claimed'), ready=tutRewardsReady();
   el.textContent = ready.length ? `🎁 받을 보상이 있어요 · ${ready.map(t=>t.rewardText).join(' · ')}`
     : !left.length ? '모두 완료 · 언제든 다시 해 볼 수 있어요'
-    : T.every(t=>tutState(t.id)==='todo') ? '처음이라면 여기부터 · 1~5부 · 첫 완료 보상 1,000골드 + 카드 4장'
+    : T.every(t=>tutState(t.id)==='todo') ? '첫 완료 보상 1,000골드'
     : `${T.length-left.length}/${T.length} 완료 · 다음: ${tutLabel(left[0])} (${left[0].rewardText})`;
-  el.textContent += ' · 📖 가이드는 맨 밑';   // v144 가이드는 튜토리얼 화면 맨 밑으로 옮김
+   // v144 가이드는 튜토리얼 화면 맨 밑으로 옮김
   const bd=$('tutBadge'); if(bd){ bd.hidden=!ready.length; bd.textContent=ready.length; }
 }
 function openTutorials(){ showScreen('tutorial'); renderTutorials(); ServerStore.loadProgress().then(renderTutorials); }

@@ -2026,3 +2026,8 @@ body.hand-open.hand-hover .hand::before{display:none;}
 #cardPreview .card.hs .cname{font-size:.6rem;}
 #cardPreview .card.hs .effect{display:flex; overflow:hidden; line-height:1.12; font-size:.38rem;}
 #cardPreview .card.hs.eff-2 .effect{font-size:.34rem;} #cardPreview .card.hs.eff-3 .effect{font-size:.31rem;} #cardPreview .card.hs.eff-4 .effect{font-size:.28rem;} #cardPreview .card.hs.eff-5 .effect{font-size:.26rem;}
+
+/* 밧줄: 오른쪽 버튼 묶음 밖, 보드 가운데 선 위에 가로로. 줄이 줄어들며 불꽃이 턴 종료 버튼 쪽으로 번진다 */
+.pvp-rope{--rope-max:min(34vw, 26rem); position:absolute; z-index:4; pointer-events:none; margin:0;
+  right:calc(var(--side-w) + .3rem); top:calc(50% - 1.84rem);}
+@media (max-width:640px){ .pvp-rope{--rope-max:38vw; right:5.6rem;} }

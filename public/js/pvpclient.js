@@ -159,7 +159,6 @@ const PvpClient = (() => {
     b.classList.toggle('waiting', !!q && !S.replaced);
     el('pvpFindTxt').textContent = S.replaced ? '🔄 다른 탭(기기)에서 열려 있어요 · 눌러서 여기서 하기' : !S.esOpen ? '서버에 연결하는 중…' : q ? `${S.mode === 'rank' ? '랭크전' : '일반전'} 상대를 찾는 중… ${sec(Date.now() - S.queuedAt)}초 (누르면 취소)` : (S.mode === 'rank' ? '🏆 랭크전 상대 찾기' : '⚔️ 일반전 상대 찾기');
     el('pvpSpin').style.display = q && !S.replaced ? '' : 'none';
-    el('pvpRules').textContent = `한 턴 ${sec(c.turnMs)}초 · 멀리건 ${sec(c.mulliganMs)}초 · 시간이 지나면 턴이 자동으로 넘어가고, 연속 ${c.maxTimeouts}번 넘기면 패배해요. 연결이 끊기면 ${sec(c.reconnectMs)}초 안에 돌아와야 해요.`;
     document.querySelectorAll('.pvpWinGold').forEach(x => { x.textContent = PVP.WIN_GOLD; });
   }
   // 오늘의 승리 게이지: 10승마다 한 바퀴 (보석 하나 = 1승). 보상과는 무관한 기록 표시다.
