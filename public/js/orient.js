@@ -48,15 +48,15 @@
     let g = document.getElementById('rotateHint');
     if (!g) {
       g = document.createElement('div'); g.id = 'rotateHint'; g.setAttribute('role', 'alertdialog'); g.setAttribute('aria-label', '가로 화면 안내');
-      g.innerHTML = '<div class="rh-icon img"><img src="/images/ui/btn_rotate.webp" alt="" draggable="false"></div><p>가로로 돌려서 플레이해 주세요</p><button type="button" class="rh-btn" id="rotateFsBtn">전체화면 · 가로로 보기</button><small></small>';
+      g.innerHTML = '<div class="rh-icon img"><img src="/images/ui/btn_rotate.webp" alt="" draggable="false"></div><p>가로로 돌려 주세요</p><button type="button" class="rh-btn" id="rotateFsBtn">전체화면</button><small></small>';
       document.body.appendChild(g);
     }
     if (!g.dataset.wired) {
       g.dataset.wired = '1';
       const sm = g.querySelector('small');
       if (sm) sm.textContent = isIOS
-        ? '아이폰·아이패드는 기기를 직접 가로로 돌려 주세요. 돌려도 그대로면 제어 센터에서 「화면 방향 잠금」을 꺼 주세요.'
-        : '아래 버튼을 누르면 전체화면으로 바뀌면서 자동으로 가로가 됩니다. 기기를 직접 돌려도 돼요. (자동 회전이 꺼져 있으면 켜 주세요)';
+        ? '화면 방향 잠금을 꺼 주세요.'
+        : '';
       const b = g.querySelector('#rotateFsBtn');
       if (b) { if (isIOS || !canFs()) b.hidden = true; b.addEventListener('click', e => { e.stopPropagation(); lock(true); }); }
       ['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend', 'wheel'].forEach(t => g.addEventListener(t, e => { if (!(e.target.closest && e.target.closest('button'))) e.stopPropagation(); }, { passive: true }));

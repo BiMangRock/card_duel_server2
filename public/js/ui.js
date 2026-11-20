@@ -21,10 +21,10 @@ const Host = {
 };
 // 난이도 → 상대 Player. bot:null 이면 아직 구현 전이라 선택할 수 없다.
 const DIFFICULTY = {
-  easy:   {label:'초급', desc:'완전 무작위로 행동하는 AI',      bot:BotPlayers.random},
-  normal: {label:'중급', desc:'규칙 기반으로 행동하는 AI',      bot:BotPlayers.rule},
-  normal2:{label:'중급2', desc:'한 수 앞을 보고 교환·마무리를 계산하는 AI (중급보다 강함)', bot:BotPlayers.rule2},
-  hard:   {label:'상급', desc:'강화학습 기반 AI',               bot:null},   // TODO: 학습한 정책(BotPlayer)이 준비되면 연결
+  easy:   {label:'초급', desc:'무작위로 둔다',      bot:BotPlayers.random},
+  normal: {label:'중급', desc:'정해진 규칙대로 둔다',      bot:BotPlayers.rule},
+  normal2:{label:'중급2', desc:'한 수 앞을 본다', bot:BotPlayers.rule2},
+  hard:   {label:'상급', desc:'학습한 AI',               bot:null},   // TODO: 학습한 정책(BotPlayer)이 준비되면 연결
 };
 // v153 터치에서 확실히 눌리는 카드 선택 (멀리건 · 발견 공용)
 //  · 폰·태블릿에서 카드를 눌러도 선택이 안 되던 문제: 예전엔 click 이벤트에만 기대서, 길게 누르기(카드 설명) · 끌기 처리가
@@ -124,7 +124,7 @@ addEventListener('resize', ()=>{ const m=$('mulliganModal'); if(m && m.classList
 function showMulligan(done){                                  // v77 멀리건: 시작 카드를 클릭해 ✕ 표시 → 확정하면 그 카드만 덱에 섞고 새로 뽑는다
   const P=Host.state.seats[MY], cards=P.hand.filter(c=>(P.startIds||[]).includes(c.id)), out=new Set();
   const m=$('mulliganModal'), ok=$('mulliganOk');
-  $('mulliganTitle').textContent=`멀리건 — 시작 카드 ${cards.length}장`;
+  $('mulliganTitle').textContent='멀리건';
   const upd=()=>{ ok.textContent = out.size ? `${out.size}장 바꾸고 시작` : '바꾸지 않고 시작'; };
   upd(); m.classList.add('show'); m.scrollTop=0;
   mullCards(cards, out, upd);
@@ -132,7 +132,7 @@ function showMulligan(done){                                  // v77 멀리건: 
   ok.onclick=async ()=>{ if(ok.disabled) return; ok.disabled=true;
     const before=P.hand.slice(), ids=[...out];
     const n=mulliganHand(Host.state, MY, ids); view=Host.view(MY);
-    if(n){ logLine(`멀리건: 시작 카드 ${n}장을 바꿨습니다.`);
+    if(n){ logLine(`멀리건: ${n}장 교체`);
       const after=Host.state.seats[MY].hand, pairs=[];                                     // v158 제자리 교체: 같은 칸의 새 카드
       before.forEach((c,i)=>{ if(ids.includes(c.id) && after[i] && after[i].id!==c.id) pairs.push({oldId:c.id, card:after[i]}); });
       try{ await mullAnimate(pairs); }catch(e){ console.error(e); } }
@@ -141,8 +141,8 @@ function showMulligan(done){                                  // v77 멀리건: 
 function controlTipOnce(){                                        // v139 바뀐 조작을 한 번만 알려 준다 (기기마다)
   const K='cardDuel.ctrlTip.v139'; try{ if(localStorage.getItem(K)) return; localStorage.setItem(K,'1'); }catch(_){ return; }
   const touch=!(window.matchMedia && matchMedia('(hover:hover)').matches);
-  toast('카드를 전장으로 끌어다 놓으면 내고, 하수인을 적에게 끌어다 놓으면 공격해요.');
-  setTimeout(()=>toast(touch?'카드 설명은 카드를 길게 누르면 보여요.':'카드 설명은 카드 위에 마우스를 올리면 보여요.'), 900);
+  toast('카드는 전장으로, 하수인은 적에게 끌어다 놓으세요.');
+  setTimeout(()=>toast(touch?'길게 누르면 카드 설명':'마우스를 올리면 카드 설명'), 900);
 }
 function beginMatch(){                                           // 멀리건을 거친 뒤 첫 화면·상대 선공 진행
   const go=()=>{ ui.busy=false; render();   // v156 조작 안내 말풍선은 없앴다 (튜토리얼 「화면 보는 법」으로 옮김)
@@ -201,14 +201,14 @@ function eventText(ev){
   switch(ev.type){
     case 'turn_start': if(game && (game.spectate || game.replay)) return `${document.querySelector(ev.seat===MY?'#playerHero .name':'#aiHero .name').textContent}의 턴입니다.`;   // v136 관전: 이름으로
       return ev.seat===MY ? '당신의 턴입니다.' : '상대의 턴입니다.';
-    case 'spell': return `${ev.tag?`(${ev.tag}) `:ev.chaos?'(혼돈) ':''}${ev.seat===MY?'당신이':'상대가'} 주문 「${ev.name}」 사용` + (ev.card.effect.type==='mana' ? `: 이번 턴 마나 +${ev.gain}` : '');
+    case 'spell': return `${ev.tag?`(${ev.tag}) `:ev.chaos?'(혼돈) ':''}${ev.seat===MY?'당신이':'상대가'} ${ev.name} 사용` + (ev.card.effect.type==='mana' ? `: 이번 턴 마나 +${ev.gain}` : '');
     case 'draw':
       if(ev.src) return `${who(ev.src.seat)} ${ev.src.name}: 카드 ${ev.count+ev.burned}장 뽑기`;
       return ev.burned ? `${who(ev.seat)} 손패가 가득 차 카드 ${ev.burned}장이 소멸했습니다.` : null;
     case 'summon': return ev.seat===MY ? `${ev.name} 소환!` : `상대가 ${ev.name}을(를) 소환!`;
     case 'attack': return `${who(ev.seat)} ${ev.name} → ${ev.targetName || heroLabel(ev.target.seat)} 공격!`;
     case 'damage':
-      if(ev.immune) return `${ev.name}은(는) 화염 주문에 면역입니다!`;
+      if(ev.immune) return `${ev.name}: 화염 면역`;
       if(ev.absorbed) return `${ev.name}의 보호막이 파괴됐습니다!`;
       if(ev.cause==='battlecry') return `${who(ev.src.seat)} ${ev.src.name}: ${tLabel(ev.target,ev.name)}에게 ${ev.amount} 피해`;
       return ev.target.kind==='hero' ? `${heroLabel(ev.target.seat)}에게 ${ev.amount} 피해` : null;
@@ -216,71 +216,71 @@ function eventText(ev){
     case 'buff': return ev.temp ? `${who(ev.src.seat)} ${ev.src.name}: ${ev.name} 이번 턴 공격력 +${ev.value}` : `${who(ev.src.seat)} ${ev.src.name}: ${ev.name} +${ev.value}/+${ev.hpValue ?? ev.value}`;
     case 'handDiscount': return ev.seat===MY ? `${ev.src.name}: 손패 주문 ${ev.count}장의 비용 -${ev.amount}` : `상대 손패 주문의 비용이 감소했습니다`;
     case 'deckTransform': return `${who(ev.seat)} ${ev.src.name}: 덱의 주문 ${ev.count}장이 변신했습니다`;
-    case 'deckAdd': return ev.count ? `${who(ev.src.seat)} ${ev.src.name}: 무작위 주문 ${ev.count}장을 덱에 섞어 넣음` : (ev.seat===MY ? `${ev.src.name}: 덱에 ${ev.name}을(를) 섞어 넣었습니다` : `상대가 덱에 카드를 섞어 넣었습니다`);   // v73: 중복돼 있던 두 줄을 합침
+    case 'deckAdd': return ev.count ? `${who(ev.src.seat)} ${ev.src.name}: 무작위 주문 ${ev.count}장을 덱에 섞어 넣음` : (ev.seat===MY ? `${ev.src.name}: 덱에 ${ev.name}을(를) 섞음` : `상대가 덱에 카드를 섞어 넣었습니다`);   // v73: 중복돼 있던 두 줄을 합침
     case 'grant': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}에게 ${ev.kws.join('·')} 부여`;
     case 'mount': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}에게 도발과 죽음의 메아리 부여`;
     case 'cardsDiscount': return ev.seat===MY ? `${ev.src.name}: 얻은 주문 ${ev.count}장의 비용 -${ev.amount}` : `상대가 얻은 주문 ${ev.count}장의 비용이 감소했습니다`;
     case 'haste': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name} 바로 공격 가능!`;
     case 'fatigue': return `${who(ev.seat)} 덱이 비어 탈진! (${ev.amount} 피해)`;
-    case 'freeze': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name} 빙결 — 다음 턴 공격 불가`;
+    case 'freeze': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name} 빙결`;
     case 'copy': return ev.seat===MY ? `${ev.src.name}: ${ev.name}을(를) 복제해 손패에 추가` : `상대가 손패의 하수인 한 장을 복제했습니다.`;
     case 'silence': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}의 모든 추가 효과가 사라졌습니다`;
     case 'shieldGain': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}에게 보호막 부여`;
-    case 'twin': return ev.seat===MY ? `이중 주문: 「${ev.name}」 사본을 손패에 추가${ev.burned?' — 손패가 가득 차 소각':''}` : `상대가 이중 주문 사본을 얻었습니다${ev.burned?' (손패가 가득 차 소각)':''}`;
+    case 'twin': return ev.seat===MY ? `이중 주문: ${ev.name} 사본 획득${ev.burned?', 손패가 가득 차 소각':''}` : `상대가 이중 주문 사본 획득${ev.burned?', 소각':''}`;
     case 'eclipse': return `${who(ev.src.seat)} ${ev.src.name}: 이번 턴 다음 주문을 2번 시전`;
-    case 'eclipseUse': return `일식: 「${ev.name}」을(를) 2번 시전합니다 (${who(ev.seat)} 턴)`;
-    case 'recast': return `${who(ev.seat)} 「${ev.name}」 두 번째 시전`;
+    case 'eclipseUse': return `일식: ${ev.name} 2번 시전`;
+    case 'recast': return `${who(ev.seat)} ${ev.name} 두 번째 시전`;
     case 'crystal': return `${who(ev.src.seat)} ${ev.src.name}: 빈 마나 수정 ${ev.amount}개 획득`;
     case 'nextMana': return `${who(ev.src.seat)} ${ev.src.name}: 다음 턴에만 마나 수정 ${ev.amount}개 획득`;
     case 'armorLater': return `${who(ev.src.seat)} ${ev.src.name}: 다음 턴 시작에 방어도 +${ev.amount} 예약`;
     case 'compost': return `${who(ev.src.seat)} ${ev.src.name}: 하수인 ${ev.count}기에게 죽음의 메아리 부여`;
     case 'ascend': return ev.later!=null ? `${who(ev.src.seat)} ${ev.src.name}: 빈 마나 수정 +${ev.amount} (최대 마나 ${ev.now}), 다음 턴 시작에 최대 마나 +${ev.later}`   // 옛 리플레이
-      : `${who(ev.src.seat)} ${ev.src.name}: 최대 마나 +${ev.amount}`+(ev.crystal?`, 빈 마나 수정 +${ev.crystal}`:' (빈 마나 수정은 이미 10이라 못 얻음)')+` → 최대 마나 ${ev.now}`;
+      : `${who(ev.src.seat)} ${ev.src.name}: 최대 마나 +${ev.amount}`+(ev.crystal?`, 빈 마나 수정 +${ev.crystal}`:'')+`, 최대 마나 ${ev.now}`;
     case 'forestSoul': return `${who(ev.src.seat)} ${ev.src.name}: 하수인 ${ev.count}기에게 죽음의 메아리 부여`;
     case 'recycle': return `${who(ev.src.seat)} ${ev.src.name}: 손패 ${ev.count}장을 덱에 섞고, 덱의 모든 카드 비용 -${ev.amount}`;
     case 'shrink': return `${who(ev.src.seat)} ${ev.src.name}: 덱의 하수인 ${ev.count}장의 비용·공격력 -${ev.amount}`;
-    case 'toDeck': return ev.vanish ? `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}은(는) 카드가 될 수 없어 사라졌습니다` : `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}을(를) ${ev.seat===MY?'내':'상대'} 덱에 섞어 넣음`;   // v71
+    case 'toDeck': return ev.vanish ? `${who(ev.src.seat)} ${ev.src.name}: ${ev.name} 사라짐` : `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}을(를) ${ev.seat===MY?'내':'상대'} 덱에 섞어 넣음`;   // v71
     case 'bounce': return ev.burned ? `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}이(가) ${ev.seat===MY?'내':'상대'} 손으로 돌아가려 했으나 손패가 가득 차 소멸` : `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}을(를) ${ev.seat===MY?'내':'상대'} 손으로 돌려보냄`;   // v72
     case 'deckCopy': return ev.name ? `${who(ev.src.seat)} ${ev.src.name}: ${ev.name} ${ev.count}장을 복사해 ${ev.seat===MY?'내':'상대'} 덱에 섞어 넣음` : `${who(ev.src.seat)} ${ev.src.name}: 상대 덱 ${ev.count}장을 복사해 ${ev.seat===MY?'내':'상대'} 덱에 섞어 넣음`; // v71 (이름이 없으면 베네딕투스식 덱 전체 복사)
-    case 'reveal': return `${who(ev.seat)} ${ev.src.name}: 덱의 주문 「${ev.name}」(비용 ${ev.cost}) 공개`;
+    case 'reveal': return `${who(ev.seat)} ${ev.src.name}: 덱의 주문 ${ev.name} 공개`;
     case 'spellTax': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.seat===MY?'내':'상대'} 다음 턴 주문 비용 +${ev.amount}`;
     case 'board': return null;
     case 'bossPhase': return `보스가 폭주합니다. 방어도 +${ev.armor||0}`+(ev.gain?`, ${ev.gain.name} 획득`+(ev.gain.global?', 나에게도 적용':''):'');   // v166
-    case 'generated': if(ev.returned) return `${who(ev.seat)} 「${ev.name}」이(가) 대상이 죽어 손패로 돌아왔습니다${ev.burned?' — 손패가 가득 차 소각':''}`;
-      return ev.seat===MY ? `${ev.src.name}: 「${ev.name}」 획득${ev.burned?' — 손패가 가득 차 소각':''}` : `상대가 ${ev.src.name}(으)로 카드를 얻었습니다${ev.burned?' (손패가 가득 차 소각)':''}`;
-    case 'overload': return `${who(ev.seat)} 「${ev.name}」: 다음 턴 마나 수정 ${ev.amount}개 과부하`;
+    case 'generated': if(ev.returned) return `${who(ev.seat)} ${ev.name}: 대상이 죽어 손패로 돌아옴${ev.burned?', 소각':''}`;
+      return ev.seat===MY ? `${ev.src.name}: ${ev.name} 획득${ev.burned?', 손패가 가득 차 소각':''}` : `상대가 ${ev.src.name}(으)로 카드 획득${ev.burned?', 소각':''}`;
+    case 'overload': return `${who(ev.seat)} ${ev.name}: 과부하 ${ev.amount}`;
     case 'growth': return `${who(ev.src.seat)} ${ev.src.name}: 각 플레이어가 마나 수정 ${ev.amount}개를 얻음`;
     case 'fruit': return `${who(ev.seat)} 금단의 과일: 마나 ${ev.amount}를 모두 소모`;
     case 'fruitPick': return `${who(ev.seat)} 선택: ${ev.name}`;
-    case 'fruitWait': return ev.seat===MY ? '하나를 선택하세요.' : null;
-    case 'fruitTargetWait': return ev.seat===MY ? '공격력을 얻을 아군 하수인을 선택하세요.' : null;
+    case 'fruitWait': return ev.seat===MY ? '하나를 고르세요' : null;
+    case 'fruitTargetWait': return ev.seat===MY ? '공격력을 줄 아군 하수인' : null;
     case 'shrinkStat': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}에게서 공격력 ${ev.atk}·생명력 ${ev.hp} 가져옴`;
     case 'corpseGain': return `${who(ev.seat)} ${ev.src.name}: 시체 ${ev.amount}개 획득`;
     case 'corpseSpend': return `${who(ev.seat)} ${ev.src.name}: 시체 ${ev.amount}개 소모`;
-    case 'heroPower': return `${ev.seat===MY?'내':'상대'} 영웅 능력 ${ev.icon} ${ev.name} — ${ev.text}`;   // v131
+    case 'heroPower': return `${ev.seat===MY?'내':'상대'} 영웅 능력: ${ev.name}`;   // v131
     case 'armor': return `${who(ev.src.seat)} ${ev.src.name}: 방어도 +${ev.amount}`;
     case 'handBuff': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.hand?'손패':'손과 덱'}의 하수인 +${ev.amount}/+${ev.amount}`;
     case 'handDouble': return `${who(ev.src.seat)} ${ev.src.name}: 손패 하수인 ${ev.count}장의 공격력·생명력 2배`;
     case 'storm': return `${who(ev.seat)} ${ev.src.name}: 이번 게임 동안 주문을 시전할 때마다 같은 비용의 하수인을 소환`;
     case 'heroAtk': return `${who(ev.src.seat)} ${ev.src.name}: 영웅 공격력 +${ev.amount} (이번 턴)`;
     case 'spellburst': return `${who(ev.seat)} ${ev.name}: 주문폭주 발동!`;
-    case 'targetWait': return ev.seat===MY ? '두 번째 시전의 대상을 선택하세요.' : null;
+    case 'targetWait': return ev.seat===MY ? '두 번째 대상' : null;
     case 'discover': return `${who(ev.seat)} ${ev.src.name}: 카드 중 하나를 발견합니다`;
-    case 'choicePick': return `${who(ev.seat)} 선택: ${ev.name}${ev.auto?' (혼돈의 주문서 자동 선택)':''}`;
-    case 'discoverPick': return ev.seat===MY ? `발견: ${ev.name} 획득 (비용 ${ev.cost})${ev.burned?' — 손패가 가득 차 소각':''}` : '상대가 발견한 카드를 손에 넣었습니다';
+    case 'choicePick': return `${who(ev.seat)} 선택: ${ev.name}${ev.auto?' (자동)':''}`;
+    case 'discoverPick': return ev.seat===MY ? `발견: ${ev.name}${ev.burned?', 손패가 가득 차 소각':''}` : '상대가 발견한 카드를 손에 넣었습니다';
     case 'recall': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}을(를) 손패로 되돌림`;
     case 'statSet': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}의 ${ev.hp!=null?`공격력·생명력이 ${ev.atk}/${ev.hp}`:`공격력이 ${ev.atk}`}(으)로 바뀜`;
-    case 'transform': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}이(가) ${ev.to||'양'}(으)로 변했습니다`;
+    case 'transform': return `${who(ev.src.seat)} ${ev.src.name}: ${ev.name}이(가) ${ev.to||'양'}(으)로 변함`;
     case 'ignored': return ev.fizzle ? `${who(ev.seat)} ${ev.src.name}: 자리·대상이 없어 불발` : `${who(ev.seat)} ${ev.src.name}: 대상이 없어 효과 무시`;
     case 'mana': return `${who(ev.src.seat)} ${ev.src.name}: 이번 턴 마나 +${ev.amount}`;
     case 'revive': return `${who(ev.seat)} ${ev.name}: 환생! (체력 1)`;
-    case 'phoenix': return `${who(ev.seat)} 불굴! 쓰러지지 않고 체력 ${ev.hp}(으)로 되살아났습니다`;
+    case 'phoenix': return `${who(ev.seat)} 불굴: 체력 ${ev.hp}로 버팀`;
     case 'refund': return `${who(ev.seat)} ${ev.name}: 마나 환급 (+1)`;
     case 'eggGrow': return `${who(ev.seat)} ${ev.name}: 죽으면 나올 닭이 +${ev.bonus}/+${ev.bonus}`;
     case 'totemAtk': return `${who(ev.seat)} ${ev.src.name}: 이번 게임 동안 내 토템 공격력 +${ev.amount}`;
     case 'deckBuff': return `${who(ev.seat)} ${ev.src.name}: 덱의 하수인 ${ev.count}장 +${ev.amount}/+${ev.amount}`;
     case 'discard': return ev.count ? `${who(ev.seat)} ${ev.src.name}: 손패 ${ev.count}장을 모두 버렸습니다` : null;
-    case 'echoCopy': return `${who(ev.seat)} ${ev.name}: 잔상 — 이번 턴에 한 장 더 낼 수 있습니다`;
+    case 'echoCopy': return `${who(ev.seat)} ${ev.name}: 잔상`;
     case 'dmgDouble': return `${who(ev.seat)} ${ev.src&&ev.src.name||'타르막'}: 이번 턴 동안 하수인이 받는 피해가 2배!`;
     case 'echo': return `${who(ev.seat)} ${ev.name}: 전투의 함성이 한 번 더 발동!`;
     case 'surrender': return `${who(ev.seat)} 항복했습니다.`;
@@ -878,19 +878,19 @@ function finishGame(){
         const gotCards=first && game.boss.rewardCards && game.boss.rewardCards.length ? rewardCardsText(game.boss.rewardCards) : '';   // v117: 첫 클리어 보상 카드 (서버가 지급)
         const next=game.boss.chapter ? advChapterBosses(BossBook.get(), game.boss.chapter).find(b=>b.stage>game.boss.stage) : null;
         const grad=!!(game.boss.chapter && !next);                                                    // v117 마지막 단계 → 졸업
-        game.advReward=`<span class="plus">+${fmt(amount)}골드</span><span class="sub2">${first?'첫 클리어 보상':isFinalStage(game.boss)?`재졸업 보상 (${FINAL_REPEAT_GOLD}골드 고정)`:'재도전 보상 (첫 클리어 보상의 '+Math.round(BOSS_REPEAT_RATIO*100)+'%)'}</span>`+
+        game.advReward=`<span class="plus">+${fmt(amount)}골드</span><span class="sub2">${first?'첫 클리어':isFinalStage(game.boss)?'재졸업':'재도전'}</span>`+
           (gotCards?`<span class="sub2 cards">획득 카드: ${escHtml(gotCards)}</span>`:'')+
-          ((game.boss.chapter || first) && game.boss.rewardChoice && game.boss.rewardChoice.length?`<span class="sub2 cards">보상 카드 묶음을 고를 수 있어요. 고른 카드는 잠긴 덱에 바로 더해져요.</span>`:'')+
-          (next?`<span class="sub2">다음 상대: ${escHtml(next.name)}</span>`:'')+(grad?`<span class="sub2 cards">졸업을 축하합니다! 덱 잠금이 풀렸어요.</span>`:'')+
+          ((game.boss.chapter || first) && game.boss.rewardChoice && game.boss.rewardChoice.length?`<span class="sub2 cards">보상 카드 고르기</span>`:'')+
+          (next?`<span class="sub2">다음 상대: ${escHtml(next.name)}</span>`:'')+(grad?`<span class="sub2 cards">졸업</span>`:'')+
           `<span class="sub2">보유 골드 {{GOLD}}</span>`;   // v163 도감 골드가 들어오면 다시 그릴 때 최신 값
-        logLine(`보스 격파! ${first?'첫 클리어':'재도전'} 보상 +${fmt(amount)}골드`+(gotCards?` · 카드 ${gotCards}`:''));
+        logLine(`보스 격파! ${first?'첫 클리어':'재도전'} 보상 +${fmt(amount)}골드`+(gotCards?`, 카드 ${gotCards}`:''));
       }
     } else {
-      logLine(winner===null?'무승부':'패배... 다시 도전해 보세요.');
+      logLine(winner===null?'무승부':'패배');
       if(winner===OPP && game.boss.chapter && !game.devTest && runOf(game.boss.chapter)){         // v117 입학(런): 지면 처음부터
-        game.advReward=`<span class="minus">유급…</span><span class="sub2">입학이 끝났어요. 덱 잠금이 풀렸으니, 덱을 다듬고 다시 입학해 보세요.</span>`;
+        game.advReward=`<span class="minus">유급</span><span class="sub2">덱 잠금 해제</span>`;
         ServerStore.loseRun(game.boss.id).then(()=>{ if($('screen-adventure').classList.contains('show')) openAdventure(); });
-        logLine('유급! 입학이 끝났습니다. 처음부터 다시 입학해야 해요.');
+        logLine('유급');
       }
     }
     return;
@@ -902,8 +902,8 @@ function finishGame(){
   updateWallet();
   const m=r.summary;
   if(m.kind==='easy') logLine(m.win?`보상 +${m.payout}골드`:'보상 없음');
-  else if(m.kind==='bet') logLine(m.win?`배팅 성공! (${m.payoutPct}%) +${fmt(m.net)}골드`:m.draw?'무승부: 배팅 금액 환불':`배팅 실패... -${fmt(m.bet)}골드`);
-  else logLine(m.win?`보상 +${fmt(m.payout)}골드 (풀 ${m.poolFrom}→${m.poolTo})`:m.draw?'무승부: 변동 없음':`풀 ${m.poolFrom}→${m.poolTo}`);
+  else if(m.kind==='bet') logLine(m.win?`배팅 성공 +${fmt(m.net)}골드`:m.draw?'무승부: 배팅 금액 환불':`배팅 실패 -${fmt(m.bet)}골드`);
+  else logLine(m.win?`보상 +${fmt(m.payout)}골드`:m.draw?'무승부: 변동 없음':'보상 없음');
 }
 function rewardHTML(){
   if(game && game.mode==='pvp') return game.pvpHTML||'';
@@ -912,8 +912,8 @@ function rewardHTML(){
   const sign=n=>n>0?`<span class="plus">+${fmt(n)}골드</span>`:n<0?`<span class="minus">${fmt(n)}골드</span>`:'<span>±0골드</span>';
   let top, sub='';
   if(m.kind==='easy') top=m.win?sign(m.payout):'<span>획득 골드 없음</span>';
-  else if(m.kind==='bet'){ top=sign(m.net); sub=m.win?`배팅 ${fmt(m.bet)}골드 × 배당 ${m.payoutPct}% → ${fmt(m.payout)}골드 반환`:m.draw?'무승부로 배팅 금액이 환불되었습니다':`배팅 ${fmt(m.bet)}골드를 잃었습니다`; }
-  else { top=m.win?sign(m.payout):'<span>획득 골드 없음</span>'; sub=m.draw?'':`오늘의 보상 풀 ${m.poolFrom} → ${m.poolTo}`; }
+  else if(m.kind==='bet'){ top=sign(m.net); sub=m.win?`${fmt(m.payout)}골드 반환`:m.draw?'무승부, 환불':''; }
+  else { top=m.win?sign(m.payout):'<span>획득 골드 없음</span>'; sub=m.draw?'':`다음 보상 ${m.poolTo}골드`; }
   return `${top}<span class="sub2">${sub}</span><span class="sub2">보유 골드 ${fmt(Economy.get().gold)}</span>`+beatenHTML();   // v163
 }
 async function runOpponentTurn(){
@@ -939,12 +939,12 @@ function playCard(c){
   ui.selected=null; ui.place=null; stopArrow();
   if(c.type!=='spell' && view.me.board.length>0){          // v129 하수인: 먼저 놓을 자리(하수인 사이)를 고른다
     ui.pending=null; ui.place={cardId:c.id, card:c, entries, pos:view.me.board.length};
-    logLine('하수인을 놓을 자리를 고르세요. 같은 자리를 한 번 더 누르면 내요.');
+    logLine('놓을 자리를 고르세요');
     render(); return;
   }
   if(entries.length===1 && !entries[0].target){ playerAction(entries[0]); return; }   // 대상이 없는 카드만 바로 낸다. 대상이 있으면 (후보가 하나뿐이어도) 직접 지정
   ui.pending={cardId:c.id, entries};
-  logLine('대상을 선택하세요.');
+  logLine('대상을 고르세요');
   render();
 }
 // ---------- v132 일일 퀘스트: 한 판 기록 (내 행동·이벤트에서 센다) ----------
@@ -961,7 +961,7 @@ const QStats = {
     c.wins=won?1:0; c.pvp=mode==='pvp'?1:0; c.adv=mode==='adventure'?1:0; c.cheatWins=(won && beaten && beaten.length)?1:0;   // v163
     const g=game, r=await ServerStore.reportGame(c, won ? (beaten||[]) : []);
     if(r && r.ok){ updateWallet();
-      const msgs=[...(r.codexNew||[]).map(x=>`특성 도감 등록! ${(cheatById(x.id)||{}).name||x.id} · +${x.gold}골드`), ...(r.completed||[]).map(q=>`퀘스트 완료! ${q.text} · +${q.gold}골드`)];   // v163
+      const msgs=[...(r.codexNew||[]).map(x=>`도감 등록 ${(cheatById(x.id)||{}).name||x.id} +${x.gold}골드`), ...(r.completed||[]).map(q=>`퀘스트 완료 +${q.gold}골드`)];   // v163
       msgs.forEach((t,i)=>setTimeout(()=>toast(t, 'gold'), 600+i*1800)); updateQuestMenuDesc();
       if(g && g===game){ g.beatenNew=(r.codexNew||[]).map(x=>x.id); g.codexSynced=true; if($('overlay').classList.contains('show')) $('overlayReward').innerHTML=rewardHTML(); } }
   },
@@ -1068,7 +1068,7 @@ function turnNotices(){                                  // 내 턴이 시작될
 // ---------- v132 일일 퀘스트 화면 ----------
 function updateQuestMenuDesc(){ const el=$('questMenuDesc'), p=window.ServerStore && ServerStore.progress; if(!el || !p) return;
   const L=p.quests.list, done=L.filter(q=>q.done).length, ready=tutRewardsReady().length;
-  const left=L.filter(q=>!q.done).reduce((t,q)=>t+q.gold,0); el.textContent=(ready?`보상 ${ready}개 · `:'')+`${done}/${L.length}`+(left?` · +${left}`:'');   // v168 짧게
+  const left=L.filter(q=>!q.done).reduce((t,q)=>t+q.gold,0); el.textContent=(ready?`보상 ${ready}, `:'')+`${done}/${L.length}`+(left?`, +${left}`:'');   // v168 짧게
   const bd=$('questBadge'); if(bd){ bd.hidden=!ready; bd.textContent=ready; } }
 
 // ---------- v140 튜토리얼 · 첫 걸음 (튜토리얼 첫 완료 보상, 계정당 한 번) ----------
@@ -1077,15 +1077,15 @@ function updateQuestMenuDesc(){ const el=$('questMenuDesc'), p=window.ServerStor
 const tutState=id=>{ const p=window.ServerStore && ServerStore.progress; return p && p.tutorial ? (p.tutorial[id]||'todo') : null; };
 const tutLocked=t=>!!(t.needs && tutState(t.needs)==='todo' && tutState(t.id)==='todo');   // 기본을 안 끝냈으면 고급은 잠금 (이미 끝낸 기록이 있으면 열어 둔다)
 const tutRewardsReady=()=>PROGRESS.TUTORIALS.filter(t=>tutState(t.id)==='ready');
-const tutLabel=t=>`${PROGRESS.TUTORIALS.indexOf(t)+1}부 · ${t.name}`;
+const tutLabel=t=>`${PROGRESS.TUTORIALS.indexOf(t)+1}부 ${t.name}`;
 const tutGo=t=>{ if(t.id==='menu'){ if(typeof MenuTour!=='undefined') MenuTour.start(); } else location.href=t.url; };   // 5부 메뉴 둘러보기는 이 화면 위에서 진행
 function updateTutorialMenuDesc(){
   const el=$('tutMenuDesc'); if(!el || tutState('basic')==null) return;
   const T=PROGRESS.TUTORIALS, left=T.filter(t=>tutState(t.id)!=='claimed'), ready=tutRewardsReady();
-  el.textContent = ready.length ? `보상 받기 · ${ready.map(t=>t.rewardText).join(' · ')}`   // v168 짧게
+  el.textContent = ready.length ? `보상 받기`   // v168 짧게
     : !left.length ? '모두 완료'
     : T.every(t=>tutState(t.id)==='todo') ? '+1,000'
-    : `${T.length-left.length}/${T.length} · +${left[0].rewardText}`;
+    : `${T.length-left.length}/${T.length}, +${left[0].rewardText}`;
    // v144 가이드는 튜토리얼 화면 맨 밑으로 옮김
   const bd=$('tutBadge'); if(bd){ bd.hidden=!ready.length; bd.textContent=ready.length; }
 }
@@ -1134,11 +1134,11 @@ async function claimTutorial(id, btn){
   if($('screen-tutorial').classList.contains('show')) renderTutorials();
   renderFirstSteps();
   const rw=r.reward||{};
-  if(rw.gold) toast(`첫 걸음 보상! +${fmt(rw.gold)}골드`, 'gold');
+  if(rw.gold) toast(`+${fmt(rw.gold)}골드`, 'gold');
   if(rw.card){ const t=PROGRESS.TUTORIALS.find(x=>x.id===id), rar=rw.card.rarity;
     playPacks({ title:`${tutLabel(t)} 완료 보상`, packLabel:t.reward.odds?'희귀 이상 카드':`${rar} 카드`,
       packs:[{ cards:[{ name:rw.card.name, rarity:rar, isNew:rw.card.isNew, dup:false, extra:false, refund:0 }], refund:0, pityHit:null }], spent:0,
-      info:()=>rw.card.isNew?`새 ${rar} 카드 「${rw.card.name}」을(를) 얻었어요!`:`「${rw.card.name}」 한 장이 더 쌓였어요.` }); }
+      info:()=>rw.card.isNew?`새 카드 ${rw.card.name}`:`${rw.card.name} +1장` }); }
 }
 function questResetIn(){   // v168 다음 초기화(한국 시간 새벽 5시)까지 남은 시간
   const now=Date.now(), kst=new Date(now+9*3600e3), next=Date.UTC(kst.getUTCFullYear(),kst.getUTCMonth(),kst.getUTCDate(),5)-9*3600e3;
@@ -1155,11 +1155,11 @@ function renderQuests(){
     const row=document.createElement('div'); row.className='quest'+(x.done?' done':'');
     row.innerHTML=`<div class="q-main"><b>${escHtml(x.text)}</b><div class="q-bar"><i style="width:${Math.round(x.prog/x.goal*100)}%"></i><span>${x.prog} / ${x.goal}</span></div></div>`+
       `<div class="q-side"><span class="q-gold">${x.done?'✔ 완료':`${x.gold}`}</span></div>`;
-    if(!x.done && q.rerollsLeft>0){ const b=document.createElement('button'); b.type='button'; b.className='q-reroll'; b.textContent='↻ 바꾸기'; b.title='다른 퀘스트로 바꿔요. 하루 '+PROGRESS.REROLLS+'번';
+    if(!x.done && q.rerollsLeft>0){ const b=document.createElement('button'); b.type='button'; b.className='q-reroll'; b.textContent='↻ 바꾸기'; b.title='하루 '+PROGRESS.REROLLS+'번';
       b.onclick=async()=>{ b.disabled=true; const r=await ServerStore.rerollQuest(i); if(!r.ok) $('questNote').textContent=''+r.error; renderQuests(); }; row.querySelector('.q-side').appendChild(b); }
     box.appendChild(row);
   });
-  $('questNote').textContent=`오늘 바꾸기 ${q.rerollsLeft}번 남음`+(q.gamesLeft!=null?` · 퀘스트로 세는 판 ${q.gamesLeft}판 남음 (하루 ${PROGRESS.MAX_GAMES_PER_DAY}판)`:'');
+  $('questNote').textContent=`오늘 바꾸기 ${q.rerollsLeft}번 남음`+(q.gamesLeft!=null?`, 남은 판 ${q.gamesLeft}`:'');
 }
 
 // ---------- v132 카드 제작 · 분해 ----------
@@ -1174,14 +1174,14 @@ function closeCraft(){ $('craftModal').classList.remove('show'); }
 function renderCraft(){
   const modal=$('craftModal'); if(!modal || !modal.classList.contains('show')) return;
   const p=ServerStore.progress, dust=p ? p.dust : 0, need=deckNeedsLocal();
-  $('craftDust').innerHTML=`${ICO('dust','가루')} 가루 ${fmt(dust)}`;
+  $('craftDust').innerHTML=`${ICO('dust','가루')} ${fmt(dust)}`;
   const extra=CARD_POOL.filter(craftableCard).reduce((t,c)=>t+Math.max(0, ServerStore.owned(c.name)-CONFIG.COPIES),0);
   const extraGain=CARD_POOL.filter(craftableCard).reduce((t,c)=>t+Math.max(0, ServerStore.owned(c.name)-CONFIG.COPIES)*PROGRESS.DISENCHANT[c.rarity],0);
-  const xb=$('craftExtra'); xb.textContent=extra?`일괄 추출 ${extra}장 · +${fmt(extraGain)}`:'일괄 추출'; xb.disabled=!extra;
-  xb.title=`덱 한도(${CONFIG.COPIES}장)를 넘는 카드를 모두 분해합니다. 각 카드는 ${CONFIG.COPIES}장씩 남습니다.`;
-  xb.onclick=async()=>{ if(!await confirmBox('일괄 추출', `${CONFIG.COPIES}장을 넘는 남는 카드 ${extra}장을 모두 분해합니다.\n각 카드는 ${CONFIG.COPIES}장씩 남고, 가루 ${fmt(extraGain)}을(를) 얻습니다.`, '모두 분해')) return;
-    xb.disabled=true; const r=await ServerStore.disenchantExtra(); $('craftNote').textContent=r.ok?`✔ 일괄 추출: ${r.count}장 분해 · 가루 +${fmt(r.gain)}`:''+r.error; renderCraft(); updateDeckMenuDesc(); };
-  if(!$('craftNote').textContent) $('craftNote').textContent=`분해: 일반 ${PROGRESS.DISENCHANT['일반']} · 희귀 ${PROGRESS.DISENCHANT['희귀']} · 특급 ${PROGRESS.DISENCHANT['특급']} · 전설 ${PROGRESS.DISENCHANT['전설']}  /  제작: ${PROGRESS.CRAFT['일반']} · ${PROGRESS.CRAFT['희귀']} · ${PROGRESS.CRAFT['특급']} · ${PROGRESS.CRAFT['전설']} 가루. 덱에 넣은 장수만큼은 분해할 수 없습니다.`;
+  const xb=$('craftExtra'); xb.textContent=extra?`일괄 추출 ${extra}장`:'일괄 추출'; xb.disabled=!extra;
+  xb.title=`${CONFIG.COPIES}장을 넘는 카드를 모두 분해`;
+  xb.onclick=async()=>{ if(!await confirmBox('일괄 추출', `남는 카드 ${extra}장을 분해해서 가루 ${fmt(extraGain)}을(를) 얻어요.`, '모두 분해')) return;
+    xb.disabled=true; const r=await ServerStore.disenchantExtra(); $('craftNote').textContent=r.ok?`${r.count}장 분해, 가루 +${fmt(r.gain)}`:''+r.error; renderCraft(); updateDeckMenuDesc(); };
+  if(!$('craftNote').textContent) $('craftNote').textContent='';
   const tabs=$('craftTabs'); tabs.innerHTML='';
   CRAFT_TABS.forEach(([k,label])=>{ const b=document.createElement('button'); b.type='button'; b.textContent=label; b.className=craft.tab===k?'on':''; b.onclick=()=>{ craft.tab=k; renderCraft(); }; tabs.appendChild(b); });
   const si=$('craftSearch'); si.value=craft.q; si.oninput=()=>{ craft.q=si.value.trim(); renderCraftGrid(dust, need); };
@@ -1202,15 +1202,15 @@ function renderCraftGrid(dust, need){
     const btns=document.createElement('div'); btns.className='craft-btns';
     const mk=document.createElement('button'); mk.type='button'; mk.className='mk'; mk.innerHTML=`${ICO('craft','제작')} ${cost}`; mk.title=`가루 ${cost}로 1장 만들기`;
     mk.disabled = n>=CONFIG.COPIES || dust<cost;
-    mk.onclick=()=>armConfirm(mk, async()=>{ const r=await ServerStore.craft(c.name); $('craftNote').textContent=r.ok?`✔ ${c.name} 1장을 만들었어요. 가루 -${cost}`:''+r.error; renderCraft(); updateDeckMenuDesc(); }, c.rarity==='전설'||c.rarity==='특급');
-    const de=document.createElement('button'); de.type='button'; de.className='de'; de.innerHTML=`${ICO('dust','가루')} +${gain}`; de.title=keep?`덱에 ${keep}장 쓰는 중 — 그보다 많은 장수만 분해할 수 있어요`:`1장 분해해서 가루 ${gain} 얻기`;
+    mk.onclick=()=>armConfirm(mk, async()=>{ const r=await ServerStore.craft(c.name); $('craftNote').textContent=r.ok?`${c.name} 제작`:''+r.error; renderCraft(); updateDeckMenuDesc(); }, c.rarity==='전설'||c.rarity==='특급');
+    const de=document.createElement('button'); de.type='button'; de.className='de'; de.innerHTML=`${ICO('dust','가루')} +${gain}`; de.title=keep?`덱에서 ${keep}장 사용 중`:`분해`;
     de.disabled = n<=keep;
     de.onclick=async()=>{                                   // v134 2장 이하인 카드를 분해하면 경고 (남는 카드는 바로 분해)
-      if(n<=CONFIG.COPIES && !await confirmBox('정말 분해할까요?', `「${c.name}」은(는) 지금 ${n}장뿐이라 남는 카드가 아닙니다.\n분해하면 ${n-1}장만 남아 덱에 ${n-1===0?'넣을 수 없게':`${n-1}장까지만 넣을 수 있게`} 돼요.\n가루 +${gain} · 다시 만들려면 가루 ${cost}`, '그래도 분해', true)) return;
-      de.disabled=true; const r=await ServerStore.disenchant(c.name, 1); $('craftNote').textContent=r.ok?`✔ ${c.name} 1장 분해 · 가루 +${r.gain}`:''+r.error; renderCraft(); updateDeckMenuDesc(); };
+      if(n<=CONFIG.COPIES && !await confirmBox('정말 분해할까요?', `${c.name}은(는) ${n}장뿐이에요. 다시 만들려면 가루 ${cost}가 필요해요.`, '그래도 분해', true)) return;
+      de.disabled=true; const r=await ServerStore.disenchant(c.name, 1); $('craftNote').textContent=r.ok?`${c.name} 분해, 가루 +${r.gain}`:''+r.error; renderCraft(); updateDeckMenuDesc(); };
     btns.appendChild(mk); btns.appendChild(de); item.appendChild(btns); grid.appendChild(item);
   }
-  if(!list.length) grid.innerHTML='<p class="note">해당하는 카드가 없습니다.</p>';
+  if(!list.length) grid.innerHTML='<p class="note">카드 없음</p>';
 }
 function confirmBox(title, text, okLabel='확인', danger=false){      // v134 확인 창 (브라우저 alert 대신). 결과: true/false
   return new Promise(res=>{
@@ -1295,7 +1295,7 @@ function aiGreet(){ if(game && game.mode!=='pvp' && Math.random()<.7) setTimeout
 document.addEventListener('contextmenu', e=>{                                         // 오른쪽 클릭(폰은 꾹 누르기): 내 영웅 → 감정 표현 / 상대 영웅 → 감정 표현 끄기·켜기
   const mine=e.target.closest && e.target.closest('#playerHero'), opp=e.target.closest && e.target.closest('#aiHero');
   if(mine){ toggleEmoteMenu(e); }
-  else if(opp){ e.preventDefault(); emo.muted=!emo.muted; toast(emo.muted?'상대 감정 표현을 껐습니다':'상대 감정 표현을 켰습니다'); }
+  else if(opp){ e.preventDefault(); emo.muted=!emo.muted; toast(emo.muted?'상대 감정 표현 끔':'상대 감정 표현 켬'); }
 });
 // ---------- v131 영웅 능력 ----------
 function renderPower(id, hp, usable, selected){
@@ -1308,7 +1308,7 @@ function renderPower(id, hp, usable, selected){
   b.classList.toggle('has-art', !!art);
   if(b.dataset.hpkey!==key){ b.dataset.hpkey=key;
     b.innerHTML=(art ? `<span class="hp-icon hp-img" style="background-image:url('${art}')"></span>` : `<span class="hp-icon">${hp.icon}</span>`)+(hp.passive ? `<span class="hp-cost hp-passive">지속</span>` : `<span class="hp-cost">${hp.cost}</span>`); }
-  b.dataset.tip=hp.passive ? `${hp.name} (지속) — ${hp.text}` : `${hp.name} (${hp.cost}) — ${hp.text}${hp.used?' · 이번 턴 사용함':''}`; b.removeAttribute('title');
+  b.dataset.tip=hp.passive ? `${hp.name} (지속)\n${hp.text}` : `${hp.name} (${hp.cost})\n${hp.text}`; b.removeAttribute('title');
   b._hp=hp;   // v142 마우스를 올리거나(PC) 꾹 누르면(폰) 카드처럼 큰 설명 창 (아래 미리보기)
 }
 function usePower(e){
@@ -1324,7 +1324,7 @@ function usePower(e){
   ui.selected=null; ui.place=null; stopArrow();
   if(entries.length===1 && !entries[0].target){ playerAction(entries[0]); return; }
   ui.pending={cardId:-2, entries};
-  logLine(`${hp.icon} ${hp.name}: 대상을 선택하세요.`);
+  logLine(`${hp.name}: 대상 고르기`);
   render();
   const b=$('myPower'); if(b) startArrow(b, true);   // v142 대상 지정: 영웅 능력에서 화살표 (PC는 마우스를 따라간다 · 폰은 끌어서 쓰면 손가락을 따라간다)
 }
@@ -1373,7 +1373,7 @@ function placeAt(pos){
   ui.place=null;
   if(p.entries.length===1 && !p.entries[0].target){ playerAction({...p.entries[0], pos}); return; }
   ui.pending={cardId:p.cardId, entries:p.entries, pos, card:p.card};   // 전투의 함성 대상은 자리를 고른 뒤에 지정
-  logLine('대상을 선택하세요.');
+  logLine('대상을 고르세요');
   render();
 }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && (ui.place || ui.pending)){ ui.place=null; ui.pending=null; render(); } });
@@ -1481,7 +1481,7 @@ $('surrenderBtn').onclick=()=>{
 //  개발자의 영남대 대전은 원래 시험 대전이라 기록·보상이 없고, 자유 보스전은 평소 승리와 똑같이 정산된다
 async function devSkipBoss(){
   if(!isDev() || !game || game.mode!=='adventure' || !Host.state || Host.state.over) return;
-  if($('mulliganModal') && $('mulliganModal').classList.contains('show')) { warn('멀리건을 먼저 끝내 주세요.'); return; }
+  if($('mulliganModal') && $('mulliganModal').classList.contains('show')) { warn('멀리건 중입니다.'); return; }
   Host.state.over=true; Host.state.winner=MY; Host.state.pending=null;
   ui.selected=null; ui.pending=null; ui.place=null; stopArrow(); resetSurrenderBtn();
   logLine(`🛠 개발자: 보스 건너뛰기 → ${game.boss ? game.boss.name : '보스'} 승리 처리`);
@@ -1781,7 +1781,7 @@ function cardEl(c, opts={}){
 // 마나 표시 (내 쪽·상대 쪽 공통). '매 턴 마나 +N' 치트가 있으면 그 추가분까지 총량에 포함한다.
 function renderMana(textId, crystalsId, p){
   const total=Math.max(1, p.maxMana+((p.mods&&p.mods.manaBonus)||0));
-  { const ex=''+(p.locked?` · 과부하 ${p.locked}`:'')+(p.overloadNext?` · 다음 턴 과부하 ${p.overloadNext}`:'')+(p.nextMana?` · 다음 턴 마나 +${p.nextMana}`:'')+(p.ascendNext?` · 다음 턴 최대 마나 +${p.ascendNext}`:'')+(p.spellTax?` · 주문 비용 +${p.spellTax}`:'')+(p.taxNext?` · 다음 턴 주문 비용 +${p.taxNext}`:'')+(p.noSpell?' · ✈ 주문 금지':'')+(p.heroFrozen?' · 🧊 영웅 행동 불가':'')+(p.heroImmune?' · 🛌 휴학: 영웅 면역':'')+((p.gradQuests&&p.gradQuests.length)?' · 🎓 사정회 '+p.gradQuests.map(q=>`${q.prog}/${q.stage}`).join(', '):'')+(p.spellDisc?` · 다음 주문 -${p.spellDisc}`:'')+(p.hangover?' · 🍺 숙취: 카드 비용만큼 피해':'')+((p.dormant&&p.dormant.length)?' · 💤 '+p.dormant.map(d=>`${d.name} ${d.left}턴`).join(', '):'')+(p.playLimit!=null?` · 👀 카드 ${p.plays||0}/${p.playLimit}장`:'');   // v155 「3/5」 크게 + 과부하 등은 작게
+  { const ex=''+(p.locked?`, 과부하 ${p.locked}`:'')+(p.overloadNext?`, 다음 턴 과부하 ${p.overloadNext}`:'')+(p.nextMana?`, 다음 턴 마나 +${p.nextMana}`:'')+(p.ascendNext?`, 다음 턴 최대 마나 +${p.ascendNext}`:'')+(p.spellTax?`, 주문 비용 +${p.spellTax}`:'')+(p.taxNext?`, 다음 턴 주문 비용 +${p.taxNext}`:'')+(p.noSpell?', ✈ 주문 금지':'')+(p.heroFrozen?', 🧊 영웅 행동 불가':'')+(p.heroImmune?', 🛌 휴학: 영웅 면역':'')+((p.gradQuests&&p.gradQuests.length)?', 🎓 사정회 '+p.gradQuests.map(q=>`${q.prog}/${q.stage}`).join(', '):'')+(p.spellDisc?`, 다음 주문 -${p.spellDisc}`:'')+(p.hangover?', 🍺 숙취: 카드 비용만큼 피해':'')+((p.dormant&&p.dormant.length)?', 💤 '+p.dormant.map(d=>`${d.name} ${d.left}턴`).join(', '):'')+(p.playLimit!=null?`, 👀 카드 ${p.plays||0}/${p.playLimit}장`:'');   // v155 「3/5」 크게 + 과부하 등은 작게
     $(textId).innerHTML=`<b>${p.mana}</b><span class="mx">/${total}</span>`+(ex?`<small>${escHtml(ex.replace(/^ · /,''))}</small>`:''); $(textId).title=`마나 ${p.mana} / ${total}`+ex; }
   const cz=$(crystalsId); cz.innerHTML='';
   for(let i=0;i<Math.max(total, p.mana);i++){     // 동전 등으로 최대치를 넘긴 마나도 수정으로 보여준다
@@ -1881,7 +1881,7 @@ function render(){
   renderCheats();
   { const dm=$('discoverModal'), pd=v.pending;                                      // 발견: 내가 고를 차례면 3장 선택 창을 띄운다
     if(pd && pd.seat===MY && pd.options){
-      const fruit=pd.kind==='fruit', choice=pd.kind==='choice', pocket=pd.kind==='pocketDimension'; $('discoverTitle').textContent=fruit?'금단의 과일 — 하나를 고르세요':choice?'선택 — 둘 중 하나를 고르세요':pocket?'주머니 차원 — 주문 발견':'발견 — 한 장을 고르세요'; $('discoverNote').textContent=fruit?'마나를 모두 소모했습니다. 공격력을 고르면 이어서 아군 하수인 1기를 선택합니다.':choice?'원하는 효과 하나를 선택합니다.':pocket?`선택한 주문의 비용이 4 감소합니다. 이미 발견한 주문이 다시 나올 때까지 반복합니다. (현재 ${(pd.seen||[]).length}장 선택함)`:'';
+      const fruit=pd.kind==='fruit', choice=pd.kind==='choice', pocket=pd.kind==='pocketDimension'; $('discoverTitle').textContent=fruit?'금단의 과일':choice?'선택':pocket?'주머니 차원':'발견'; $('discoverNote').textContent=fruit?'고른 다음 아군 하수인을 고르세요':pocket?'고른 주문 비용 -4':'';
       const g=$('discoverGrid'), key=JSON.stringify([pd.kind, pd.options.map(c=>[c.id, c.name, c.cost])]);
       if(g.dataset.key!==key || !dm.classList.contains('show')){            // v153 같은 후보면 다시 그리지 않는다 (누르는 도중에 화면이 갱신되면 터치가 사라졌다)
         g.dataset.key=key; g.innerHTML='';
@@ -1902,7 +1902,7 @@ function render(){
   { const el=$('aiArmor'); el.textContent=op.armor||''; el.classList.toggle('show', op.armor>0); $('aiArmorNext').textContent=op.armorNext?`다음 턴 방어도 +${op.armorNext}`:''; }
   renderMana('manaText','crystals',me);
   renderMana('aiManaText','aiCrystals',op);
-  $('aiHandCnt').textContent=op.handCount; $('aiDeckCnt').textContent=op.deckCount+(op.deckCount===0?` (다음 탈진 ${op.fatigue+1})`:''); $('myDeckCnt').textContent=me.deckCount+(me.deckCount===0?` (다음 탈진 ${me.fatigue+1})`:'');
+  $('aiHandCnt').textContent=op.handCount; $('aiDeckCnt').textContent=op.deckCount+(op.deckCount===0?'':''); $('myDeckCnt').textContent=me.deckCount+(me.deckCount===0?'':'');
 
   const active = v.turn===MY && !v.over && !ui.busy;
   const legal = active ? v.legal : [];
@@ -2001,7 +2001,7 @@ function renderDeckModal(){
   for(const c of view.me.deckCards) rem[c.name]=(rem[c.name]||0)+1;
   const mine=countsOf((game&&game.deckNames)||defaultDeckList());      // 이번 판에 넣은 내 덱 구성
   const total=Object.values(mine).reduce((a,b)=>a+b,0);
-  $('deckTitle').textContent=`내 덱 — 남은 카드 ${view.me.deckCount}장 / 전체 ${total}장`;
+  $('deckTitle').textContent=`남은 카드 ${view.me.deckCount} / ${total}`;
   const grid=$('deckGrid'); grid.innerHTML='';
   let lastType=null;
   CARD_POOL.forEach(c=>{
@@ -2068,7 +2068,7 @@ $('edFilterToggle').onclick=()=>{ $('deckEditor').classList.toggle('filters-coll
 function renderDeckEditor(){
   const total=edTotal(), size=CONFIG.DECK_SIZE, T=!!ed.test, maxCopies=T?TEST_COPIES:CONFIG.COPIES, saveOk=T?total>=1:total===size, atCap=T?total>=TEST_MAX_DECK:total>=size;
   const spellCnt=CARD_POOL.reduce((n,c)=>n+(c.type==='spell'?(ed.counts[c.name]||0):0),0);
-  $('edTitle').textContent=T ? `테스트 덱 편집 — ${total}장 (주문 ${spellCnt}장)` : `덱 편집 — ${total} / ${size}장 (주문 ${spellCnt}장)`;
+  $('edTitle').textContent=T ? `테스트 덱 편집 — ${total}장 (주문 ${spellCnt}장)` : `${total} / ${size}`;
   $('edNote').textContent = T
     ? `테스트 전용 덱입니다 (일반 덱과 따로 저장). 1~${TEST_MAX_DECK}장, 같은 카드 최대 ${TEST_COPIES}장. 카드를 누르면 1장 추가됩니다.`
     : saveOk
@@ -2080,17 +2080,17 @@ function renderDeckEditor(){
   let bars='';
   for(let k=0;k<=maxCost;k++){
     const n=byCost[k]||0;
-    bars+=`<div class="cv-col${ed.cost===k?' on':''}" data-cost="${k}" title="${k}코 ${n}장 (클릭: ${k}코스트 카드만 보기)"><span class="cv-n">${n}</span><div class="cv-bar" style="height:${n?Math.max(4,Math.round(n/peak*60)):2}px"></div><span class="cv-k">${k}</span></div>`;
+    bars+=`<div class="cv-col${ed.cost===k?' on':''}" data-cost="${k}" title="${k}코 ${n}장"><span class="cv-n">${n}</span><div class="cv-bar" style="height:${n?Math.max(4,Math.round(n/peak*60)):2}px"></div><span class="cv-k">${k}</span></div>`;
   }
-  $('edCurve').innerHTML=`<div class="cv-title">마나 곡선 <small>(코스트별 장수 · 막대를 누르면 해당 코스트만 표시)</small></div><div class="cv-chart">${bars}</div>`;
+  $('edCurve').innerHTML=`<div class="cv-title">마나 곡선</div><div class="cv-chart">${bars}</div>`;
   $('edCurve').querySelectorAll('.cv-col').forEach(el=>el.onclick=()=>{ const k=+el.dataset.cost; ed.cost=(ed.cost===k?null:k); edScrollTop(); renderDeckEditor(); });
-  if(ed.adv){ $('edTitle').textContent=`모험 덱 편집 — ${total} / ${size}장 (주문 ${spellCnt}장)`; if(saveOk) $('edNote').textContent='입학 덱 30장 · 일반 카드만'; }
+  if(ed.adv){ $('edTitle').textContent=`모험 덱 ${total} / ${size}`; if(saveOk) $('edNote').textContent='일반 카드만'; }
   if(ed.boss){ $('edTitle').textContent=`보스 덱 — ${ed.bossName||''} ${total} / ${size}장 (주문 ${spellCnt}장)`; $('edNote').textContent = saveOk ? '저장할 수 있습니다. 이 덱이 보스가 쓰는 덱입니다.' : `정확히 ${size}장을 채워야 저장할 수 있습니다 (같은 카드는 최대 ${CONFIG.COPIES}장).`; }
   let slotOk=false;
   if(ed.slot){ const act=DeckSlots.isActive(ed.slot.slot); slotOk = total<=size && (!act || total===size);   // v135 덱 슬롯: 미완성도 저장 가능 (사용 중 덱만 30장)
-    $('edTitle').textContent=`${ed.slot.name} — ${total} / ${size}장 (주문 ${spellCnt}장)`;
+    $('edTitle').textContent=`${ed.slot.name}, ${total} / ${size}`;
     $('edNote').textContent = act ? (total===size ? '사용 중인 덱입니다. 저장하면 바로 대전에 쓰입니다.' : `사용 중인 덱은 정확히 ${size}장이어야 저장할 수 있습니다.`)
-      : (total===size ? '저장할 수 있습니다. 덱 목록에서 [사용하기]를 누르면 대전에 쓰입니다.' : `미완성이어도 저장할 수 있어요 (${total}/${size}장). 대전에 쓰려면 ${size}장을 채워야 합니다.`); }
+      : (total===size ? '저장할 수 있습니다. 덱 목록에서 [사용하기]를 누르면 대전에 쓰입니다.' : ''); }
   $('edSave').disabled=!(ed.slot ? slotOk : saveOk);
   const grid=$('edGrid'), st=grid.scrollTop; grid.innerHTML='';
   // 카드 종류(주문/하수인)로 먼저 나누고, 각 종류 안에서 속성별로 묶은 뒤 코스트 오름차순 정렬
@@ -2136,7 +2136,7 @@ function renderDeckEditor(){
     }
     if(school!==lastSchool && !String(ed.tab).startsWith('rune:') && !String(ed.tab).startsWith('tribe:')){
       lastSchool=school;
-      const h=document.createElement('div'); h.className='ed-school-label'; h.textContent=`◆ ${school} ${c.type==='spell'?'속성':'종족'} · 코스트순`; grid.appendChild(h);
+      const h=document.createElement('div'); h.className='ed-school-label'; h.textContent=`◆ ${school} ${c.type==='spell'?'속성':'종족'}`; grid.appendChild(h);
     }
     const cap=edCap(c.name), own=ServerStore.owned(c.name), locked=edOwnedMode() && own<=0;
     const item=document.createElement('div'); item.className='ed-item'+(n?'':' zero')+(locked?' locked':'');
@@ -2182,24 +2182,24 @@ function renderDeckList(msg){
     row.innerHTML=`<div class="ds-pic"${art?` style="background-image:url('${art}')"`:''}>${art?'':(hp?hp.icon:'🃏')}</div>
       <div class="ds-main"><b></b><small></small><div class="ds-hp"></div></div><div class="ds-btns"></div>`;
     row.querySelector('b').textContent=sl.name+(act?'  ✔ 사용 중':'');
-    row.querySelector('small').textContent= st.ok ? `${st.total}장 · 완성` : st.total<CONFIG.DECK_SIZE ? `미완성 ${st.total}/${CONFIG.DECK_SIZE}장${st.missing?` · 없는 카드 ${st.missing}장`:''}` : `없는 카드 ${st.missing}장 · 카드 제작에서 만들 수 있어요`;
+    row.querySelector('small').textContent= st.ok ? `${st.total}장` : st.total<CONFIG.DECK_SIZE ? `${st.total}/${CONFIG.DECK_SIZE}장` : `없는 카드 ${st.missing}장`;
     const sel=document.createElement('select'); sel.title='이 덱의 영웅 능력';
     sel.innerHTML='<option value="">🔮 영웅 능력: 따로 안 정함</option>'+HERO_POWER_IDS.map(id=>`<option value="${id}">${HERO_POWERS[id].icon} ${escHtml(HERO_POWERS[id].name)}</option>`).join('');
-    sel.value=sl.heroPower||''; sel.onchange=async()=>{ const r=await ServerStore.updateDeck(sl.slot,{heroPower:sel.value}); if(r.ok && act && sel.value){ HeroPowerPref.set(sel.value); updatePowerMenuDesc(); } renderDeckList(r.ok?`✔ 「${sl.name}」 영웅 능력을 바꿨습니다`:''+r.error); };
+    sel.value=sl.heroPower||''; sel.onchange=async()=>{ const r=await ServerStore.updateDeck(sl.slot,{heroPower:sel.value}); if(r.ok && act && sel.value){ HeroPowerPref.set(sel.value); updatePowerMenuDesc(); } renderDeckList(r.ok?'영웅 능력 변경':''+r.error); };
     row.querySelector('.ds-hp').appendChild(sel);
     const btns=row.querySelector('.ds-btns');
     const btn=(label, cls, fn, dis, tip)=>{ const b=document.createElement('button'); b.type='button'; b.className='end-turn sub '+(cls||''); b.textContent=label; b.disabled=!!dis; if(tip) b.title=tip; b.onclick=fn; btns.appendChild(b); return b; };
-    btn(act?'사용 중':'사용하기', 'ds-use', async()=>{ const r=await ServerStore.activateDeck(sl.slot); if(r.ok){ if(sl.heroPower){ HeroPowerPref.set(sl.heroPower); updatePowerMenuDesc(); } updateDeckMenuDesc(); } renderDeckList(r.ok?`✔ 「${sl.name}」을(를) 이제 대전에 씁니다`+(sl.heroPower?` (영웅 능력 ${HERO_POWERS[sl.heroPower].name})`:''):''+r.error); }, act || !st.ok, st.ok?'':'완성된 덱(30장 · 가진 카드)만 쓸 수 있어요');
+    btn(act?'사용 중':'사용하기', 'ds-use', async()=>{ const r=await ServerStore.activateDeck(sl.slot); if(r.ok){ if(sl.heroPower){ HeroPowerPref.set(sl.heroPower); updatePowerMenuDesc(); } updateDeckMenuDesc(); } renderDeckList(r.ok?`${sl.name} 사용`+(sl.heroPower?` (영웅 능력 ${HERO_POWERS[sl.heroPower].name})`:''):''+r.error); }, act || !st.ok, st.ok?'':'30장을 채워야 써요');
     btn('편집', '', ()=>openSlotEditor(sl));
-    btn('이름', '', async()=>{ const nm=await promptBox('덱 이름 바꾸기', '새 이름 (24자까지)', sl.name); if(nm==null) return; const r=await ServerStore.updateDeck(sl.slot,{name:nm}); renderDeckList(r.ok?'✔ 이름을 바꿨습니다':''+r.error); });
-    btn('복사', '', async()=>{ const r=await ServerStore.createDeck({name:(sl.name+' 사본').slice(0,24), deck:sl.deck, heroPower:sl.heroPower}); renderDeckList(r.ok?`✔ 「${sl.name}」을(를) 복사했습니다`:''+r.error); }, d.slots.length>=d.max);
+    btn('이름', '', async()=>{ const nm=await promptBox('덱 이름 바꾸기', '새 이름', sl.name); if(nm==null) return; const r=await ServerStore.updateDeck(sl.slot,{name:nm}); renderDeckList(r.ok?'이름 변경':''+r.error); });
+    btn('복사', '', async()=>{ const r=await ServerStore.createDeck({name:(sl.name+' 사본').slice(0,24), deck:sl.deck, heroPower:sl.heroPower}); renderDeckList(r.ok?'복사함':''+r.error); }, d.slots.length>=d.max);
     btn('📋 코드', 'ds-code', ()=>copyDeckCode(sl));
-    btn('삭제', 'ds-del', async()=>{ if(!await confirmBox('덱 삭제', `「${sl.name}」을(를) 지울까요? 카드는 그대로 남아요.`, '삭제', true)) return; const r=await ServerStore.deleteDeck(sl.slot); renderDeckList(r.ok?'✔ 덱을 지웠습니다':''+r.error); }, act, act?'사용 중인 덱은 지울 수 없어요':'');
+    btn('삭제', 'ds-del', async()=>{ if(!await confirmBox('덱 삭제', `${sl.name}을(를) 지울까요?`, '삭제', true)) return; const r=await ServerStore.deleteDeck(sl.slot); renderDeckList(r.ok?'삭제함':''+r.error); }, act, act?'사용 중인 덱은 지울 수 없어요':'');
     box.appendChild(row);
   }
 }
 async function newDeck(){
-  const nm=await promptBox('새 덱', '덱 이름 (24자까지)', `새 덱 ${(ServerStore.decks?ServerStore.decks.slots.length:0)+1}`); if(nm==null) return;
+  const nm=await promptBox('새 덱', '덱 이름', `새 덱 ${(ServerStore.decks?ServerStore.decks.slots.length:0)+1}`); if(nm==null) return;
   const r=await ServerStore.createDeck({name:nm, deck:[], heroPower:HeroPowerPref.get()==='random'?'':HeroPowerPref.get()});
   if(!r.ok){ renderDeckList(''+r.error); return; }
   renderDeckList(); const sl=ServerStore.decks.slots.find(x=>x.slot===r.slot); if(sl) openSlotEditor(sl);
@@ -2213,28 +2213,28 @@ async function saveSlotFromEditor(){
   const r=await ServerStore.updateDeck(sl.slot, {deck:list});
   if(!r.ok){ $('edNote').textContent=''+r.error; return; }
   closeDeckEditor(); updateDeckMenuDesc();
-  renderDeckList(`✔ 「${sl.name}」 저장 (${list.length}/${CONFIG.DECK_SIZE}장)`);
+  renderDeckList(`${sl.name} 저장`);
 }
 async function copyDeckCode(sl){
   const code=await DeckCode.encode(sl.deck, sl.name, sl.heroPower);
   const lines=[`### ${sl.name}`]; const hp=HERO_POWERS[sl.heroPower]; if(hp) lines.push(`# 영웅 능력: ${hp.icon} ${hp.name}`);
   const cnt=countsOf(sl.deck); Object.keys(cnt).map(n=>cardByName(n)).filter(Boolean).sort((a,b)=>a.cost-b.cost||(a.name<b.name?-1:1)).forEach(c=>lines.push(`# ${cnt[c.name]}x (${c.cost}) ${c.name}`));
-  lines.push('#', code, '#', '# 카드 결투 → 📚 내 덱 → [코드로 가져오기]에 이 글을 통째로 붙여 넣으세요.');
+  lines.push('#', code, '#', '# 내 덱 > 코드로 가져오기');
   const text=lines.join('\n');
   let copied=false; try{ await navigator.clipboard.writeText(text); copied=true; }catch(_){}
-  await promptBox(copied?'덱 코드를 복사했어요':'덱 코드', copied?'친구에게 붙여 넣어 보내세요.':'아래 글을 모두 복사해서 친구에게 보내세요.', text, true, true);
+  await promptBox(copied?'덱 코드를 복사했어요':'덱 코드', '', text, true, true);
 }
 async function importDeckCode(){
-  const text=await promptBox('코드로 가져오기', '친구가 보낸 덱 코드를 붙여 넣으세요.', '', true); if(text==null) return;
+  const text=await promptBox('코드로 가져오기', '', '', true); if(text==null) return;
   const r=await DeckCode.decode(text, CARD_POOL);
   if(r.error){ renderDeckList(''+r.error); return; }
   const ok=r.deck.filter(n=>{ const c=cardByName(n); return c && (isDev() || cardScope(c)==='normal'); }), skip=r.deck.length-ok.length;
   const st=deckStatus(ok), hp=HERO_POWERS[r.heroPower];
-  const info=[`「${r.name}」 ${ok.length}장`+(hp?` · 영웅 능력 ${hp.icon} ${hp.name}`:''), st.missing?`없는 카드 ${st.missing}장은 카드 제작에서 만들 수 있어요`:'가진 카드로 바로 쓸 수 있어요',
-    ...(r.unknown.length?[`이 게임에 없는 카드 ${r.unknown.length}종은 빠집니다: ${r.unknown.slice(0,4).join(', ')}${r.unknown.length>4?' …':''}`]:[]), ...(skip?[`일반 덱에 넣을 수 없는 카드 ${skip}장은 빠집니다`]:[])].join('\n');
+  const info=[`${r.name} ${ok.length}장`+(hp?`, ${hp.name}`:''), st.missing?`없는 카드 ${st.missing}장`:'',
+    ...(r.unknown.length?[`빠지는 카드 ${r.unknown.length}종: ${r.unknown.slice(0,4).join(', ')}`]:[]), ...(skip?[`빠지는 카드 ${skip}장`]:[])].join('\n');
   if(!await confirmBox('이 덱을 가져올까요?', info, '가져오기')) return;
   const res=await ServerStore.createDeck({name:r.name, deck:ok, heroPower:hp?r.heroPower:''});
-  renderDeckList(res.ok?`✔ 「${r.name}」을(를) 가져왔습니다`:''+res.error);
+  renderDeckList(res.ok?`${r.name} 가져옴`:''+res.error);
 }
 function promptBox(title, label, value='', multiline=false, readOnly=false){   // 입력 창 (브라우저 prompt 대신). 취소하면 null
   return new Promise(res=>{
@@ -2317,54 +2317,53 @@ $('edClose').onclick=()=>{ closeDeckEditor(); if(ed.boss) refreshBossForm(); };
 
 // ---------- v95 가이드 ----------
 const GUIDE_FX=[
- {n:'도발', d:'rush', t:'상대는 도발 하수인을 먼저 공격해야 합니다. 도발이 있는 한 영웅과 다른 하수인은 공격할 수 없습니다.', demo:'<i class="me">3</i><i class="en2">1</i><i class="en">2</i><em>도발 먼저!</em>'},
- {n:'보호막', d:'shield', t:'첫 피해를 한 번 완전히 막고 사라집니다.', demo:'<i class="me">3</i><i class="en">2</i><b class="ov"></b><em>피해 0 · 보호막 파괴</em>'},
- {n:'돌진', d:'charge', t:'낸 턴에 바로 공격할 수 있습니다. 영웅도 공격 가능!', demo:'<i class="me">4</i><i class="hr">♥</i><em>소환 즉시 영웅 공격</em>'},
- {n:'속공', d:'charge', t:'낸 턴에 바로 공격하지만 하수인만 공격할 수 있습니다. 영웅은 다음 턴부터.', demo:'<i class="me">3</i><i class="en">2</i><em>하수인만 공격</em>'},
- {n:'환생', d:'revive', t:'처음 죽을 때 체력 1로 되살아납니다(1회).', demo:'<i class="me">2</i><i class="en">2</i><em>죽음 → 체력 1로 부활</em>'},
- {n:'모면', d:'spell', t:'주문·효과의 대상으로 지정할 수 없습니다. (일반 공격은 받습니다)', demo:'<i class="me">·</i><i class="en">6</i><span class="bolt">⚡</span><span class="nope">✕</span><em>주문 대상 불가</em>'},
- {n:'은신', d:'stealth', t:'상대가 공격하거나 지정할 수 없습니다. 이 하수인이 공격할 때까지 유지됩니다. (엄폐로 얻은 은신은 내 다음 턴 시작까지)', demo:'<i class="me">3</i><i class="en">2</i><em>은신 중 · 지정 불가</em>'},
- {n:'빙결', d:'frozen', t:'얼어 있는 동안 공격할 수 없습니다.', demo:'<i class="me">3</i><b class="ov" style="left:8px;right:auto;top:14px;height:46px;width:34px"></b><em>❄ 공격 불가</em>'},
- {n:'독성', d:'poison', t:'이 하수인이 하수인에게 피해를 주면, 그 하수인은 체력과 상관없이 처치됩니다. (보호막이 막은 피해는 제외)', demo:'<i class="me">1</i><i class="en">8</i><em>피해를 입히면 처치</em>'},
- {n:'생명력 흡수', d:'ls', t:'이 하수인이 준 피해만큼 내 영웅이 회복됩니다.', demo:'<i class="me">3</i><i class="en">2</i><em>피해 = 회복</em>'},
- {n:'죽음의 메아리', d:'death', t:'이 하수인이 죽을 때 효과가 발동합니다.', demo:'<i class="me">·</i><i class="en">2</i><em>죽으면 효과 발동</em>'},
+ {n:'도발', d:'rush', t:'상대는 이 하수인부터 공격해야 한다.', demo:'<i class="me">3</i><i class="en2">1</i><i class="en">2</i><em>도발 먼저!</em>'},
+ {n:'보호막', d:'shield', t:'첫 피해를 한 번 막는다.', demo:'<i class="me">3</i><i class="en">2</i><b class="ov"></b><em>피해 0, 보호막 깨짐</em>'},
+ {n:'돌진', d:'charge', t:'낸 턴에 바로 공격한다.', demo:'<i class="me">4</i><i class="hr">♥</i><em>소환 즉시 영웅 공격</em>'},
+ {n:'속공', d:'charge', t:'낸 턴에 하수인을 공격할 수 있다.', demo:'<i class="me">3</i><i class="en">2</i><em>하수인만 공격</em>'},
+ {n:'환생', d:'revive', t:'처음 죽으면 체력 1로 되살아난다.', demo:'<i class="me">2</i><i class="en">2</i><em>체력 1로 부활</em>'},
+ {n:'모면', d:'spell', t:'주문과 효과의 대상이 되지 않는다.', demo:'<i class="me">·</i><i class="en">6</i><span class="bolt">⚡</span><span class="nope">✕</span><em>주문 대상 불가</em>'},
+ {n:'은신', d:'stealth', t:'공격하기 전까지 상대가 공격하거나 지정할 수 없다.', demo:'<i class="me">3</i><i class="en">2</i><em>지정 불가</em>'},
+ {n:'빙결', d:'frozen', t:'얼어 있는 동안 공격할 수 없다.', demo:'<i class="me">3</i><b class="ov" style="left:8px;right:auto;top:14px;height:46px;width:34px"></b><em>❄ 공격 불가</em>'},
+ {n:'독성', d:'poison', t:'피해를 입은 하수인은 죽는다.', demo:'<i class="me">1</i><i class="en">8</i><em>피해를 입히면 처치</em>'},
+ {n:'생명력 흡수', d:'ls', t:'준 피해만큼 내 영웅이 회복한다.', demo:'<i class="me">3</i><i class="en">2</i><em>피해 = 회복</em>'},
+ {n:'죽음의 메아리', d:'death', t:'죽을 때 발동한다.', demo:'<i class="me">·</i><i class="en">2</i><em>죽으면 효과 발동</em>'},
 ];
 const GUIDE_TXT=[
- ['전투의 함성','카드를 손에서 낼 때 한 번 발동하는 효과입니다. 대상을 고르는 경우도 있습니다.'],
- ['주문폭주','내가 주문을 시전한 뒤 딱 한 번 발동하고, 발동하면 키워드가 사라집니다.'],
- ['과부하 (N)','이 카드를 내면 <b>다음 턴</b> 마나 수정 N개가 잠겨 쓸 수 없습니다.'],
- ['방어도','영웅이 받는 피해를 먼저 흡수합니다. 체력이 아니라 방패 역할입니다.'],
- ['시체','내 하수인이 죽을 때마다 1개씩 쌓입니다. 혈기 카드가 시체를 소모해 강력한 효과를 냅니다.'],
- ['증가','생명력 <b>증가</b>는 회복과 달리 최대 체력을 넘어 영웅 생명력을 늘립니다.'],
- ['발견','카드 3장 중 1장을 골라 손으로 가져옵니다.'],
+ ['전투의 함성','손에서 낼 때 발동한다.'],
+ ['주문폭주','주문을 쓴 뒤 한 번 발동한다.'],
+ ['과부하 (N)','다음 턴에 마나 N개가 잠긴다.'],
+ ['방어도','영웅 체력보다 먼저 깎인다.'],
+ ['시체','내 하수인이 죽을 때마다 1개씩 쌓인다.'],
+ ['증가','최대 체력을 넘어 생명력을 늘린다.'],
+ ['발견','3장 중 1장을 골라 손에 넣는다.'],
 ];
 // ---- v113 가이드: 새 키워드 + 그림 설명 페이지 ----
 GUIDE_FX.unshift({h:'기본 키워드'});
 GUIDE_FX.push({h:'추가된 키워드'},
- {n:'질풍', d:'wind', t:'턴마다 <span class="hl">두 번</span> 공격할 수 있습니다. (걸어 다니는 샘, 바람의 군주 알아키르)', demo:'<i class="me">3</i><i class="en">4</i><em>한 턴에 두 번 공격</em>'},
- {n:'과부하 (N)', d:'lock', t:'이 카드를 내면 <span class="hl">다음 턴</span> 마나 수정 N개가 잠겨 쓸 수 없습니다. (토템 골렘, 번개 폭풍 등)', demo:'<span class="cr">💎</span><span class="cr" style="left:30px">💎</span><span class="cr" style="left:52px">💎</span><span class="cr lk" style="left:74px">🔒</span><span class="cr lk" style="left:96px">🔒</span><em>다음 턴 마나 N개 잠김</em>'},
- {n:'잔상', d:'echo', t:'이 카드를 내면 <span class="hl">같은 카드가 한 장 더</span> 손에 들어옵니다. 이번 턴에 또 낼 수 있고, 내 턴이 끝나면 사라집니다.', demo:'<i class="me">✦</i><i class="en">✦</i><em>복사본이 손에 · 턴 끝에 사라짐</em>'},
- {n:'이중 주문', d:'twin', t:'이 주문을 쓸 때마다 <span class="hl">이중 주문이 없는 복사본</span>이 손패로 들어옵니다. 손패가 가득이면 소각됩니다.', demo:'<i class="me">✦</i><i class="en">✦</i><em>쓸 때마다 사본 1장 획득</em>'},
- {n:'연계', d:'spell', t:'이번 턴에 <span class="hl">앞서 다른 카드를 냈을 때만</span> 발동합니다. (엘프 음악가)', demo:'<i class="me">1</i><i class="en2" style="background:linear-gradient(160deg,#cfe9e6,#6fc2ba)">3</i><em>앞에 낸 카드가 있으면 발동</em>'},
- {n:'미니미', d:'twin', t:'이 카드를 내면 <span class="hl">1/1 · 비용 (1)</span>의 작은 복사본(미니)이 손패로 들어옵니다. 전투의 함성도 그대로입니다.', demo:'<i class="me">5</i><i class="en">1</i><em>작은 복사본이 손으로</em>'},
- {n:'주입 (N)', d:'death', t:'이 카드를 <span class="hl">손에 들고 있는 동안</span> 하수인이 (양쪽 합쳐) N마리 죽으면 강화됩니다. 카드에 [현재/N]으로 표시됩니다.', demo:'<i class="me">·</i><i class="en">2</i><em>죽을 때마다 [n/N] 증가</em>'},
- {n:'소각', d:'burn', t:'손패가 가득(<span class="hl">${CONFIG.MAX_HAND}장</span>)일 때 카드를 얻으면 그 카드는 불타 사라집니다.', demo:'<i class="me">🔥</i><i class="en">+1</i><em>손패 가득 → 카드 소각</em>'}
+ {n:'질풍', d:'wind', t:'턴마다 두 번 공격한다.', demo:'<i class="me">3</i><i class="en">4</i><em>한 턴에 두 번 공격</em>'},
+ {n:'과부하 (N)', d:'lock', t:'다음 턴에 마나 N개가 잠긴다.', demo:'<span class="cr">💎</span><span class="cr" style="left:30px">💎</span><span class="cr" style="left:52px">💎</span><span class="cr lk" style="left:74px">🔒</span><span class="cr lk" style="left:96px">🔒</span><em>다음 턴 마나 N개 잠김</em>'},
+ {n:'잔상', d:'echo', t:'이번 턴에 한 번 더 낼 수 있다.', demo:'<i class="me">✦</i><i class="en">✦</i><em>턴 끝에 사라짐</em>'},
+ {n:'이중 주문', d:'twin', t:'쓰면 복사본 1장이 손에 들어온다.', demo:'<i class="me">✦</i><i class="en">✦</i><em>쓸 때마다 사본 1장 획득</em>'},
+ {n:'연계', d:'spell', t:'이번 턴에 다른 카드를 냈으면 발동한다.', demo:'<i class="me">1</i><i class="en2" style="background:linear-gradient(160deg,#cfe9e6,#6fc2ba)">3</i><em>앞에 낸 카드가 있으면 발동</em>'},
+ {n:'미니미', d:'twin', t:'1/1 비용 1인 복사본이 손에 들어온다.', demo:'<i class="me">5</i><i class="en">1</i><em>작은 복사본이 손으로</em>'},
+ {n:'주입 (N)', d:'death', t:'손에 든 동안 하수인 N마리가 죽으면 강화된다.', demo:'<i class="me">·</i><i class="en">2</i><em>죽을 때마다 [n/N] 증가</em>'},
+ {n:'소각', d:'burn', t:'손패가 ${CONFIG.MAX_HAND}장일 때 얻은 카드는 사라진다.', demo:'<i class="me">🔥</i><i class="en">+1</i><em>손패가 차면 소각</em>'}
 );
 GUIDE_TXT.push(
- ['내 턴이 끝날 때','내가 [턴 종료]를 누르면 발동하는 효과입니다. 토템·정령 같은 필드 유지형 카드가 많이 씁니다.'],
- ['이번 게임 동안','한 번 발동하면 게임이 끝날 때까지 유지되는 효과입니다. (돌장인: 내 토템 공격력 +2)'],
- ['양옆','하수인 줄에서 바로 왼쪽·오른쪽에 붙어 있는 하수인입니다. 위치를 잘 배치하세요. (불꽃의 토템, 물 공급 토템)'],
- ['토템','종족입니다. 대부분 공격력이 0이지만 턴 종료 때 아군을 돕습니다. (스테레오 토템, 죄악석 토템 등)'],
- ['주문 공격력','주문이 주는 피해를 늘려줍니다. 시프는 내가 시전한 주문의 속성 종류만큼 강해집니다.'],
- ['침묵','하수인의 모든 추가 능력(도발·보호막 등)을 지웁니다. 능력치와 종족은 그대로입니다.'],
- ['변신','다른 하수인으로 바뀝니다. 기존 능력과 강화 효과가 모두 사라집니다.'],
- ['사냥꾼 카드','사냥꾼 표시가 붙은 주문과 모든 야수 하수인을 가리킵니다. 실탄 장전 같은 카드가 찾습니다.'],
- ['룬 (부정·냉기·혈기)','카드 맨 아래에 적히는 계열입니다. 덱 편집에서 룬 탭으로 따로 모아 볼 수 있습니다.']
+ ['내 턴이 끝날 때','턴 종료를 누르면 발동한다.'],
+ ['이번 게임 동안','게임이 끝날 때까지 유지된다.'],
+ ['양옆','바로 왼쪽과 오른쪽 하수인.'],
+ ['토템','종족. 대부분 공격력이 0이다.'],
+ ['주문 공격력','주문 피해가 그만큼 늘어난다.'],
+ ['침묵','하수인의 능력을 모두 지운다.'],
+ ['변신','다른 하수인으로 바뀐다.'],
+ ['사냥꾼 카드','사냥꾼 주문과 야수 하수인.'],
+ ['룬','카드 맨 아래에 적힌 계열.']
 );
 function guideFx(){
-  return '<p class="dim">예시 화면은 반복 재생되는 간단한 애니메이션입니다. (파란 카드 = 내 하수인, 붉은 카드 = 상대)</p>'
-   + GUIDE_FX.map(f=> f.h ? `<h4>${f.h}</h4>` : `<div class="g-fx"><div class="gd d-${f.d}">${f.demo}</div><div class="txt"><b>${f.n}</b>${f.t.replace('${CONFIG.MAX_HAND}', CONFIG.MAX_HAND)}</div></div>`).join('')
-   + '<h4>그 밖의 용어</h4><ul>'+GUIDE_TXT.map(x=>`<li><b>${x[0]}</b> — ${x[1]}</li>`).join('')+'</ul>';
+  return ''+GUIDE_FX.map(f=> f.h ? `<h4>${f.h}</h4>` : `<div class="g-fx"><div class="gd d-${f.d}">${f.demo}</div><div class="txt"><b>${f.n}</b>${f.t.replace('${CONFIG.MAX_HAND}', CONFIG.MAX_HAND)}</div></div>`).join('')
+   + '<h4>그 밖의 용어</h4><ul>'+GUIDE_TXT.map(x=>`<li><b>${x[0]}</b> ${x[1]}</li>`).join('')+'</ul>';
 }
 // ---- 그림 도우미 ----
 const gImg=n=> (typeof CARD_ART!=='undefined' && CARD_ART[n]) ? `<img src="${CARD_ART[n]}" alt="" onerror="this.style.display='none'">` : '';
@@ -2386,19 +2385,19 @@ function guideCard(){
   const M=CONFIG.MAX_MANA;
   const pages=[
    {t:'하수인 카드', s:`<div class="g-card" style="background:none"><div class="g-sample"><span class="c">3</span><span class="nm">예시 하수인</span><span class="ef">도발. 전투의 함성: 카드를 1장 뽑는다</span><span class="a">2</span><span class="r">야수</span><span class="l">4</span></div>
-      <ul class="g-legend" style="margin:0"><li><b>왼쪽 위(파랑)</b> 마나 비용</li><li><b>왼쪽 아래(노랑)</b> 공격력</li><li><b>오른쪽 아래(빨강)</b> 체력 — 0이 되면 죽습니다</li><li><b>아래 가운데</b> 종족</li><li><b>가운데 글</b> 키워드와 효과</li></ul></div>`,
-    x:'<p>전장에 남아 싸우는 카드입니다. 낼 때 마나를 쓰고, 다음 턴부터 공격할 수 있습니다.</p>'},
+      <ul class="g-legend" style="margin:0"><li><b>왼쪽 위(파랑)</b> 마나 비용</li><li><b>왼쪽 아래(노랑)</b> 공격력</li><li><b>오른쪽 아래(빨강)</b> 체력</li><li><b>아래 가운데</b> 종족</li><li><b>가운데 글</b> 키워드와 효과</li></ul></div>`,
+    x:'<p>전장에 남아 싸운다. 낸 다음 턴부터 공격한다.</p>'},
    {t:'주문 카드', s:`<div class="g-card" style="background:none"><div class="g-sample sp"><span class="c">2</span><span class="nm">불꽃 화살</span><div class="art2"></div><span class="ef" style="top:60px">적 하나에게 피해 3</span><span class="r">✦ 화염 주문 ✦</span></div>
       <ul class="g-legend" style="margin:0"><li><b>왼쪽 위(파랑)</b> 마나 비용</li><li><b>공격력·체력 없음</b></li><li><b>아래</b> ✦ 속성 주문 ✦</li></ul></div>`,
-    x:'<p>한 번 쓰면 효과를 내고 사라집니다. 보라색 카드로 구분하세요. <b>잔상</b>·<b>이중 주문</b>이 붙은 주문은 복사본이 손으로 들어옵니다.</p>'},
+    x:'<p>쓰면 효과를 내고 사라진다.</p>'},
    {t:'종족과 룬', s:`<div class="gp-row">${gcol(gmc({cls:'me',art:'스테레오 토템',nm:'스테레오 토템',c:2,a:0,h:3}),'<span class="chip tr">토템</span> 종족')}${gcol(gmc({cls:'me',art:'카인 선퓨리',nm:'카인 선퓨리',c:4,a:3,h:5}),'종족 없음')}</div><div class="gp-sep"></div>
       <div class="gp-row"><span class="chip un">부정 룬</span><span class="chip fr">냉기 룬</span><span class="chip bl">혈기 룬</span></div>`,
-    x:'<p><b>종족</b>은 카드 아래 가운데에 적힙니다(야수·토템·기계·정령·언데드 등). 같은 종족끼리 효과를 주고받습니다.</p><p><b>룬</b>은 카드 맨 아래에 적히는 계열 표시이고, 덱 편집에서 룬 탭으로 모아 볼 수 있습니다.</p>'},
+    x:'<p><b>종족</b>은 카드 아래 가운데, <b>룬</b>은 맨 아래에 적힌다.</p>'},
    {t:'탈진', s:`<div class="gp-row">${gcol('<div class="slot" style="width:44px;height:60px"></div>','덱이 비었다!')}<span class="gp-arrow">→</span>${gcol(ghero('🙂',CONFIG.HERO_HP-1),'뽑을 때마다')}</div>
       <div class="gp-row"><span class="dmg">-1</span><span class="gp-arrow">›</span><span class="dmg">-2</span><span class="gp-arrow">›</span><span class="dmg">-3</span><span class="gp-arrow">›</span><span class="dmg">-4</span><span class="gp-arrow">…</span></div>`,
-    x:'<p>덱이 비었는데 카드를 뽑아야 하면 영웅이 피해를 입습니다. 피해는 <b>1, 2, 3, 4…</b> 뽑을 때마다 커집니다. 덱 카드 수를 항상 확인하세요!</p>'},
-   {t:'동전', s:`<div class="gp-row">${gcol('<div class="coin">동전</div>','0마나 주문 (후공이 받음)')}<span class="gp-arrow">→</span>${gcol('<span class="crys">💎💎💎💎</span> <span class="crys" style="color:#ffd89a">+💎💎</span>','이번 턴 마나 +2')}</div>`,
-    x:'<p>후공 플레이어가 받는 0마나 주문입니다. 쓰면 <b>이번 턴만</b> 마나 +2. 마나 수정을 영구히 늘리지는 않습니다.</p>'}
+    x:'<p>덱이 비면 뽑을 때마다 피해가 1씩 커진다.</p>'},
+   {t:'동전', s:`<div class="gp-row">${gcol('<div class="coin">동전</div>','후공')}<span class="gp-arrow">→</span>${gcol('<span class="crys">💎💎💎💎</span> <span class="crys" style="color:#ffd89a">+💎💎</span>','이번 턴 마나 +2')}</div>`,
+    x:'<p>후공이 받는 0마나 주문. 이번 턴만 마나 +2.</p>'}
   ];
   return gPager('card',pages);
 }
@@ -2407,33 +2406,33 @@ function guideRule(){
   const pages=[
    {t:'🏆 승리 조건', s:`<div class="gp-row">${gcol(ghero('🙂',C.HERO_HP),'내 영웅 체력 '+C.HERO_HP)}${gcol(ghero('😈',C.HERO_HP),'상대 영웅 체력 '+C.HERO_HP)}</div><div class="gp-sep"></div>
       <div class="gp-row">${gcol(ghero('😈',0,{dead:true}),'상대 체력 0')}<span class="gp-arrow">=</span>${gcol('<div style="font-size:2rem">🏆</div>','승리!')}</div>`,
-    x:`<p>상대 영웅의 체력을 <b>0</b>으로 만들면 승리! 반대로 내 체력이 0이 되면 패배입니다. 영웅 체력은 <b>${C.HERO_HP}</b>에서 시작합니다.</p>`},
+    x:`<p>상대 영웅 체력을 0으로 만들면 이긴다.</p>`},
    {t:'조작법', s:`<div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'손패 카드',c:3}),'잡아서')}<span class="gp-arrow"><img class="ico-ctl" src="/images/ui/ctl_drag.webp" alt="" draggable="false"></span>${gcol('<div class="slot" style="width:64px;height:84px"></div>','전장에 놓기 = 내기')}</div>
       <div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:4}),'잡아서 끌면 화살표')}<span class="gp-arrow">➶</span>${gcol(gmc({cls:'en',art:EN,nm:'상대',a:2,h:3}),'적 위에서 놓기 = 공격')}</div><div class="gp-sep"></div>
       <div class="gp-row"><div class="step"><i><img class="ico-ctl" src="/images/ui/ctl_mouse.webp" alt="" draggable="false"></i><span>PC<br>마우스 올리기</span></div><div class="step"><i><img class="ico-ctl" src="/images/ui/ctl_tap.webp" alt="" draggable="false"></i><span>폰<br>길게 누르기</span></div><span class="gp-arrow">=</span><div class="step"><i>🔍</i><span>카드<br>자세한 설명</span></div></div>`,
-    x:'<p><b>카드 내기</b>: 손패 카드를 잡고 전장으로 끌어다 놓으면 냅니다. 하수인은 놓는 위치가 곧 자리예요. 대상이 필요한 주문은 끌면 화살표가 나오고, 대상 위에서 손을 떼면 씁니다.</p><p><b>공격</b>: 내 하수인을 잡고 적 하수인이나 영웅 위에서 놓습니다. 빈 곳에서 놓으면 취소돼요. <b>누르고 → 대상 누르기</b>(탭 두 번)도 똑같이 됩니다.</p><p><b>설명 보기</b>: PC는 카드 위에 마우스를 올리고, 폰은 카드를 <b>길게 누르세요</b>. 손을 떼면 닫힙니다.</p>'},
+    x:'<p>카드는 전장으로, 하수인은 적에게 끌어다 놓는다. 눌러서 고른 뒤 대상을 눌러도 된다.</p>'},
    {t:'🃏 게임 준비', s:`<div class="gp-row">${gcol(gback(3),'덱 <b style="color:#f0c869">'+C.DECK_SIZE+'장</b>')}${gcol(`<div style="display:flex;gap:6px">${gmc({cls:'me',art:ME,nm:'같은 카드',c:4})}${gmc({cls:'me',art:ME,nm:'같은 카드',c:4})}</div>`,'같은 카드는 최대 '+C.COPIES+'장')}</div><div class="gp-sep"></div>
-      <div class="gp-row">${gcol(gback(C.START_HAND),'선공 · 시작 손패 '+C.START_HAND+'장')}${gcol(`<div style="display:flex;align-items:center;gap:8px">${gback(C.START_HAND+C.SECOND_HAND)}<div class="coin">동전</div></div>`,'후공 · +'+C.SECOND_HAND+'장과 동전 1장')}</div>`,
-    x:'<p>선공·후공은 <b>무작위</b>로 정해집니다. 후공은 카드를 더 받아 불리함을 보충합니다.</p>'},
+      <div class="gp-row">${gcol(gback(C.START_HAND),'선공 '+C.START_HAND+'장')}${gcol(`<div style="display:flex;align-items:center;gap:8px">${gback(C.START_HAND+C.SECOND_HAND)}<div class="coin">동전</div></div>`,'후공 +'+C.SECOND_HAND+'장, 동전')}</div>`,
+    x:'<p>선공은 무작위로 정해진다.</p>'},
    {t:'🔄 멀리건', s:`<div class="gp-row">${gmc({cls:'back'})}${gmc({cls:'me',art:ME,nm:'비싼 카드',c:9,x:true})}${gmc({cls:'back'})}<span class="gp-arrow">→</span>${gmc({cls:'me',art:TAUNT,nm:'새 카드',c:3})}</div>
-      <div class="gp-lbl" style="max-width:none">마음에 안 드는 카드를 눌러 ✕ 표시 → 덱에 섞고 새 카드를 뽑음</div>`,
-    x:'<p>시작 카드 중 원하지 않는 카드를 눌러 <b>✕</b> 표시하면 덱에 섞이고 새 카드를 뽑습니다. <b>한 번만</b> 가능하고, 바꾸지 않아도 됩니다. 보통 <b>비싼 카드</b>를 바꾸는 게 좋습니다.</p>'},
+      <div class="gp-lbl" style="max-width:none">누른 카드를 새로 뽑는다</div>`,
+    x:'<p>시작 카드를 한 번 바꿀 수 있다.</p>'},
    {t:'⏱ 매 턴 순서', s:`<div class="gp-row"><div class="step"><i>💎</i><span>마나 +1<br>가득 채움</span></div><span class="gp-arrow">›</span><div class="step"><i>🃏</i><span>카드 1장<br>뽑기</span></div><span class="gp-arrow">›</span><div class="step"><i>⚔️</i><span>카드 내고<br>공격</span></div><span class="gp-arrow">›</span><div class="step"><i>⏭️</i><span>[턴 종료]<br>상대 차례</span></div></div><div class="gp-sep"></div>
       <div class="gp-row">${gcol('<span class="crys">💎💎💎💎</span><span class="crys off">💎💎💎💎💎💎</span>','4번째 턴 = 마나 4')}${gcol('<span class="crys">💎💎💎💎💎💎💎💎💎💎</span>','최대 '+C.MAX_MANA+'개')}</div>`,
-    x:`<p>내 턴이 시작되면 <b>마나 수정 +1개</b>(최대 ${C.MAX_MANA}개)가 생기고 마나가 가득 찹니다. 카드 1장을 뽑은 뒤 마나 범위 안에서 카드를 내고 하수인으로 공격합니다. 끝나면 <b>[턴 종료]</b>를 누르세요.</p>`},
-   {t:'📏 필드·손패 제한', s:`<div class="gp-lbl" style="max-width:none">필드 — 하수인 최대 ${C.MAX_BOARD}기</div><div class="slots">${'<div class="slot f"></div>'.repeat(C.MAX_BOARD)}<div class="slot no">✕</div></div>
-      <div class="gp-lbl" style="max-width:none">손패 — 최대 ${C.MAX_HAND}장 (넘치면 소각 🔥)</div><div class="slots">${'<div class="slot h"></div>'.repeat(C.MAX_HAND)}<div class="slot no">🔥</div></div>
+    x:`<p>턴마다 마나 수정이 1개 늘고 다 찬다. 최대 ${C.MAX_MANA}개.</p>`},
+   {t:'📏 필드·손패 제한', s:`<div class="gp-lbl" style="max-width:none">필드 ${C.MAX_BOARD}기</div><div class="slots">${'<div class="slot f"></div>'.repeat(C.MAX_BOARD)}<div class="slot no">✕</div></div>
+      <div class="gp-lbl" style="max-width:none">손패 ${C.MAX_HAND}장</div><div class="slots">${'<div class="slot h"></div>'.repeat(C.MAX_HAND)}<div class="slot no">🔥</div></div>
       <div class="gp-sep"></div><div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'낸 턴',a:3,h:5,zz:true}),'낸 턴: 공격 불가')}<span class="gp-arrow">→</span>${gcol(gmc({cls:'me',art:ME,nm:'다음 턴',a:3,h:5}),'다음 턴부터 공격')}</div>`,
-    x:`<p>필드에는 하수인을 최대 <b>${C.MAX_BOARD}기</b>까지 둘 수 있고, 가득 차면 더 소환되지 않습니다. 손패는 <b>${C.MAX_HAND}장</b>까지이며 넘치게 뽑으면 그 카드가 불타 사라집니다. 하수인은 턴마다 <b>한 번</b> 공격하고, 낸 턴에는 공격하지 못합니다(돌진·속공 제외).</p>`},
+    x:`<p>손패가 꽉 찬 상태로 뽑은 카드는 사라진다.</p>`},
    {t:'⚔️ 공격 방법', s:`<div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:4}),'① 내 하수인을 잡고')}<span class="gp-arrow">⚔</span>${gcol(gmc({cls:'en',art:EN,nm:'상대 하수인',a:2,h:3}),'② 대상 위에 놓는다')}</div>
-      <div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:2}),'<span class="dmg">-2</span> 서로 공격력만큼<br>피해를 주고받음')}${gcol(gmc({cls:'en',art:EN,nm:'상대 하수인',a:2,h:0,x:true,}),'<span class="dmg">-3</span> 체력 0 → 처치')}</div>`,
-    x:'<p>내 하수인을 대상까지 끌어다 놓습니다(누르고 → 대상 누르기도 됩니다). 서로 <b>공격력만큼</b> 피해를 주고받으며, 체력이 0이 되면 죽습니다. 상대 영웅도 공격 대상이 될 수 있습니다.</p>'},
-   {t:'🛡 도발', s:`<div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:4}),'')}<span class="gp-arrow" style="color:#ff6a5a">🚫 →</span>${gcol(ghero('😈',C.HERO_HP),'영웅·다른 하수인')}</div>
-      <div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:4}),'')}<span class="gp-arrow">⚔ →</span>${gcol(gmc({cls:'en taunt',art:TAUNT,nm:'도발 하수인',a:3,h:6}),'도발부터 공격!')}</div>`,
-    x:'<p>상대에게 <b>도발</b> 하수인(회색 테두리)이 있으면 영웅과 다른 하수인은 공격할 수 없고, <b>도발부터</b> 처리해야 합니다.</p>'},
-   {t:'🦸 영웅 공격 · 방어도', s:`<div class="gp-row">${gcol(ghero('🙂',C.HERO_HP,{atk:2}),'영웅 공격력 2')}<span class="gp-arrow">⚔</span>${gcol(ghero('😈',C.HERO_HP-2),'<span class="dmg">-2</span>')}</div><div class="gp-sep"></div>
-      <div class="gp-row">${gcol(ghero('🙂',C.HERO_HP,{arm:5}),'방어도 5')}<span class="dmg">피해 4</span><span class="gp-arrow">→</span>${gcol(ghero('🙂',C.HERO_HP,{arm:1}),'방어도 1 · 체력 그대로')}</div>`,
-    x:'<p>카드 효과로 <b>영웅 공격력</b>이 생기면 그 턴에 한 번 영웅이 공격할 수 있습니다. <b>방어도</b>는 영웅이 받는 피해를 체력보다 먼저 흡수하는 방패입니다.</p>'}
+      <div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:2}),'<span class="dmg">-2</span> 서로 공격력만큼<br>피해를 주고받음')}${gcol(gmc({cls:'en',art:EN,nm:'상대 하수인',a:2,h:0,x:true,}),'<span class="dmg">-3</span> 처치')}</div>`,
+    x:'<p>서로 공격력만큼 피해를 주고받는다.</p>'},
+   {t:'🛡 도발', s:`<div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:4}),'')}<span class="gp-arrow" style="color:#ff6a5a">🚫</span>${gcol(ghero('😈',C.HERO_HP),'영웅·다른 하수인')}</div>
+      <div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:4}),'')}<span class="gp-arrow">⚔</span>${gcol(gmc({cls:'en taunt',art:TAUNT,nm:'도발 하수인',a:3,h:6}),'도발부터')}</div>`,
+    x:'<p>도발 하수인부터 공격해야 한다.</p>'},
+   {t:'🦸 영웅 공격과 방어도', s:`<div class="gp-row">${gcol(ghero('🙂',C.HERO_HP,{atk:2}),'영웅 공격력 2')}<span class="gp-arrow">⚔</span>${gcol(ghero('😈',C.HERO_HP-2),'<span class="dmg">-2</span>')}</div><div class="gp-sep"></div>
+      <div class="gp-row">${gcol(ghero('🙂',C.HERO_HP,{arm:5}),'방어도 5')}<span class="dmg">피해 4</span><span class="gp-arrow">→</span>${gcol(ghero('🙂',C.HERO_HP,{arm:1}),'방어도 1')}</div>`,
+    x:'<p>방어도가 체력보다 먼저 깎인다.</p>'}
   ];
   return gPager('rule',pages);
 }
@@ -2451,31 +2450,30 @@ function modeGuidePages(){
   const R=(typeof RANK!=='undefined')?RANK:{TIERS:['브론즈','실버','골드','플래티넘','다이아','전설'], DIVS:3, STARS_PER_DIV:3, STREAK_BONUS_FROM:3, FALLBACK_MS:30000};
   const sec=ms=>Math.round(ms/1000), pct=x=>Math.round(Math.abs(x-1)*100);
   const tiers=Object.entries(typeof CHEAT_TIERS!=='undefined'?CHEAT_TIERS:{}).map(([p,t])=>[t.count?'😈':'🙂', `배당 ${p}%<br>${t.count?`치트 ${t.count}개`:'치트 없음'}`]);
-  const ex=(typeof CHEATS!=='undefined'?CHEATS:[]).filter(c=>['hp','startMana','chargeAll'].includes(c.id)).map(c=>`${c.icon} ${c.name}(${c.desc(c.levels[0]).replace(/\s*\(.*\)\s*$/,'')})`).join(' · ');
   const B=ECON.BET_TIERS;
   return {
     ai:[
       {t:'🤖 AI 대전', s:gboxes([['🎲','초급<br>무작위로 행동'],['📏','중급<br>규칙대로 행동'],['🧠','중급2<br>한 수 앞을 계산']]),
-       x:`<p>컴퓨터와 1대1로 싸웁니다. <b>📚 내 덱</b>에 저장한 덱을 그대로 씁니다.</p><p><b>초급</b>은 이기면 <b>${ECON.EASY_WIN}골드</b>. <b>중급·중급2</b>는 다음 화면에서 <b>일반 모드</b>와 <b>배팅 모드</b> 중 하나를 고릅니다.</p>`},
-      {t:'일반 모드 · 배팅 모드', s:gboxes([['🆓','일반 모드<br>참가비 없음'],['🎲','배팅 모드<br>골드를 건다']]),
-       x:`<p><b>일반 모드</b>: 이기면 <b>오늘의 보상</b>(하루 시작 ${ECON.POOL_START}골드)을 받습니다. 이기면 다음 보상이 +${pct(ECON.POOL_UP)}%, 지면 −${pct(ECON.POOL_DOWN)}%가 되고, 매일 새벽 ${ECON.RESET_HOUR}시에 ${ECON.POOL_START}골드로 돌아갑니다.</p><p><b>배팅 모드</b>: 골드를 걸고 배당(${B[0]}~${B[B.length-1]}%)을 고릅니다. 지면 건 골드를 모두 잃고, <b>배당 200% 이상이면 상대 AI가 치트를 받습니다</b>.</p>`}],
+       x:`<p>내 덱으로 AI와 싸운다. 초급은 이기면 ${ECON.EASY_WIN}골드.</p>`},
+      {t:'일반 모드와 배팅 모드', s:gboxes([['🆓','일반 모드<br>참가비 없음'],['🎲','배팅 모드<br>골드를 건다']]),
+       x:`<p><b>일반 모드</b>는 이길수록 보상이 오르고 질수록 내려간다. 매일 새벽 ${ECON.RESET_HOUR}시에 ${ECON.POOL_START}골드로 돌아온다.</p><p><b>배팅 모드</b>는 지면 건 골드를 잃는다. 배당 200%부터 AI가 치트를 받는다.</p>`}],
     bet:[
       {t:'🎲 배팅 모드', s:gsteps([[ICO('gold','골드'),'금액<br>정하기'],['📈','배당<br>고르기'],['⚔️','대전'],['🏆','이기면<br>건 금액 × 배당']]),
-       x:`<p>건 골드는 <b>시작하는 순간 빠져나가고</b>, 도중에 나가면 돌려받지 못합니다. 이기면 건 골드에 더해 <b>건 골드 × 배당%</b>를 받아요. (예: 100골드 · 배당 200% → 이기면 300골드를 돌려받음) 무승부면 건 골드를 그대로 돌려받습니다.</p>`},
+       x:`<p>도중에 나가면 건 골드를 돌려받지 못한다.</p>`},
       {t:'😈 치트', s:gboxes(tiers),
-       x:`<p>배당이 높을수록 상대 AI가 <b>치트</b>(특수 능력)를 더 받습니다. 치트는 게임을 시작할 때 후보 중에서 <b>무작위로 뽑히고</b>, 판 위쪽 상대 쪽에 칩으로 표시됩니다. 칩에 마우스를 올리면(폰은 탭) 효과가 보여요.</p>${ex?`<p>예: ${ex}. 배당이 높을수록 더 센 치트도 후보에 들어갑니다.</p>`:''}`}],
+       x:`<p>배당이 높을수록 AI가 치트를 더 받는다.</p>`}],
     pvp:[
       {t:'⚔️ 유저 대전', s:gsteps([['🔎','상대<br>찾기'],['🔄',`멀리건<br>${sec(P.MULLIGAN_MS)}초`],['⏱',`한 턴<br>${sec(P.TURN_MS)}초`],['🏆',`승리<br>${P.WIN_GOLD}골드`]]),
-       x:`<p>다른 사람과 실시간으로 대전합니다. 저장된 <b>내 덱</b>으로 싸우고, 이기면 매번 <b>${P.WIN_GOLD}골드</b>를 받습니다 (하루 횟수 제한 없음).</p><p>한 턴은 <b>${sec(P.TURN_MS)}초</b>. 시간이 지나면 턴이 자동으로 넘어가고, <b>연속 ${P.MAX_TIMEOUTS}번</b> 넘어가면 패배합니다. 연결이 끊기면 <b>${sec(P.RECONNECT_MS)}초</b> 안에 돌아와야 해요.</p>`},
-      {t:'🏆 일반전 · 랭크전', s:gsteps(R.TIERS.map((n,i)=>[rankIco(i), n])),
-       x:`<p>두 탭은 대기열이 따로입니다. <b>랭크전</b>은 ${R.TIERS.slice(0,-1).join(' → ')}(각 ${R.DIVS}단계, 단계마다 별 ${R.STARS_PER_DIV}개) → ${R.TIERS[R.TIERS.length-1]}로 올라갑니다.</p><p>이기면 별 +1, <b>${R.STREAK_BONUS_FROM}연승째부터 +2</b>, 지면 −1 (브론즈는 안 줄어요). 실버 이상은 한 번 오르면 그 등급 아래로 안 떨어지고, 전설은 거둔 승수로 순위를 매깁니다. 랭크전 상대가 ${sec(R.FALLBACK_MS)}초 안에 안 잡히면 일반전으로 바꿀 수 있어요.</p>`},
-      {t:'🎞 리플레이 · 친구', s:gboxes([['🎞','지난 판<br>다시 보기'],['👥','친구<br>대전'],['👁','관전']]),
-       x:`<p><b>🎞 지난 판 다시 보기</b>로 최근 ${P.REPLAY_KEEP}판을 양쪽 손패까지 다시 볼 수 있어요. <b>👥 친구</b> 화면에서 접속 중인 친구에게 대전을 신청하거나 관전할 수 있습니다. 친구 대전은 연습용이라 골드·랭크·전적·일일 퀘스트에 반영되지 않아요.</p>`}],
+       x:`<p>시간 초과로 ${P.MAX_TIMEOUTS}번 연속 넘어가면 진다. 연결이 끊기면 ${sec(P.RECONNECT_MS)}초 안에 돌아와야 한다.</p>`},
+      {t:'🏆 랭크전', s:gsteps(R.TIERS.map((n,i)=>[rankIco(i), n])),
+       x:`<p>이기면 별 +1, ${R.STREAK_BONUS_FROM}연승부터 +2, 지면 -1. 실버부터는 등급이 떨어지지 않는다.</p>`},
+      {t:'🎞 리플레이와 친구', s:gboxes([['🎞','지난 판<br>다시 보기'],['👥','친구<br>대전'],['👁','관전']]),
+       x:`<p>최근 ${P.REPLAY_KEEP}판을 다시 볼 수 있다. 친구 대전은 기록에 남지 않는다.</p>`}],
     adv:[
       {t:'🗺 모험 모드', s:gsteps([['🎓','챕터<br>고르기'],['👹','보스에게<br>도전'],['🎁','처음 깨면<br>보상']]),
-       x:'<p>정해진 덱을 쓰는 <b>보스</b>와 싸웁니다. 져도 골드를 잃지 않아요. 챕터는 <b>도장깨기</b> 방식이라 앞 단계를 깨야 다음 단계가 열립니다.</p><p>보스는 전용 카드와 <b>특수 능력</b>을 가질 수 있어요. 보스 칸의 칩에 마우스를 올리면(폰은 탭) 효과가 보입니다.</p>'},
-      {t:'🎒 보상 · 모험 덱', s:gboxes([['🎁','카드 묶음<br>골라 받기'],['🎒','모험 덱<br>편집']]),
-       x:'<p>보스를 <b>처음 깨면</b> 보상을 받습니다. 카드 묶음 중 하나를 고르는 보상은 창을 닫아도 모험 화면의 <b>[🎁 받지 않은 보상]</b>에서 나중에 고를 수 있어요.</p><p><b>🎒 모험 전용</b> 카드는 <b>모험 덱</b>에만 넣을 수 있습니다. 모험 화면의 <b>[🎒 모험 덱 편집]</b>에서 꾸미고, AI 대전·유저 대전은 계속 일반 덱을 씁니다.</p>'}],
+       x:'<p>보스를 차례로 이긴다. 앞 단계를 깨야 다음이 열린다.</p>'},
+      {t:'🎒 보상과 모험 덱', s:gboxes([['🎁','카드 묶음<br>골라 받기'],['🎒','모험 덱<br>편집']]),
+       x:'<p>모험 전용 카드는 모험 덱에만 넣을 수 있다.</p>'}],
   };
 }
 function guideMode(){
@@ -2537,8 +2535,8 @@ function updateWallet(){
   document.querySelectorAll('.walletView').forEach(el=>el.innerHTML=`${ICO('gold','골드')} ${g}`);
 }
 function rewardDesc(key){
-  if(key==='easy') return `승리 시 ${ECON.EASY_WIN}골드 · 패배 시 0골드`;
-  if(key==='normal' || key==='normal2') return '일반 / 배팅 모드 선택 가능';
+  if(key==='easy') return `승리 ${ECON.EASY_WIN}골드`;
+  if(key==='normal' || key==='normal2') return '';
   return '';
 }
 function buildDifficultyButtons(){
@@ -2556,12 +2554,12 @@ function buildDifficultyButtons(){
 // ---- 중급: 일반 / 배팅 선택 ----
 function openPlayMode(key='normal'){
   curKey=key;
-  $('playmodeTitle').textContent=`${DIFFICULTY[key].label} AI — 방식 선택`;
+  $('playmodeTitle').textContent=`${DIFFICULTY[key].label}`;
   const sv=Economy.get(), pool=Economy.poolNow(sv);
-  $('btnNormalMode').innerHTML=`일반 모드<span class="desc">참가비 없음 · 승리 시 오늘의 보상 <b>${pool}골드</b></span><span class="desc">이기면 +5% · 지면 −5%</span>`;
+  $('btnNormalMode').innerHTML=`일반 모드<span class="desc">승리 <b>${pool}골드</b></span>`;
   const mb=Economy.maxBet(sv);
   $('btnBetMode').disabled = mb<1;
-  $('btnBetMode').innerHTML=`배팅 모드${mb<1?'<span class="soon">골드 부족</span>':''}<span class="desc">골드를 걸고 대전 · 배당 ${ECON.BET_TIERS[0]}~${ECON.BET_TIERS[ECON.BET_TIERS.length-1]}% 선택, 패배 시 건 골드를 모두 잃음</span><span class="desc">배당 200% 이상은 상대 AI가 치트를 받습니다 · 보상 풀과는 별개 (최대 ${fmt(mb)}골드)</span>`;
+  $('btnBetMode').innerHTML=`배팅 모드${mb<1?'<span class="soon">골드 부족</span>':''}<span class="desc">배당 ${ECON.BET_TIERS[0]}~${ECON.BET_TIERS[ECON.BET_TIERS.length-1]}%</span>`;
   showScreen('playmode');
 }
 // ---- 배팅 화면 ----
@@ -2579,7 +2577,7 @@ function refreshBetUI(){
   $('betRange').min=min; $('betRange').max=max; $('betRange').value=v;
   $('betInput').min=min; $('betInput').max=max;
   const net=Economy.betWinNet(v, betTier);
-  $('betResult').innerHTML=`승리 시 <span class="win">+${fmt(net)}</span> (총 ${fmt(v+net)}골드 반환) · 패배 시 <span class="lose">−${fmt(v)}</span>`;
+  $('betResult').innerHTML=`승리 <span class="win">+${fmt(net)}</span>, 패배 <span class="lose">−${fmt(v)}</span>`;
   buildTierToggle(); renderCheatInfo();
   $('betGo').disabled = max<1;
 }
@@ -2638,16 +2636,15 @@ function startGame(key, opts={}){
   $('logList').innerHTML='';
   $('overlay').classList.remove('show');
   $('overlayReward').innerHTML='';
-  const tag = key==='easy' ? `승리 +${ECON.EASY_WIN}G` : mode==='bet' ? `배팅 ${fmt(game.bet)}G · ${tier}%` : `보상 ${game.pool}G`;
+  const tag = key==='easy' ? `승리 +${ECON.EASY_WIN}G` : mode==='bet' ? `배팅 ${fmt(game.bet)}G ${tier}%` : `보상 ${game.pool}G`;
   $('verBadge').textContent=VERSION;
-  $('diffBadge').textContent=`${d.label} · ${tag}`;
-  document.querySelector('#aiHero .name').textContent=`AI 봇 · ${d.label}`;   // v156 위 제목줄 대신, 상대 이름판에 상대가 누구인지
+  $('diffBadge').textContent=`${d.label}, ${tag}`;
+  document.querySelector('#aiHero .name').textContent=`AI ${d.label}`;   // v156 위 제목줄 대신, 상대 이름판에 상대가 누구인지
   $('menu').classList.add('hidden');
   updateWallet();
   const iFirst = Host.state.first===MY;
-  const bonusTxt = `시작 손패 +${CONFIG.SECOND_HAND}장 · 동전 1장`;
-  logLine(`게임 시작! (${d.label} 상대${mode==='bet'?` · 배팅 ${fmt(game.bet)}골드`:''}) ` + (iFirst ? `당신이 선공입니다. 후공(상대) 보너스: ${bonusTxt}. 당신의 턴입니다.` : `상대가 선공입니다. 후공(당신) 보너스: ${bonusTxt}.`));
-  $('diffBadge').textContent += iFirst ? ' · 선공' : ' · 후공';
+  logLine(`게임 시작, ${d.label} AI` + (iFirst ? ', 선공' : ', 후공'));
+  $('diffBadge').textContent += iFirst ? ', 선공' : ', 후공';
   if(game.cheats.length) logLine('상대 치트: '+game.cheats.map(c=>c.desc).join(' / '));
   beginMatch();
 }
@@ -2722,7 +2719,7 @@ function showOffer(offer){
   offer.bundles.forEach((list,i)=>{
     const col=document.createElement('div'); col.className='offer-bundle';
     const cnt={}; list.forEach(n=>cnt[n]=(cnt[n]||0)+1);
-    const head=document.createElement('div'); head.className='offer-head'; head.textContent=`${['첫','두','세'][i]||i+1}번째 묶음 · ${list.length}장`; col.appendChild(head);
+    const head=document.createElement('div'); head.className='offer-head'; head.textContent=`${list.length}장`; col.appendChild(head);
     const row=document.createElement('div'); row.className='offer-cards';
     Object.entries(cnt).forEach(([n,k])=>{ const c=cardByName(n); if(!c) return; const el=cardEl(c); const b=document.createElement('div'); b.className='copies'; b.textContent=`×${k}`; el.appendChild(b); row.appendChild(el); });
     col.appendChild(row);
@@ -2730,7 +2727,7 @@ function showOffer(offer){
     btn.onclick=async()=>{ box.querySelectorAll('button').forEach(x=>x.disabled=true); $('offerMsg').textContent='받는 중…';
       const r=await ServerStore.pickOffer(offer.bossId, i);
       if(!r.ok){ $('offerMsg').textContent=''+r.error; box.querySelectorAll('button').forEach(x=>x.disabled=false); return; }
-      $('offerMsg').textContent = Object.keys(ServerStore.runs).length ? `✔ ${rewardCardsText(r.granted)}이(가) 이번 입학 동안 잠긴 덱에 더해졌어요.` : `✔ ${rewardCardsText(r.granted)} 획득!`;
+      $('offerMsg').textContent = Object.keys(ServerStore.runs).length ? `${rewardCardsText(r.granted)} 획득` : `${rewardCardsText(r.granted)} 획득`;
       box.innerHTML=''; $('offerAfter').style.display='flex'; $('offerGoDeck').style.display='none';
       try{ logLine('보상 카드 획득: '+rewardCardsText(r.granted)); }catch(e){}
       if($('screen-adventure').classList.contains('show')) openAdventure(); };
@@ -2981,7 +2978,7 @@ function deckBrief(deck){
   const cards=deck.map(n=>CARD_POOL.find(c=>c.name===n)).filter(Boolean);
   if(!cards.length) return '';
   const avg=(cards.reduce((a,c)=>a+c.cost,0)/cards.length).toFixed(1), sp=cards.filter(c=>c.type==='spell').length;
-  return `평균 코스트 ${avg} · 주문 ${sp}장`;
+  return `평균 ${avg}코, 주문 ${sp}장`;
 }
 const escHtml=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 let advTier='mid', advView=null;     // advView: 챕터 id 또는 'free'(자유 보스전)
@@ -2990,10 +2987,10 @@ const bossIconHTML=b=>advIsImgIcon(b.icon) ? `<img class="boss-img" src="${escHt
 const runOf=ch=>ServerStore.runs[ch]||null;
 function bossLocked(b, all){                       // 잠겨 있으면 {why} , 열려 있으면 null
   if(!b.chapter || isDev()) return null;                // v122 개발자: 영남대 모든 단계 바로 도전 (기록·보상 없는 시험 대전)
-  const run=runOf(b.chapter); if(!run) return {why:'입학하기를 눌러야 도전할 수 있어요'};
-  if((run.cleared||[]).includes(b.id)) return {why:'이번 입학에서 통과했어요', passed:true};
+  const run=runOf(b.chapter); if(!run) return {why:'입학 전'};
+  if((run.cleared||[]).includes(b.id)) return {why:'통과', passed:true};
   const next=advRunNext(all, b.chapter, run); if(next && next.id===b.id) return null;
-  return {why: next ? `${next.name}을(를) 먼저 깨야 해요` : '이미 모든 단계를 깼어요'};
+  return {why: next ? `${next.name} 다음` : '모두 통과'};
 }
 const rewardCardsText=list=>{ const c={}; list.forEach(n=>c[n]=(c[n]||0)+1); return Object.entries(c).map(([n,k])=>k>1?`${n} ×${k}`:n).join(', '); };
 function bossButton(b, i, all, opts={}){
@@ -3001,13 +2998,13 @@ function bossButton(b, i, all, opts={}){
   const bpw=bossPowerOf(b), chips=[...(bpw?[`<span class="chip power" tabindex="0" data-tip="${escHtml((bpw.active?`영웅 능력 (${bpw.cost}): `:'지속 영웅 능력: ')+bpw.text)}">${bpw.icon} ${escHtml(bpw.name)}</span>`]:[]),   // v162 보스 영웅 능력도 표시
     ...bossCheatList(b).map(c=>`<span class="chip" tabindex="0" data-tip="${escHtml(bossCheatDesc(b,c))}">${c.icon||''} ${escHtml(c.name)}</span>`)].join(' ');
   const gold=done?'재도전 +'+bossRepeatGold(b):'첫 클리어 +'+bossReward(b);
-  const cards=b.rewardCards&&b.rewardCards.length ? ` · 🎁 ${done?'<s>':''}${escHtml(rewardCardsText(b.rewardCards))}${done?'</s>':''}` : '';
+  const cards=b.rewardCards&&b.rewardCards.length ? `, 🎁 ${done?'<s>':''}${escHtml(rewardCardsText(b.rewardCards))}${done?'</s>':''}` : '';
   const stage=opts.chapter && b.stage>0 ? `<span class="stage">${b.stage}단계</span>` : '';
   const btn=document.createElement('button'); btn.className='menu-btn boss-btn'+(lock&&!lock.passed?' locked':'')+(lock&&lock.passed?' passed':''); btn.disabled=!!bad || !!lock;
-  const badge=opts.chapter ? (lock&&lock.passed?'<span class="clr">✔ 통과</span>':(!lock?'<span class="clr now">▶ 도전!</span>':'')) : (done?'<span class="clr">✔ 클리어</span>':'');
+  const badge=opts.chapter ? (lock&&lock.passed?'<span class="clr">통과</span>':(!lock?'<span class="clr now">도전</span>':'')) : (done?'<span class="clr">클리어</span>':'');
   btn.innerHTML=`<span class="ic">${lock&&!lock.passed?'🔒':bossIconHTML(b)}</span><span class="bt">${badge}${stage}${escHtml(b.name)}`+
     `<span class="desc">${lock&&!lock.passed?escHtml(lock.why):escHtml(b.desc)}</span>`+
-    `<span class="tags">${opts.chapter?rankTag(bossRank(b))+' ':''}${deckBrief(b.deck)} · 🏆 ${gold}골드${cards}${bad?' · ⚠ 덱 오류':''}</span>${chips&&!lock?`<span class="tags">${chips}</span>`:''}</span>`;
+    `<span class="tags">${opts.chapter?rankTag(bossRank(b))+' ':''}${deckBrief(b.deck)}, ${gold}골드${cards}${bad?', 덱 오류':''}</span>${chips&&!lock?`<span class="tags">${chips}</span>`:''}</span>`;
   btn.onclick=()=>startBoss(i);
   return btn;
 }
@@ -3044,37 +3041,37 @@ function openAdventure(rank){
     const info=advChapterInfo(advView), list=advChapterBosses(all, advView), run=runOf(advView), done=run?(run.cleared||[]).length:0, next=advRunNext(all, advView, run);
     $('advChapterDesc').style.display='';
     $('advChapterDesc').innerHTML=`<b>${info.img?`<img class="ch-img sm" src="${escHtml(info.img)}" alt="">`:escHtml(info.icon)} ${escHtml(info.name)}</b> <span class="prog">${run?`${done} / ${list.length}`:'입학 전'}</span><br><small>${escHtml(info.desc||'')}</small><div class="adv-bar"><i style="width:${list.length?Math.round(done/list.length*100):0}%"></i></div>`+
-      (run ? `<div class="run-box"><b>재학 중</b> · 잠긴 덱 ${run.deck.length}장${next?` · 다음 상대: ${escHtml(next.name)}`:''}<br><small>보스에게 지면 입학이 끝나고 처음부터 다시 시작해요. 고른 보상 카드는 이 덱에 바로 더해져요.</small>`+
+      (run ? `<div class="run-box"><b>재학 중</b>${next?`, 다음 상대 ${escHtml(next.name)}`:''}<br><small>지면 처음부터</small>`+
              `<div class="run-btns"><button type="button" onclick="showRunDeck('${advView}')">잠긴 덱 보기</button><button type="button" class="drop" onclick="dropRun('${advView}')">자퇴하기</button></div></div>`
-           : `<div class="run-box"><button type="button" class="enroll" onclick="enrollRun('${advView}')">입학하기</button><br><small>${AdvDeckBook.has()?'모험 덱':'일반 덱'} 30장(일반 카드만)으로 입학해요. <b>입학하면 덱을 바꿀 수 없어요.</b> 모험 전용 카드는 단계를 깰 때마다 보상으로 덱에 더해지고, 입학이 끝나면 사라져요. 보스에게 지면 처음부터 다시.</small></div>`);
+           : `<div class="run-box"><button type="button" class="enroll" onclick="enrollRun('${advView}')">입학하기</button><br><small>입학하면 덱이 잠겨요</small></div>`);
     if(isDev()) $('advChapterDesc').insertAdjacentHTML('beforeend', `<div class="run-box"><small>🛠 <b>개발자 모드</b>: 모든 단계를 바로 도전할 수 있어요. ${runOf(advView)?'잠긴 덱':'모험 덱'}(모든 카드 가능)으로 싸우고, 클리어 기록·보상·입학 진행은 남지 않아요.</small></div>`);   // v122
     { const cbs=list.filter(b=>CUT_REPLAY[b.id] && typeof Cutscene!=='undefined' && (isDev() || Cutscene.seen(BOSS_CUTSCENE[b.id])));   // v150 컷신 다시 보기 (본 적이 있거나 개발자) · v152 학년마다 버튼
       if(cbs.length) $('advChapterDesc').insertAdjacentHTML('beforeend', `<div class="run-box">${cbs.map(cb=>`<button type="button" class="cut-replay" onclick="playBossCutscene('${cb.id}')">${escHtml(CUT_REPLAY[cb.id])} 컷신 다시 보기</button>`).join(' ')}</div>`); }
     list.forEach(b=>box.appendChild(bossButton(b, all.indexOf(b), all, {chapter:true})));
   }
-  { const n=ServerStore.offers.length, ob=$('advOfferBtn'); ob.style.display=n?'':'none'; if(n) ob.innerHTML=`받지 않은 보상이 있어요 (${n})<span class="desc">${escHtml(ServerStore.offers[0].bossName)} 클리어 보상 — 눌러서 카드 묶음을 고르세요</span>`; }   // v117
+  { const n=ServerStore.offers.length, ob=$('advOfferBtn'); ob.style.display=n?'':'none'; if(n) ob.innerHTML=`받지 않은 보상 ${n}<span class="desc">${escHtml(ServerStore.offers[0].bossName)}</span>`; }   // v117
   $('advDeckBtn').style.display=advView==='free'?'none':'';
   $('advDeckBtn').disabled=Object.keys(ServerStore.runs).length>0;
   $('advFreeNote').style.display=advView==='free'?'':'none';
-  $('advDeckDesc').textContent=Object.keys(ServerStore.runs).length ? '재학 중에는 덱을 바꿀 수 없어요 (졸업·자퇴하거나 보스에게 지면 풀려요)' : AdvDeckBook.has() ? `모험 덱 사용 중 · ${deckBrief(AdvDeckBook.get())}` : '아직 모험 덱이 없어 일반 덱으로 입학해요 · 입학 때 들고 갈 30장(일반 카드만)을 따로 만들 수 있어요';
+  $('advDeckDesc').textContent=Object.keys(ServerStore.runs).length ? '재학 중' : AdvDeckBook.has() ? deckBrief(AdvDeckBook.get()) : '없음';
   showScreen('adventure');
 }
 // ---- v117 입학하기 · 자퇴 · 잠긴 덱 보기 ----
 async function enrollRun(ch){
   const deck=AdvDeckBook.get();
-  if(!await confirmBox('입학할까요?', `${advChapterInfo(ch).name.replace(/\s*입학$/,'')}에 입학합니다.\n지금 모험 덱 30장이 잠기고, 졸업·자퇴하거나 보스에게 질 때까지 바꿀 수 없어요.`, '입학하기')) return;
+  if(!await confirmBox('입학할까요?', '졸업하거나 질 때까지 덱을 바꿀 수 없어요.', '입학하기')) return;
   const r=await ServerStore.enroll(ch, deck);
   if(!r.ok){ alertBox('입학하지 못했어요', r.error); return; }
   advView=ch; openAdventure();
 }
 async function dropRun(ch){
-  if(!await confirmBox('자퇴할까요?', '이번 입학의 진행과 잠긴 덱(보상으로 받은 모험 전용 카드 포함)이 사라지고, 처음부터 다시 입학해야 해요.', '자퇴하기', true)) return;
+  if(!await confirmBox('자퇴할까요?', '진행과 받은 카드가 사라져요.', '자퇴하기', true)) return;
   await ServerStore.dropRun(ch); openAdventure();
 }
 function showRunDeck(ch){
   const run=runOf(ch); if(!run) return;
   const cnt={}; run.deck.forEach(n=>cnt[n]=(cnt[n]||0)+1);
-  $('offerTitle').textContent=`잠긴 덱 — ${run.deck.length}장`;
+  $('offerTitle').textContent=`잠긴 덱 ${run.deck.length}장`;
   $('offerMsg').textContent='졸업할 때까지 고정';
   const box=$('offerBundles'); box.innerHTML=''; const col=document.createElement('div'); col.className='offer-bundle'; const row=document.createElement('div'); row.className='offer-cards';
   CARD_POOL.forEach(c=>{ if(!cnt[c.name]) return; const el=cardEl(c); const b=document.createElement('div'); b.className='copies'; b.textContent=`×${cnt[c.name]}`; el.appendChild(b); row.appendChild(el); });
@@ -3112,17 +3109,17 @@ async function startBoss(idx, opts={}){
   if(game.snBonus) logLine((game.snBonus.good?'✦ ':'⚠ ')+game.snBonus.text);
   $('overlay').classList.remove('show');
   $('overlayReward').innerHTML='';
-  document.querySelector('#aiHero .name').textContent='모험 · '+(advIsImgIcon(boss.icon) ? boss.name : `${boss.icon} ${boss.name}`);   // v156 모험 상대는 「모험 · 보스 이름」
+  document.querySelector('#aiHero .name').textContent=(advIsImgIcon(boss.icon) ? boss.name : `${boss.icon} ${boss.name}`);   // v156 모험 상대는 「모험 · 보스 이름」
   { const av=$('aiAvatar'), sp=av&&av.firstElementChild, img=advIsImgIcon(boss.icon);            // v117: 그림 아이콘 보스는 초상화를 띄운다
     document.body.classList.toggle('boss-portrait', img); if(sp){ sp.textContent=''; sp.style.backgroundImage=img?`url("${boss.icon.replace(/^\//,'')}")`:''; } }
   const iFirst=Host.state.first===MY;
   $('verBadge').textContent=VERSION;
-  $('diffBadge').textContent=`모험 · ${rankLabel(bossRank(boss))} · ${boss.name}${opts.devTest?' (시험)':''}`+(iFirst?' · 선공':' · 후공');
+  $('diffBadge').textContent=`${boss.name}${opts.devTest?' (시험)':''}`+(iFirst?', 선공':', 후공');
   $('menu').classList.add('hidden');
   updateWallet();
-  logLine(`보스 ${boss.name} 등장! [${rankLabel(bossRank(boss))}] `+(iFirst?'당신이 선공입니다.':'보스가 선공입니다.'));
+  logLine(`${boss.name}`+(iFirst?', 선공':', 후공'));
   if(bossCheatList(boss).length) logLine('보스 특성: '+bossCheatList(boss).map(c=>`${c.name}(${bossCheatDesc(boss,c)})`).join(' / '));
-  { const bpw=bossPowerOf(boss); if(bpw) logLine(`보스 영웅 능력: ${bpw.icon} ${bpw.name} — ${bpw.active?`(${bpw.cost}) `:'(지속) '}${bpw.text}`); }   // v162
+  { const bpw=bossPowerOf(boss); if(bpw) logLine(`보스 영웅 능력: ${bpw.name}`); }   // v162
   if(r.note) logLine(r.note);
   beginMatch();
 }
@@ -3338,7 +3335,7 @@ function renderShop(){
   const info=shopInfo, gold=Economy.get().gold;
   $('shopGold').innerHTML=`${ICO('gold','골드')} ${fmt(gold)}`;
   $('shopPackSize').textContent=`${SHOP.PACK_SIZE}장`;
-  $('shopSub').textContent=`${SHOP.PACK_SIZE}장 · ${SHOP.GUARANTEE_MIN} 이상 1장 보장`;   // v168 짧게
+  $('shopSub').textContent=`${SHOP.PACK_SIZE}장, ${SHOP.GUARANTEE_MIN} 이상 1장`;   // v168 짧게
   // 등급별 확률 · 내 수집 현황 · 중복 환급
   const box=$('shopRates'); box.innerHTML='';
   SHOP_RARITIES.forEach(r=>{
@@ -3347,7 +3344,7 @@ function renderShop(){
     const nm=document.createElement('span'); nm.className='ed-rar r-'+RARITY_ORDER.indexOf(r); nm.textContent=r;
     const pc=document.createElement('span'); pc.className='sr-pc'; pc.textContent=`${shopRatePercent(r)}%`;
     const own=document.createElement('span'); own.className='sr-own'; own.textContent=`수집 ${have}/${all.length}`;
-    const rf=document.createElement('span'); rf.className='sr-rf'; rf.textContent=`분해 +${PROGRESS.DISENCHANT[r]} 가루`; rf.title='남는 카드(덱 한도 초과분)를 분해하면 받는 가루';   // v140: 중복 골드 환급은 없어졌다 (예전 SHOP.REFUND 를 읽다가 화면이 멈추던 버그)
+    const rf=document.createElement('span'); rf.className='sr-rf'; rf.textContent=`분해 +${PROGRESS.DISENCHANT[r]} 가루`; rf.title='분해하면 받는 가루';   // v140: 중복 골드 환급은 없어졌다 (예전 SHOP.REFUND 를 읽다가 화면이 멈추던 버그)
     row.append(nm,pc,own,rf); box.appendChild(row);
   });
   const left=info?info.pity.left:null;
@@ -3355,7 +3352,7 @@ function renderShop(){
   $('shopPityLegend').textContent=left?(left.legend<=1?'다음 팩':`${left.legend}팩 뒤`):'…';
   $('shopDupNote').textContent='';   // v168 안내 문구 뺌
   [[1,'shopBuy1'],[5,'shopBuy5']].forEach(([n,id])=>{
-    const b=$(id); b.textContent=`${n}팩 열기 · ${fmt(shopCost(n))}골드`; b.disabled=shopWorking||gold<shopCost(n)||!info;
+    const b=$(id); b.textContent=`${n}팩, ${fmt(shopCost(n))}골드`; b.disabled=shopWorking||gold<shopCost(n)||!info;
   });
 }
 function renderShopHistory(){
@@ -3365,7 +3362,7 @@ function renderShopHistory(){
   list.forEach(h=>{
     const row=document.createElement('div'); row.className='sh-row';
     const t=document.createElement('div'); t.className='sh-t'; const d=new Date(h.openedAt);
-    t.innerHTML=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`+(h.refund?` · 환급 +${h.refund} ${ICO('gold','골드')}`:'')+(h.pityHit?' · 천장 확정':'');
+    t.innerHTML=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`+(h.refund?`, +${h.refund} ${ICO('gold','골드')}`:'')+(h.pityHit?', 천장':'');
     row.appendChild(t);
     const cs=document.createElement('div'); cs.className='sh-c';
     h.cards.forEach(c=>{ const s=document.createElement('span'); s.className='sh-chip r'+RARITY_ORDER.indexOf(c.rarity)+(c.dup||c.extra?' dup':''); s.textContent=(c.dup||c.extra?'♻ ':c.isNew?'✨ ':'')+c.name; cs.appendChild(s); });
@@ -3377,7 +3374,7 @@ async function openShop(){
   $('shopMsg').textContent=''; $('shopHistory').style.display='none';
   shopInfo=null; renderShop(); showScreen('shop');                 // 먼저 화면을 보여 주고, 서버 정보(천장 진행도·기록)는 도착하면 채운다
   const info=await ServerStore.loadShop();
-  if(!info){ $('shopMsg').textContent='상점 정보를 불러오지 못했어요. 잠시 뒤 다시 들어와 주세요.'; return; }
+  if(!info){ $('shopMsg').textContent='상점 정보를 불러오지 못했어요.'; return; }
   shopInfo=info; renderShop();
 }
 async function shopBuy(count){
@@ -3446,7 +3443,7 @@ function finishPack(p){
   $('pkFlipAll').style.display='none';
   const newN=p.cards.filter(c=>c.isNew).length, exN=p.cards.filter(c=>c.extra).length;
   if(pk.r.info){ $('pkInfo').textContent=pk.r.info(p); }
-  else $('pkInfo').textContent=`새 카드 ${newN}장`+(exN?` · 남는 카드 ${exN}장`:'')+(p.pityHit==='legend'?' · 전설 천장 확정!':p.pityHit==='epic'?' · ✨ 특급 천장 확정!':'');
+  else $('pkInfo').textContent=`새 카드 ${newN}장`+(exN?`, 남는 카드 ${exN}장`:'')+(p.pityHit==='legend'?', 전설 천장':p.pityHit==='epic'?', 특급 천장':'');
   const last=pk.i>=pk.r.packs.length-1, nx=$('pkNext');
   nx.textContent=last?(pk.r.packs.length>1?'결과 요약':'확인'):`다음 팩 (${pk.i+2}/${pk.r.packs.length})`;
   nx.style.display=''; nx.onclick=()=>{ if(!last){ pk.i++; showPack(); } else if(pk.r.packs.length>1 && !pk.summary){ showSummary(); } else closePacks(); };
@@ -3463,7 +3460,7 @@ function showSummary(){
     const t=tally[r]; if(!t.n) return;
     const row=document.createElement('div'); row.className='pk-sum-row';
     row.innerHTML=`<span class="ed-rar r-${RARITY_ORDER.indexOf(r)}"></span><b></b><small></small>`;
-    row.firstChild.textContent=r; row.children[1].textContent=`${t.n}장`; row.lastChild.textContent=t.dup?`(남는 카드 ${t.dup}장)`:'';
+    row.firstChild.textContent=r; row.children[1].textContent=`${t.n}장`; row.lastChild.textContent=t.dup?`남는 카드 ${t.dup}`:'';
     box.appendChild(row);
   });
   const newCards=all.filter(c=>c.isNew);
@@ -3473,7 +3470,7 @@ function showSummary(){
     box.appendChild(nw);
   }
   stage.appendChild(box);
-  { const ex=pk.r.packs.flatMap(x=>x.cards).filter(c=>c.extra).length; $('pkInfo').textContent=`${fmt(pk.r.spent)}골드 사용`+(ex?` · 남는 카드 ${ex}장`:'')+` · 보유 골드 ${fmt(Economy.get().gold)}`; }
+  { const ex=pk.r.packs.flatMap(x=>x.cards).filter(c=>c.extra).length; $('pkInfo').textContent=`${fmt(pk.r.spent)}골드 사용`+(ex?`, 남는 카드 ${ex}장`:''); }
   $('pkNext').textContent='확인';
 }
 function closePacks(){
@@ -3504,75 +3501,75 @@ showScreen('main');
 // ---------- v117 키워드 사전: 카드 문구는 짧게, 뜻은 마우스를 올렸을 때 크게 보이는 카드 옆에 ----------
 //  카드 문구(종족·키워드 표시 포함)에 이 단어가 있으면 설명을 띄운다. 새 키워드를 만들면 여기에 한 줄 추가
 const KEYWORD_HELP = [
-  ['영구 혼란','혼란과 같지만, 공격한 뒤에도 풀리지 않습니다.'],
-  ['혼란','주인이 조종할 수 없습니다. 주인의 턴이 끝날 때 무작위 대상(양쪽 하수인·영웅)을 한 번 공격하고 풀립니다.'],
-  ['흑기사','정해진 아군 하수인이 받을 피해를 대신 받습니다.'],
-  ['환생','처음 죽으면 생명력 1로 한 번 되살아납니다.'],
-  ['모면','주문의 대상이 되지 않습니다.'],
-  ['잔상','낸 턴에 같은 카드를 한 번 더 낼 수 있는 복사본이 손에 들어옵니다 (턴이 끝나면 사라짐).'],
-  ['독박','아군 하수인이 피해를 입을 때 대신 맞습니다. 한 번에 받는 피해는 1로 고정됩니다.'],
-  ['휴면','전장에서 잠시 사라졌다가, 정해진 턴이 지나면 돌아옵니다.'],
-  ['근육통','내 턴이 시작될 때 아군 하수인이 전부 빙결되고, 영웅도 공격할 수 없습니다.'],
-  ['번아웃','그 하수인 주인의 턴이 시작될 때마다 공격력이 1 감소합니다. (최소 0)'],
-  ['멘붕','이번 턴에 공격할 수 없습니다.'],
-  ['내부분열','공격할 때 원래 대상 대신 무작위 아군 하수인을 공격합니다.'],
-  ['기절','공격할 수 없습니다. 주인의 턴이 시작될 때마다 50% 확률로 풀립니다.'],
-  ['비만','생명력이 2배가 되지만 공격력이 절반(내림)이 됩니다.'],
-  ['경고장','주인의 턴이 정해진 횟수만큼 끝나면 그 하수인은 처치됩니다.'],
+  ['영구 혼란','혼란과 같지만 풀리지 않는다.'],
+  ['혼란','조종할 수 없다. 주인의 턴이 끝날 때 무작위 대상을 공격하고 풀린다.'],
+  ['흑기사','정해진 아군 하수인이 받을 피해를 대신 받는다.'],
+  ['환생','처음 죽으면 생명력 1로 한 번 되살아난다.'],
+  ['모면','주문의 대상이 되지 않는다.'],
+  ['잔상','이번 턴에 한 번 더 낼 수 있다.'],
+  ['독박','아군 하수인이 피해를 입을 때 대신 맞는다. 한 번에 받는 피해는 1로 고정된다.'],
+  ['휴면','전장에서 잠시 사라졌다가, 정해진 턴이 지나면 돌아온다.'],
+  ['근육통','내 턴이 시작될 때 아군 하수인이 전부 빙결되고, 영웅도 공격할 수 없다.'],
+  ['번아웃','주인의 턴이 시작될 때마다 공격력 -1.'],
+  ['멘붕','이번 턴에 공격할 수 없다.'],
+  ['내부분열','공격할 때 원래 대상 대신 무작위 아군 하수인을 공격한다.'],
+  ['기절','공격할 수 없다. 주인의 턴이 시작될 때마다 50% 확률로 풀린다.'],
+  ['비만','생명력 2배, 공격력 절반.'],
+  ['경고장','주인의 턴이 정해진 횟수만큼 끝나면 그 하수인은 처치된다.'],
   ['카페인 과다복용','공격력 +3. 주인의 턴이 끝나면 생명력 -2, 기절.'],
-  ['3초만 더 보기','30% 확률로 아무 행동도 못 하고 이번 턴을 넘깁니다.'],
+  ['3초만 더 보기','30% 확률로 아무 행동도 못 하고 이번 턴을 넘긴다.'],
   ['두꺼운 수험서','0/3 토큰. 죽음의 메아리: 그 주인의 영웅에게 피해 4.'],
-  ['주문 공격력','주문이 주는 피해가 그만큼 늘어납니다.'],
-  ['소심함','공격력이 1이 됩니다.'],
-  ['식곤증','다음 턴에 카드를 1장 덜 뽑고, 무작위 하수인 하나가 빙결됩니다.'],
-  ['화상','적힌 숫자만큼 피해를 받습니다.'],
-  ['겁먹음','다음 내 턴 동안 빙결됩니다.'],
-  ['우주공강','다음 턴 동안 영웅이 공격하거나 주문을 쓸 수 없습니다.'],
-  ['숙취','다음 턴 동안 카드를 낼 때마다 그 비용만큼 영웅이 피해를 입습니다.'],
-  ['카페인 쇼크','그 하수인 주인의 턴이 끝나면 처치됩니다.'],
-  ['실격','누구든 하수인을 낼 때 50% 확률로 소환되지 못하고 손으로 돌아갑니다. 마나는 그대로 씁니다.'],
-  ['장소','공격하지 않는 구조물. 생명력이 내구도이고, 내 턴이 끝날 때마다 1씩 줄어듭니다.'],
-  ['1학년 하수인','원래 비용이 1이거나 이름에 「1학년」이 들어간 하수인.'],
-  ['내일로 버프','생명력 +2 · 공격력 +2 · 질풍 · 도발 · 보호막 · 생명력 흡수 중 하나.'],
+  ['주문 공격력','주문이 주는 피해가 그만큼 늘어난다.'],
+  ['소심함','공격력이 1이 된다.'],
+  ['식곤증','다음 턴에 카드를 1장 덜 뽑고, 무작위 하수인 하나가 빙결된다.'],
+  ['화상','적힌 숫자만큼 피해를 받는다.'],
+  ['겁먹음','다음 내 턴 동안 빙결된다.'],
+  ['우주공강','다음 턴 동안 영웅이 공격하거나 주문을 쓸 수 없다.'],
+  ['숙취','다음 턴 동안 카드를 낼 때마다 그 비용만큼 영웅이 피해를 입는다.'],
+  ['카페인 쇼크','그 하수인 주인의 턴이 끝나면 처치된다.'],
+  ['실격','누구든 하수인을 낼 때 50% 확률로 소환되지 못하고 손으로 돌아간다. 마나는 그대로 쓴다.'],
+  ['장소','공격하지 않는 구조물. 생명력이 내구도이고, 내 턴이 끝날 때마다 1씩 줄어든다.'],
+  ['1학년 하수인','비용이 1이거나 이름에 1학년이 들어간 하수인.'],
+  ['내일로 버프','생명력 +2, 공격력 +2, 질풍, 도발, 보호막, 생명력 흡수 중 하나.'],
   ['만취한 손님','0/2 토큰. 공격 불가, 양옆 하수인 공격력 -1.'],
   ['PC방 올빼미','4/4 속공 토큰.'],
   ['당근마켓 정산금','동전: 이번 턴 마나 +1.'],
   ['카페인 충전','0코스트 주문: 이번 턴 마나 +1.'],
   ['게임 불감증','0/1 토큰. 죽음의 메아리: 그 주인의 손에서 무작위 하수인 제거.'],
-  ['지문','도발 · 공격 불가 토큰.'],
-  ['블러드 엘프','3/3 토큰 (상대 전장).'],
+  ['지문','도발, 공격 불가 토큰.'],
+  ['블러드 엘프','상대 전장에 생기는 3/3 토큰.'],
   ['오크','3/3 토큰.'],
-  ['상태이상','빙결·기절·혼란·침묵·소심함·겁먹음·공격 불가처럼 하수인을 묶는 효과.'],
-  ['휴식','이번 턴에는 공격할 수 없습니다. 내 턴이 끝나면 풀립니다.'],
-  ['석박통합 연구원','내 턴이 끝날 때마다 내 영웅 생명력 3 회복 + 무작위 주문 1장. 원래 능력은 사라지고 능력치는 그대로.'],
+  ['상태이상','하수인을 묶는 효과.'],
+  ['휴식','이번 턴에는 공격할 수 없다. 내 턴이 끝나면 풀린다.'],
+  ['석박통합 연구원','내 턴이 끝날 때마다 내 영웅 생명력 3 회복, 무작위 주문 1장. 원래 능력은 사라지고 능력치는 그대로.'],
   ['서비스 계란말이','0코스트 주문: 하수인 하나에게 생명력 +3.'],
   ['올클리어','0코스트 주문: 카드 2장 뽑기, 마나 수정 2개 즉시 회복.'],
-  ['응원 주문','과방 만물상이 주는 1코스트 주문 9종 (타이레놀·에어팟·비타민C·메가커피·포스트잇·보조배터리·A4 요약본·1+1 쿠폰·선배 찬스).'],
-  ['대기열','빙결 + 행동 불가: 다음 내 턴까지 적 하수인과 적 영웅이 공격할 수 없습니다.'],
-  ['방어도','영웅이 받는 피해를 생명력보다 먼저 흡수합니다.'],
-  ['학사모','0코스트로 시작하는 폭탄 돌리기 주문. 쓰면 (비용+1)번 무작위 강화/약화, 1장 뽑기, 상대에게 비용 +1로 넘김.'],
-  ['부속 퀘스트','조건을 채우면 보상을 주는 주문. 졸업 사정회는 단계를 깰 때마다 학사모를 주고 계속 이어집니다.'],
-  ['축하 음료','밤샘 종강 총회가 주는 0코스트 주문 (축하 맥주·숙취해소제·샴페인 한 잔).'],
-  ['절대평가','꿀교양 줍줍이 주는 주문 5종 (단순 출석 체크·오픈북 테스트·교수님의 너그러운 자비·P/F·전원 A+ 확정).'],
-  ['면역','피해를 받지 않습니다.'],
-  ['내구도','쓸 때마다 1씩 줄고, 0이 되면 사라집니다.'],
-  ['밤샘 개발자','1/1 기계 토큰. 좋은 효과 1개와 나쁜 효과 1개를 무작위로 가집니다.'],
-  ['함성','전투의 함성의 줄임말 (손에서 낼 때 발동).'],
-  ['죽메','죽음의 메아리의 줄임말 (하수인이 죽을 때 발동).'],
-  ['도발','적은 도발 하수인을 먼저 공격해야 합니다.'],
-  ['돌진','낸 턴에 바로 공격할 수 있습니다.'],
-  ['속공','낸 턴에 하수인만 공격할 수 있습니다.'],
-  ['독성','이 카드에게 피해를 입은 하수인은 죽습니다.'],
-  ['보호막','처음 받는 피해를 한 번 막습니다.'],
-  ['은신','공격하기 전까지 적이 대상으로 고를 수 없습니다.'],
-  ['빙결','다음 공격 기회를 한 번 잃습니다.'],
-  ['침묵','하수인의 능력과 효과를 모두 지웁니다.'],
-  ['죽음의 메아리','하수인이 죽을 때 발동합니다.'],
-  ['전투의 함성','손에서 낼 때 발동합니다.'],
-  ['과부하','다음 턴에 마나 수정이 그만큼 잠깁니다.'],
-  ['발견','3장 중 1장을 골라 손에 넣습니다.'],
-  ['질풍','한 턴에 두 번 공격할 수 있습니다.'],
-  ['생명력 흡수','준 피해만큼 내 영웅이 회복합니다.'],
+  ['응원 주문','과방 만물상이 주는 1코스트 주문 9종.'],
+  ['대기열','다음 내 턴까지 적 하수인과 적 영웅이 공격할 수 없다.'],
+  ['방어도','영웅이 받는 피해를 생명력보다 먼저 흡수한다.'],
+  ['학사모','폭탄 돌리기 주문. 쓰면 무작위 효과를 내고 비용 +1이 되어 상대 손으로 넘어간다.'],
+  ['부속 퀘스트','조건을 채우면 보상을 주는 주문. 졸업 사정회는 단계를 깰 때마다 학사모를 주고 계속 이어진다.'],
+  ['축하 음료','밤샘 종강 총회가 주는 0코스트 주문.'],
+  ['절대평가','꿀교양 줍줍이 주는 주문 5종.'],
+  ['면역','피해를 받지 않는다.'],
+  ['내구도','쓸 때마다 1씩 줄고, 0이 되면 사라진다.'],
+  ['밤샘 개발자','1/1 기계 토큰. 좋은 효과 1개와 나쁜 효과 1개를 무작위로 가진다.'],
+  ['함성','전투의 함성의 줄임말.'],
+  ['죽메','죽음의 메아리의 줄임말.'],
+  ['도발','적은 도발 하수인을 먼저 공격해야 한다.'],
+  ['돌진','낸 턴에 바로 공격할 수 있다.'],
+  ['속공','낸 턴에 하수인만 공격할 수 있다.'],
+  ['독성','이 카드에게 피해를 입은 하수인은 죽는다.'],
+  ['보호막','처음 받는 피해를 한 번 막는다.'],
+  ['은신','공격하기 전까지 적이 대상으로 고를 수 없다.'],
+  ['빙결','다음 공격 기회를 한 번 잃는다.'],
+  ['침묵','하수인의 능력과 효과를 모두 지운다.'],
+  ['죽음의 메아리','하수인이 죽을 때 발동한다.'],
+  ['전투의 함성','손에서 낼 때 발동한다.'],
+  ['과부하','다음 턴에 마나 수정이 그만큼 잠긴다.'],
+  ['발견','3장 중 1장을 골라 손에 넣는다.'],
+  ['질풍','한 턴에 두 번 공격할 수 있다.'],
+  ['생명력 흡수','준 피해만큼 내 영웅이 회복한다.'],
 ];
 function keywordNotes(text){ const out=[]; for(const [k,d] of KEYWORD_HELP){ if(out.length>=6) break; if(text.includes(k) && !out.some(([x])=>x.includes(k))) out.push([k,d]); } return out; }   // '영구 혼란'이 있으면 '혼란'은 한 번만
 
@@ -3702,12 +3699,12 @@ const cardDetail=(function(){
   function hide(){ box.style.display='none'; box.innerHTML=''; }
   function show(anchor, c){
     const d=cardDetailOf(c); if(!d) return;
-    const typeLine = c.type==='spell' ? `주문${c.school&&c.school.length?' · '+c.school.join('·'):''}` : `하수인 · ${c.atk}/${c.hp}${c.tribe?' · '+c.tribe:''}`;
+    const typeLine = c.type==='spell' ? `주문${c.school&&c.school.length?', '+c.school.join(', '):''}` : `하수인 ${c.atk}/${c.hp}${c.tribe?', '+c.tribe:''}`;
     const rar = c.rarity || ((cardByName(c.name)||{}).rarity) || '';
     const sc = typeof cardScope==='function' && cardByName(c.name) ? cardScope(cardByName(c.name)) : '';
     const notes=keywordNotes(d.desc+' '+(effectText(c)||''));
     box.innerHTML=`<button class="cd-x" aria-label="닫기">✕</button>
-      <div class="cd-head"><span class="cd-cost">${c.cost ?? ''}</span><div><b>${escHtml(c.name)}</b><small>${escHtml(typeLine)}${rar?' · '+escHtml(rar):''}${sc==='adventure'?' · 🎒 모험 전용':''}</small></div></div>
+      <div class="cd-head"><span class="cd-cost">${c.cost ?? ''}</span><div><b>${escHtml(c.name)}</b><small>${escHtml(typeLine)}${rar?', '+escHtml(rar):''}${sc==='adventure'?', 모험 전용':''}</small></div></div>
       <div class="cd-desc">${escHtml(d.desc)}</div>
       ${d.quote?`<div class="cd-quote">🗨 ${escHtml(d.quote)}</div>`:''}
       ${d.flavor?`<div class="cd-flavor">${escHtml(d.flavor)}</div>`:''}
@@ -3920,10 +3917,10 @@ function traitCard(t, opt={}){                          // 카드처럼 생긴 �
   d.appendChild(traitImg(t.id, 'tc-art'));
   const b=document.createElement('div'); b.className='tc-body';
   b.innerHTML='<b class="tc-name"></b><span class="tc-desc"></span>';
-  b.querySelector('.tc-name').textContent=t.name+(t.global?' · 전장 규칙':'');
+  b.querySelector('.tc-name').textContent=t.name;
   b.querySelector('.tc-desc').textContent=String(t.desc||'').replace(/^\[양쪽\]\s*/,'');   // [양쪽] 은 '나에게도' 꼬리표로
   d.appendChild(b);
-  const tags=[]; if(t.global) tags.push(['me','나에게도']); if(t.power) tags.push(['pw','영웅 능력']); if(t.unique) tags.push(['pw','고유 능력']); if(opt.isNew) tags.push(['new',`NEW · 이기면 +${codexInfo().gold}골드`]);
+  const tags=[]; if(t.global) tags.push(['me','나에게도']); if(t.power) tags.push(['pw','영웅 능력']); if(t.unique) tags.push(['pw','고유 능력']); if(opt.isNew) tags.push(['new',`NEW +${codexInfo().gold}`]);
   if(tags.length){ const tg=document.createElement('div'); tg.className='tc-tags'; tags.forEach(([k,txt])=>{ const s=document.createElement('span'); s.className='tc-tag '+k; s.textContent=txt; tg.appendChild(s); }); d.appendChild(tg); }
   return d;
 }
@@ -3938,11 +3935,11 @@ function renderTraits(){
   const key=list.map(t=>t.id).join(',')+'|'+(game&&game.key);
   if(key!==traitKey){ traitKey=key; ring.innerHTML=''; hideTip();
     list.forEach(t=>{ const b=document.createElement('span'); b.className='trait-ico'+(t.global?' global':'')+(t.power?' power':''); b.tabIndex=0; b.dataset.id=t.id;
-      b.dataset.tip=`${t.name}${t.global?' (전장 규칙 · 나에게도 적용)':''} — ${t.desc}`; b.appendChild(traitImg(t.id)); const n=document.createElement('i'); n.className='ti-n'; b.appendChild(n); ring.appendChild(b); });
+      b.dataset.tip=`${t.name}${t.global?' (양쪽)':''}\n${t.desc}`; b.appendChild(traitImg(t.id)); const n=document.createElement('i'); n.className='ti-n'; b.appendChild(n); ring.appendChild(b); });
     const rules=list.filter(t=>t.global);
     band.innerHTML=''; band.hidden=!rules.length;
-    if(rules.length){ const s=document.createElement('span'); s.textContent='전장 규칙 · '+rules.map(t=>t.name).join(' · '); band.appendChild(s);   // 이름만 짧게, 설명은 마우스를 올리면
-      band.tabIndex=0; band.dataset.tip='나에게도 적용 — '+rules.map(t=>`${t.name}: ${t.desc.replace(/^\[양쪽\]\s*/,'')}`).join(' / '); }
+    if(rules.length){ const s=document.createElement('span'); s.textContent='전장 규칙: '+rules.map(t=>t.name).join(', '); band.appendChild(s);   // 이름만 짧게, 설명은 마우스를 올리면
+      band.tabIndex=0; band.dataset.tip=rules.map(t=>`${t.name}: ${t.desc.replace(/^\[양쪽\]\s*/,'')}`).join('\n'); }
   }
   ring.hidden=!list.length;
   // 쌓이는 수치 (재사용하기 상급: 다음 발동 때 얻는 방어도)
@@ -3971,14 +3968,14 @@ function showBossBriefing(boss){
       <div class="brief-right"><div class="brief-power"></div><h4 class="brief-h"></h4><div class="brief-traits"></div><p class="brief-tip"></p>
         <div class="brief-btns"><button type="button" class="btn-back">돌아가기</button><button type="button" class="btn-go">도전하기</button></div></div></div>`;
     const pt=m.querySelector('.brief-portrait'); if(img) pt.style.backgroundImage=`url("${ic.startsWith('/')?ic:'/'+ic}")`; else if(ic) pt.textContent=ic; else pt.style.backgroundImage='url("/images/boss/default.webp")';
-    m.querySelector('.brief-stage').textContent=boss.chapter ? `${(ADV_CHAPTERS.find(c=>c.id===boss.chapter)||{}).name||''} · ${boss.stage||''}단계` : '자유 보스전';
+    m.querySelector('.brief-stage').textContent=boss.chapter ? `${(ADV_CHAPTERS.find(c=>c.id===boss.chapter)||{}).name||''} ${boss.stage||''}단계` : '자유 보스전';
     m.querySelector('.brief-name').textContent=boss.name;
-    { const rk=rankInfo(bossRank(boss)); m.querySelector('.brief-rank').textContent=`${rk[1]||''} · 특성 ${traits.length}`; }
+    { const rk=rankInfo(bossRank(boss)); m.querySelector('.brief-rank').textContent=`${rk[1]||''}`; }
     m.querySelector('.brief-desc').textContent=boss.desc||'';
     m.querySelector('.brief-reward b').textContent=`${fmt(first?bossReward(boss):bossRepeatGold(boss))}골드`;
     const pw=m.querySelector('.brief-power');
     if(bp){ pw.innerHTML='<div class="bpw-ico"></div><div class="bpw-txt"><span></span><b></b><small></small></div>'; pw.querySelector('.bpw-ico').appendChild(traitImg(bp.id)); if(bp.active){ const c=document.createElement('i'); c.className='bpw-cost'; c.textContent=bp.cost; pw.querySelector('.bpw-ico').appendChild(c); }
-      pw.querySelector('span').textContent=bp.active?'보스 영웅 능력 · 사용형':'보스 영웅 능력 · 지속'; pw.querySelector('b').textContent=bp.name; pw.querySelector('small').textContent=bp.text; }
+      pw.querySelector('span').textContent=bp.active?'영웅 능력':'영웅 능력 (지속)'; pw.querySelector('b').textContent=bp.name; pw.querySelector('small').textContent=bp.text; }
     else { pw.innerHTML='<div class="bpw-ico"></div><div class="bpw-txt"><span>영웅 능력</span><b></b><small></small></div>'; const a=hp && hpArtOf(boss.heroPower);
       if(a) pw.querySelector('.bpw-ico').style.backgroundImage=`url("${a}")`; else pw.querySelector('.bpw-ico').textContent=hp?hp.icon:'🎲';
       pw.querySelector('b').textContent=hp?hp.name:'판마다 무작위'; pw.querySelector('small').textContent=hp?hp.text:''; }
@@ -3986,7 +3983,7 @@ function showBossBriefing(boss){
     m.querySelector('.brief-h').textContent=list.length ? `보스 특성 ${list.length}` : '특성 없음';
     const box=m.querySelector('.brief-traits'); list.forEach(t=>box.appendChild(traitCard(t, {isNew:!t.unique && !codexHas(t.id)})));
     const nNew=traits.filter(t=>!t.unique && !codexHas(t.id)).length;
-    m.querySelector('.brief-tip').textContent = nNew ? `새 특성 ${nNew}개 · 이기면 하나당 ${codexInfo().gold}골드` : (traits.filter(t=>!t.unique).length ? '이 보스의 특성은 모두 도감에 있어요' : '');
+    m.querySelector('.brief-tip').textContent = nNew ? `새 특성 ${nNew}개` : '';
     if(window.SuneungFx && SuneungFx.isSuneung(boss)){ const w=m.querySelector('.brief-tip');   // v170 폭주 예고 문구는 없앰 (예고 없이 폭주)
       const sb=SuneungFx.storyBonus(); if(sb){ const x=document.createElement('p'); x.className='brief-tip sn-warn'; x.style.color=sb.good?'#a8e6a0':'#ffb0a0'; x.textContent=(sb.good?'✦ ':'⚠ ')+sb.text; w.after(x); } }   // v167 컨디션   // v166
     const done=v=>{ document.removeEventListener('keydown', onKey, true); m.remove(); resolve(v); };
@@ -4004,7 +4001,7 @@ function showBetRoll(roll, tier){
     const old=$('betRoll'); if(old) old.remove();
     const m=document.createElement('div'); m.id='betRoll'; m.className='brief-modal'; m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true'); m.setAttribute('aria-label','AI 특성 뽑기');
     m.innerHTML=`<div class="roll-box"><h3></h3><p class="roll-sub"></p><div class="roll-cards"></div><div class="brief-btns"><button type="button" class="btn-skip">바로 보기</button><button type="button" class="btn-go" disabled>대전 시작</button></div></div>`;
-    m.querySelector('h3').textContent=`배당 ${tier}% · AI가 받을 특성 ${roll.list.length}개`;
+    m.querySelector('h3').textContent=`배당 ${tier}%`;
     m.querySelector('.roll-sub').textContent='배팅 완료';
     const box=m.querySelector('.roll-cards'), names=cheatCandidates(tier).map(c=>c.name), slots=[];
     roll.list.forEach(c=>{ const s=document.createElement('div'); s.className='roll-slot spinning'; s.innerHTML='<span class="rs-a"></span><b class="rs-b"></b><span class="rs-c"></span>'; box.appendChild(s); slots.push({s, c}); });
@@ -4028,7 +4025,7 @@ function beatenHTML(){
   const got=codexInfo(), isNew=id=>(game.beatenNew||[]).includes(id), have=Object.keys(got.got||{}).length, nNew=(game.beatenNew||[]).length, total=got.total||CHEATS.length;
   const tiles=ids.map(id=>{ const c=cheatById(id); return `<span class="bt-tile${c&&c.global?' global':''}"><img src="${cheatArt(id)}" alt=""><b>${escHtml(c?c.name:id)}</b><i class="bt-stamp">격파</i>${isNew(id)?`<i class="bt-new">NEW +${got.gold}G</i>`:''}</span>`; }).join('');
   const now=game.codexSynced ? have : have+nNew;
-  return `<span class="beaten"><span class="bt-h">이겨낸 특성</span><span class="bt-row">${tiles}</span><span class="bt-codex">특성 도감 <b>${now} / ${total}</b>${nNew?` (+${nNew} 새로 · ${fmt(nNew*got.gold)}골드)`:''}</span><span class="bt-bar"><i style="width:${Math.round(now/Math.max(1,total)*100)}%"></i></span></span>`;
+  return `<span class="beaten"><span class="bt-h">이겨낸 특성</span><span class="bt-row">${tiles}</span><span class="bt-codex">특성 도감 <b>${now} / ${total}</b>${nNew?`, +${fmt(nNew*got.gold)}골드`:''}</span><span class="bt-bar"><i style="width:${Math.round(now/Math.max(1,total)*100)}%"></i></span></span>`;
 }
 
 // ---------- 특성 도감 화면 ----------
@@ -4036,11 +4033,11 @@ function openCodex(){ showScreen('codex'); renderCodex(); ServerStore.loadProgre
 function renderCodex(){
   const grid=$('codexGrid'), sum=$('codexSum'); if(!grid) return;
   const info=codexInfo(), got=info.got||{}, n=CHEATS.filter(c=>got[c.id]).length;
-  sum.textContent=`${n} / ${CHEATS.length} 이겨냄 · 처음 이기면 ${info.gold}골드`;   // v167 짧게
+  sum.textContent=`${n} / ${CHEATS.length}`;   // v167 짧게
   $('codexBar').style.width=Math.round(n/CHEATS.length*100)+'%';
   grid.innerHTML='';
   [...CHEATS].sort((a,b)=>(got[b.id]?1:0)-(got[a.id]?1:0)).forEach(c=>{ const g=got[c.id], v=cheatValue(c,0);   // 이겨낸 특성이 앞에
-    const t=traitCard({id:c.id, name:g?c.name:'???', desc:g?c.desc(v)+(g.wins>1?` · ${g.wins}번 이김`:''):`아직 이기지 못한 특성 · 이기면 +${info.gold}골드`, global:!!c.global}, {cls:g?'got':'locked'});
+    const t=traitCard({id:c.id, name:g?c.name:'???', desc:g?c.desc(v)+'':`+${info.gold}골드`, global:!!c.global}, {cls:g?'got':'locked'});
     grid.appendChild(t); });
   updateQuestMenuDesc && updateQuestMenuDesc();
 }

@@ -17,13 +17,13 @@ const DeckCode = (() => {
   // 텍스트 어디에 있든 코드를 찾아 읽는다. 반환 {name, heroPower, deck, unknown:[모르는 카드 이름]} 또는 {error}
   async function decode(text, pool) {
     const m = String(text || '').match(/CD([01])\.([A-Za-z0-9_-]+)/);
-    if (!m) return { error: '덱 코드를 찾지 못했어요. "CD1." 로 시작하는 코드를 붙여 넣어 주세요.' };
+    if (!m) return { error: '덱 코드를 찾지 못했어요.' };
     let obj;
     try {
       let bytes = unb64u(m[2]);
       if (m[1] === '1') { if (!canZip) return { error: '이 브라우저는 압축된 덱 코드를 읽을 수 없어요.' }; bytes = await pipe(bytes, DecompressionStream); }
       obj = JSON.parse(new TextDecoder().decode(bytes));
-    } catch (_) { return { error: '덱 코드가 깨졌어요. 처음부터 끝까지 빠짐없이 복사했는지 확인해 주세요.' }; }
+    } catch (_) { return { error: '덱 코드가 깨졌어요.' }; }
     if (!obj || !Array.isArray(obj.c)) return { error: '덱 코드가 올바르지 않아요.' };
     const names = new Set((pool || []).map(c => c.name)), deck = [], unknown = [];
     for (const e of obj.c) {

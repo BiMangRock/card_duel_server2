@@ -81,12 +81,12 @@
         const r = await send(job);
         if (r === 'retry') {
           warned = true;
-          banner('⚠ 서버에 저장하지 못했어요. 다시 시도하는 중… (이 창을 닫으면 최근 변경이 사라질 수 있어요)', false);
+          banner('저장 실패, 다시 시도하는 중', false);
           await sleep(3000); continue;
         }
         if (r === 'conflict') {
           S.locked = true;
-          banner('⚠ 다른 기기나 탭에서 먼저 저장되었어요. 이 화면의 변경은 저장되지 않으니 새로고침해 주세요.', true);
+          banner('다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.', true);
           return;
         }
         if (job.k === 'wallet') { if (pending.wallet === job.v) pending.wallet = null; }
@@ -115,7 +115,7 @@
                                                                                 // v117: 첫 클리어 보상 묶음이 도착했을 때
   // v117 보상 묶음 고르기. 반환: {ok:true, granted} | {ok:false, error}
   S.pickOffer = async (bossId, index) => {
-    let res; try { res = await call('POST', '/api/adventure/pick', { bossId, index }); } catch (e) { return { ok: false, error: '서버에 연결할 수 없어요. 잠시 뒤 다시 시도해 주세요.' }; }
+    let res; try { res = await call('POST', '/api/adventure/pick', { bossId, index }); } catch (e) { return { ok: false, error: '서버에 연결할 수 없어요.' }; }
     if (res.data && res.data.collection) S.collection = res.data.collection;
     if (res.data && res.data.run && res.data.chapter){ S.runs[res.data.chapter] = res.data.run; if (S.onRunChange) S.onRunChange(res.data.chapter); }   // v117: 잠긴 덱에 보상 묶음이 더해짐
     if (res.ok || res.status === 409 || res.status === 404) S.offers = S.offers.filter(o => o.bossId !== bossId);
@@ -176,17 +176,17 @@
   };
   // 반환: {ok:true, packs, spent, refund, wallet, collection, pity, opened} | {ok:false, error}
   S.openPacks = async count => {
-    if (S.shopBusy) return { ok: false, error: '처리 중이에요. 잠시만 기다려 주세요.' };
-    if (S.locked) return { ok: false, error: '다른 기기나 탭에서 먼저 저장되었어요. 새로고침해 주세요.' };
+    if (S.shopBusy) return { ok: false, error: '처리 중이에요.' };
+    if (S.locked) return { ok: false, error: '다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.' };
     S.shopBusy = true;
     try {
-      if (!(await waitWalletSaved())) return { ok: false, error: S.locked ? '다른 기기나 탭에서 먼저 저장되었어요. 새로고침해 주세요.' : '골드 저장이 아직 끝나지 않았어요. 잠시 뒤 다시 시도해 주세요.' };
+      if (!(await waitWalletSaved())) return { ok: false, error: S.locked ? '다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.' : '골드 저장 중이에요.' };
       let res;
       try { res = await call('POST', '/api/shop/open', { count, rev }); }
-      catch (e) { return { ok: false, error: '서버에 연결할 수 없어요. 골드가 이미 차감됐을 수 있으니 새로고침해서 확인해 주세요.' }; }
+      catch (e) { return { ok: false, error: '서버에 연결할 수 없어요. 새로고침해서 골드를 확인해 주세요.' }; }
       if (res.status === 409) {
-        S.locked = true; banner('⚠ 다른 기기나 탭에서 먼저 저장되었어요. 이 화면의 변경은 저장되지 않으니 새로고침해 주세요.', true);
-        return { ok: false, error: '다른 기기나 탭에서 먼저 저장되었어요. 새로고침해 주세요.' };
+        S.locked = true; banner('다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.', true);
+        return { ok: false, error: '다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.' };
       }
       if (!res.ok) return { ok: false, error: (res.data && res.data.error) || '팩을 열지 못했어요.' };
       const d = res.data;
@@ -216,7 +216,7 @@
     if (S.locked) return { ok: false };
     if (!(await waitWalletSaved())) return { ok: false };
     let r; try { r = await call('POST', '/api/quests/report', { stats, rev, beaten: beaten || [] }); } catch (e) { return { ok: false }; }
-    if (r.status === 409) { S.locked = true; banner('⚠ 다른 기기나 탭에서 먼저 저장되었어요. 이 화면의 변경은 저장되지 않으니 새로고침해 주세요.', true); return { ok: false }; }
+    if (r.status === 409) { S.locked = true; banner('다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.', true); return { ok: false }; }
     if (!r.ok) return { ok: false };
     const d = r.data;
     if (d.wallet) { rev = d.wallet.rev; S.wallet = strip(d.wallet); lastSnap = JSON.stringify(S.wallet); Economy.set({ ...Economy.get(), gold: d.wallet.gold }); }
@@ -227,10 +227,10 @@
   // v140 첫 걸음: 튜토리얼 첫 완료 보상 받기. 골드 보상은 서버가 지갑에 넣으므로 밀린 골드 저장을 먼저 끝내고 rev 를 같이 보낸다
   //  반환 {ok:true, reward:{gold}|{card:{name,rarity,isNew}}} | {ok:false, error}
   S.claimTutorial = async id => {
-    if (S.locked) return { ok: false, error: '다른 기기나 탭에서 먼저 저장되었어요. 새로고침해 주세요.' };
-    if (!(await waitWalletSaved())) return { ok: false, error: '골드 저장이 아직 끝나지 않았어요. 잠시 뒤 다시 시도해 주세요.' };
+    if (S.locked) return { ok: false, error: '다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.' };
+    if (!(await waitWalletSaved())) return { ok: false, error: '골드 저장 중이에요.' };
     let r; try { r = await call('POST', '/api/tutorial/claim', { tutorial: id, rev }); } catch (e) { return { ok: false, error: '서버에 연결할 수 없어요.' }; }
-    if (r.status === 409) { S.locked = true; banner('⚠ 다른 기기나 탭에서 먼저 저장되었어요. 이 화면의 변경은 저장되지 않으니 새로고침해 주세요.', true); return { ok: false, error: '다른 기기나 탭에서 먼저 저장되었어요. 새로고침해 주세요.' }; }
+    if (r.status === 409) { S.locked = true; banner('다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.', true); return { ok: false, error: '다른 곳에서 먼저 저장됐어요. 새로고침해 주세요.' }; }
     if (!r.ok) { S.loadProgress(); return { ok: false, error: (r.data && r.data.error) || '보상을 받지 못했어요.' }; }
     const d = r.data;
     if (d.wallet) { rev = d.wallet.rev; S.wallet = strip(d.wallet); lastSnap = JSON.stringify(S.wallet); Economy.set({ ...Economy.get(), gold: d.wallet.gold }); }

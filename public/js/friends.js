@@ -32,7 +32,7 @@ const Friends = (() => {
     const n = S.data ? S.data.incoming.length : 0, u = unreadTotal(), b = $id('friendBadge');
     if (b) { b.textContent = n + u > 99 ? '99+' : n + u; b.hidden = !(n + u); }
     const d = $id('friendMenuDesc');
-    if (d && S.data) { const on = S.data.friends.filter(f => f.online).length; d.textContent = (S.data.friends.length ? `${on}명 접속` : '') + (n ? ` · 요청 ${n}` : '') + (u ? ` · 새 메시지 ${u}` : ''); }   // v168 짧게
+    if (d && S.data) { const on = S.data.friends.filter(f => f.online).length; d.textContent = (S.data.friends.length ? `${on}명 접속` : '') + (n ? `, 요청 ${n}` : '') + (u ? `, 메시지 ${u}` : ''); }   // v168 짧게
   }
   const STATE = { idle: '접속 중', queue: '대전 상대 찾는 중', spectate: '관전 중', match: '대전 중', offline: '오프라인' };
   const MODE = { normal: '일반전', rank: '랭크전', friend: '친구 대전' };
@@ -63,7 +63,7 @@ const Friends = (() => {
                                          : `<button type="button" class="end-turn" data-act="invite" data-id="${f.id}">대전 신청</button>`);
       btns.push(`<button type="button" class="end-turn sub fr-del${S.armed === f.id ? ' armed' : ''}" data-act="remove" data-id="${f.id}">${S.armed === f.id ? '정말 삭제?' : '삭제'}</button>`);
       return `<div class="fr-item${on ? ' on' : ''}"><span class="fr-dot ${st}"></span><span class="fr-who">${who(f)}<small class="fr-st">${esc(label)}</small></span><span class="fr-btns">${btns.join('')}</span></div>`;
-    }).join('') : '<p class="fr-empty">아직 친구가 없어요. 위에서 아이디나 닉네임으로 친구 요청을 보내 보세요.</p>';
+    }).join('') : '<p class="fr-empty">친구 없음</p>';
   }
 
   // ---------- 버튼 ----------
@@ -99,11 +99,11 @@ const Friends = (() => {
   let nickArmed = '';
   async function saveNick(nickname) {
     msg('');
-    if (nickArmed !== nickname) { nickArmed = nickname; $id('frNickSave').textContent = `「${nickname}」 확정하기`; msg('닉네임은 한 번 정하면 바꿀 수 없어요. 맞으면 버튼을 한 번 더 눌러 주세요.'); return; }
+    if (nickArmed !== nickname) { nickArmed = nickname; $id('frNickSave').textContent = `${nickname} 확정`; msg('한 번 정하면 바꿀 수 없어요.'); return; }
     nickArmed = ''; $id('frNickSave').textContent = '닉네임 정하기';
     const r = await call('PUT', '/api/profile/nickname', { nickname });
     if (!r.ok) { msg(r.data.error || '닉네임을 저장하지 못했어요.'); return; }
-    msg(`닉네임을 「${r.data.me.nickname}」(으)로 정했어요.`, true);
+    msg(`닉네임: ${r.data.me.nickname}`, true);
     const gate = $id('nickGate'); if (gate) gate.remove();
     if (window.CURRENT_USER) Object.assign(window.CURRENT_USER, r.data.me);
     const un = document.querySelector('#userBar .uname'); if (un) un.textContent = '' + r.data.me.name;
@@ -131,7 +131,7 @@ const Friends = (() => {
     p.innerHTML = `<div class="cp-head"><span class="cp-who"><b class="cp-name"></b><small class="cp-st"></small></span><button type="button" class="cp-x" title="닫기">✕</button></div>
       <div class="cp-body"><button type="button" class="cp-more" hidden>이전 메시지 더 보기</button><div class="cp-list"></div></div>
       <p class="cp-err" role="alert" hidden></p>
-      <form class="cp-form" autocomplete="off"><textarea rows="1" maxlength="${MAX_LEN}" placeholder="메시지 입력" title="Enter 보내기 · Shift+Enter 줄바꿈"></textarea><button type="submit" class="end-turn">보내기</button></form>
+      <form class="cp-form" autocomplete="off"><textarea rows="1" maxlength="${MAX_LEN}" placeholder="메시지 입력" title="메시지"></textarea><button type="submit" class="end-turn">보내기</button></form>
       <div class="cp-count"></div>`;
     document.body.appendChild(p);
     p.querySelector('.cp-x').onclick = closeChat;
@@ -292,7 +292,7 @@ const Friends = (() => {
     for (const iv of S.invites.values()) {
       const left = iv.until - now; const sub = iv.el.querySelector('.ft-sub');
       if (left <= 0) { iv.el.remove(); S.invites.delete(iv.id); continue; }
-      sub.textContent = `${iv.note ? iv.note + ' · ' : ''}${sec(left)}초 안에 답해 주세요${iv.note ? '' : ' · 연습 대전'}`;
+      sub.textContent = `${iv.note ? iv.note + ', ' : ''}${sec(left)}초`;
     }
     if (S.sent) {
       const left = S.sent.until - now;

@@ -120,11 +120,11 @@ const ADV_TEMPLATE_REWARDS = { ynu_suneung: SUNEUNG_REWARDS, ynu_2: YNU2_REWARDS
 const ADV_TEMPLATE_REWARD_CARDS = { ynu_4: ['학사모', '학사모'] };   // v124 마지막 단계 첫 클리어 보상 카드 → 컬렉션 (일반 덱에도 넣을 수 있음)   // 틀의 보상 묶음 후보 (이미 추가된 보스도 비어 있으면 채운다)   // 틀의 보상 묶음 후보 (이미 추가된 보스도 비어 있으면 채운다)
 const ADV_TEMPLATES = {
   ynu: [   // [id, 이름, 아이콘, 소개, 덱(선택)]
-    ['ynu_suneung', '수능', 'images/boss/ynu_suneung.jpg', '대학수학능력시험 — 시험장의 모든 악몽이 한꺼번에 덮쳐 온다', SUNEUNG_CARDS.flatMap(n => [n, n])],
-    ['ynu_1', '1학년', 'images/boss/ynu_1a_statue.jpg', '새내기의 악몽 — 수강신청 대참사부터 본가로 날아온 학사경고 통지서까지', advFillDeck(YNU_1_CARDS, ADV_LEGEND_SHARE[1])],
-    ['ynu_2', '2학년', 'images/boss/ynu_2_fail.jpg', '현실 자각 — 잠수 타는 팀플 조원, 전공 F 폭격, 곰팡이 핀 자취방', advFillDeck(YNU_2_CARDS, ADV_LEGEND_SHARE[2])],
-    ['ynu_3', '3학년', 'images/ynu/ynu_3_midterm.jpg', '사망년 — 코딩테스트, 지옥의 중간고사, 조별과제 내부분열, 끝나지 않는 밤샘', advFillDeck(YNU_3_CARDS, ADV_LEGEND_SHARE[3])],
-    ['ynu_4', '4학년', 'images/ynu/ynu_4_senior.jpg', '마지막 학기 — 졸업 유예자, 캡스톤 디자인, 최종 면접. 이기면 졸업!', advFillDeck(YNU_4_CARDS, ADV_LEGEND_SHARE[4])],
+    ['ynu_suneung', '수능', 'images/boss/ynu_suneung.jpg', '시험장의 모든 악몽이 한꺼번에 덮쳐 온다', SUNEUNG_CARDS.flatMap(n => [n, n])],
+    ['ynu_1', '1학년', 'images/boss/ynu_1a_statue.jpg', '수강신청 대참사부터 학사경고 통지서까지', advFillDeck(YNU_1_CARDS, ADV_LEGEND_SHARE[1])],
+    ['ynu_2', '2학년', 'images/boss/ynu_2_fail.jpg', '잠수 타는 팀플 조원, 전공 F, 곰팡이 핀 자취방', advFillDeck(YNU_2_CARDS, ADV_LEGEND_SHARE[2])],
+    ['ynu_3', '3학년', 'images/ynu/ynu_3_midterm.jpg', '코딩테스트, 중간고사, 끝나지 않는 밤샘', advFillDeck(YNU_3_CARDS, ADV_LEGEND_SHARE[3])],
+    ['ynu_4', '4학년', 'images/ynu/ynu_4_senior.jpg', '졸업 유예자, 캡스톤 디자인, 최종 면접', advFillDeck(YNU_4_CARDS, ADV_LEGEND_SHARE[4])],
   ],
 };
 

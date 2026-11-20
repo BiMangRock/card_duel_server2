@@ -12,7 +12,7 @@
     box.innerHTML = `<form class="ng-panel" autocomplete="off">
       <h3>닉네임 정하기</h3>
       <p>닉네임은 대전 상대·친구·순위표에 보이는 이름이에요. 지금은 아이디 <b></b> 로 보이고 있어요.</p>
-      <input maxlength="12" placeholder="2~12자 · 한글·영문·숫자·_" required>
+      <input maxlength="12" placeholder="2~12자" required>
       <p class="ng-warn">⚠ 닉네임은 한 번 정하면 바꿀 수 없어요.</p>
       <p class="ng-err" role="alert"></p>
       <button type="submit" class="end-turn">이 닉네임으로 정하기</button>
@@ -27,7 +27,7 @@
       e.preventDefault();
       const nickname = inp.value.trim();
       if (!/^[A-Za-z0-9_가-힣]{2,12}$/.test(nickname)) { err.textContent = '닉네임은 2~12자의 한글·영문·숫자·밑줄(_)만 쓸 수 있어요.'; return; }
-      if (armed !== nickname) { armed = nickname; btn.textContent = `「${nickname}」 확정 (다시 누르기)`; err.textContent = ''; return; }
+      if (armed !== nickname) { armed = nickname; btn.textContent = `${nickname} 확정`; err.textContent = ''; return; }
       btn.disabled = true;
       try {
         const r = await fetch('/api/profile/nickname', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname }) });

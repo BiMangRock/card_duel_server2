@@ -41,7 +41,7 @@
           <div class="cm-box cm-fx">
             <div class="cm-tabs" id="cmTabs" role="tablist"></div>
             <div class="cm-tools">
-              <input id="cmSearch" placeholder="🔍 효과 검색 (예: 피해, 소환, 뽑기)" autocomplete="off">
+              <input id="cmSearch" placeholder="효과 검색" autocomplete="off">
               <label class="cm-adv"><input type="checkbox" id="cmAdv"> 고급 효과까지</label>
             </div>
             <div class="cm-list" id="cmList"></div>
@@ -120,7 +120,7 @@
     renderTabs();
     const box = q('cmList'); box.innerHTML = '';
     const list = visibleEntries();
-    if (!list.length) { box.innerHTML = `<p class="cm-empty">${st.search ? '찾는 효과가 없어요' : '「고급 효과까지」를 켜면 더 많은 효과가 보여요'}</p>`; return; }
+    if (!list.length) { box.innerHTML = `<p class="cm-empty">${st.search ? '찾는 효과가 없어요' : '효과 없음'}</p>`; return; }
     for (const e of list) {
       const on = st.sel.has(e.id), params = e.kind === 'summon' ? {} : (st.sel.get(e.id) || defaults(e));
       const row = document.createElement('div'); row.className = 'cm-item' + (on ? ' on' : '') + (e.kind === 'summon' ? ' cm-sum' : '');
@@ -175,7 +175,7 @@
           <div class="cm-tk-kw">${KW_KEYS.map(k => `<label><input type="checkbox" value="${k}"${t.kw.includes(k) ? ' checked' : ''}> ${esc(CardRules.KW_LABEL[k] || k)}</label>`).join('')}</div>
           ${depth < CardRules.CUSTOM.SUMMON_DEPTH ? `<div class="cm-tk-more">이 소환수도 소환하기:
             <label><input type="checkbox" class="tk-sub" value="death"${t.summons.some(c => c.when === 'death') ? ' checked' : ''}> 죽으면</label>
-            <label><input type="checkbox" class="tk-sub" value="end"${t.summons.some(c => c.when === 'end') ? ' checked' : ''}> 내 턴이 끝날 때</label></div>` : '<p class="cm-note">소환수가 부르는 소환은 여기까지예요 (3단계)</p>'}
+            <label><input type="checkbox" class="tk-sub" value="end"${t.summons.some(c => c.when === 'end') ? ' checked' : ''}> 내 턴이 끝날 때</label></div>` : '<p class="cm-note">3단계까지</p>'}
         </div>
       </div>`;
     const mini = box.querySelector('.cm-tk-card');
@@ -240,7 +240,7 @@
     const b = r.budget, pct = Math.min(100, Math.round(b.used / Math.max(1, b.limit) * 100));
     q('cmBar').style.width = pct + '%';
     q('cmBar').className = b.over ? 'over' : pct >= 85 ? 'near' : '';
-    q('cmBudgetTxt').textContent = `예산 ${b.used} / ${b.limit}` + (b.over ? ` · ${b.used - b.limit} 초과!` : ` · ${b.limit - b.used} 남음`);
+    q('cmBudgetTxt').textContent = `예산 ${b.used} / ${b.limit}` + (b.over ? `, ${b.used - b.limit} 초과` : '');
     q('cmBudgetTxt').className = b.over ? 'bad' : '';
 
     const ch = q('cmChosen');
@@ -256,7 +256,7 @@
     const btn = q('cmCreate');
     btn.disabled = !!blocked;
     const label = !st.edit ? '카드 만들기' : st.edit.status === 'rejected' ? '고쳐서 다시 승인 요청' : '고친 내용 저장';
-    btn.textContent = st.busy ? '저장하는 중…' : `${label} · ${fmt(price)}골드` + (gold < price ? ' (골드 부족)' : '');
+    btn.textContent = st.busy ? '저장하는 중…' : `${label}, ${fmt(price)}골드`;
   }
   async function checkNameRemote() {
     const n = q('cmName').value.trim();
@@ -319,9 +319,9 @@
   }
   function showDone(card, editedStatus) {
     const m = document.createElement('div'); m.className = 'cm-done';
-    const msg = editedStatus === 'pending' ? `「${esc(card.name)}」을(를) 고쳐서 <b>다시 승인 요청</b>을 보냈어요. 개발자가 승인하면 유저 대전에서도 쓸 수 있어요.`
-      : editedStatus ? `「${esc(card.name)}」을(를) 고쳤어요. 덱에 넣어 둔 카드도 새 버전으로 바뀌어요.<br>유저 대전에서 쓰려면 <b>승인 요청</b>을 보내세요.`
-      : `「${esc(card.name)}」 2장을 받았어요. 덱 편집에서 넣으면 <b>AI 대전·모험</b>에서 쓸 수 있어요.<br>유저 대전에서 쓰려면 아래 목록에서 <b>승인 요청</b>을 보내세요.`;
+    const msg = editedStatus === 'pending' ? `${esc(card.name)} 승인 요청함`
+      : editedStatus ? `${esc(card.name)} 저장함`
+      : `${esc(card.name)} 2장 획득`;
     m.innerHTML = `<div class="cm-done-box"><h4>${editedStatus ? '✏️ 카드를 고쳤어요!' : '✨ 카드를 만들었어요!'}</h4><div class="cm-done-card"></div>
       <p>${msg}</p>
       <button class="menu-btn primary" type="button">확인</button></div>`;
@@ -346,9 +346,9 @@
       const can = it.status === 'made' || it.status === 'rejected';
       row.innerHTML = `<div class="cm-mine-card"></div>
         <div class="cm-mine-info"><b>${esc(it.name)}</b> <span class="cm-badge s-${STATUS_CLASS[it.status]}">${esc(it.statusLabel)}</span>
-          <p>${it.status === 'approved' ? '유저 대전에서도 쓸 수 있어요' : it.status === 'pending' ? '개발자 승인을 기다리는 중이에요' : 'AI 대전·모험에서 쓸 수 있어요'}</p>
+          <p>${it.status === 'approved' ? '승인됨' : it.status === 'pending' ? '승인 대기' : '승인 전'}</p>
           ${it.note ? `<p class="cm-note">💬 ${esc(it.note)}</p>` : ''}
-          ${can ? `<div class="cm-mine-btns"><button type="button" class="cm-edit">✏️ ${it.status === 'rejected' ? '고쳐서 다시 요청' : '고치기'} · ${CardRules.CUSTOM.EDIT_GOLD}골드</button><button type="button" class="cm-req">${it.status === 'rejected' ? '그대로 다시 요청' : '승인 요청 보내기'}</button></div>` : ''}
+          ${can ? `<div class="cm-mine-btns"><button type="button" class="cm-edit">✏️ ${it.status === 'rejected' ? '고쳐서 다시 요청' : '고치기'}, ${CardRules.CUSTOM.EDIT_GOLD}골드</button><button type="button" class="cm-req">${it.status === 'rejected' ? '그대로 다시 요청' : '승인 요청 보내기'}</button></div>` : ''}
           ${it.version > 1 ? `<p class="cm-ver">v${it.version}</p>` : ''}</div>`;
       try { const el = cardEl(it.card); el.classList.add('cm-card-sm'); row.querySelector('.cm-mine-card').appendChild(el); } catch (_) {}
       const eb = row.querySelector('.cm-edit'); if (eb) eb.onclick = () => startEdit(it);

@@ -63,7 +63,7 @@
     const username = $('username').value.trim(), password = $('password').value, nickname = $('nickname').value.trim();
     if (mode === 'signup' && !/^[A-Za-z0-9_가-힣]{2,12}$/.test(nickname)) { err.textContent = '닉네임은 2~12자의 한글·영문·숫자·밑줄(_)만 쓸 수 있어요.'; return; }
     if (mode === 'signup' && password !== $('password2').value) { err.textContent = '비밀번호 확인이 달라요.'; return; }
-    if (mode === 'signup' && !await askBox(`닉네임을 「${nickname}」(으)로 정할까요?`, '한 번 정하면 바꿀 수 없어요.', '이 닉네임으로 가입')) return;
+    if (mode === 'signup' && !await askBox(`${nickname}(으)로 정할까요?`, '한 번 정하면 바꿀 수 없어요.', '이 닉네임으로 가입')) return;
     go.disabled = true;
     try {
       const r = await fetch(mode === 'signup' ? '/api/signup' : '/api/login', {

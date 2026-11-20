@@ -54,7 +54,7 @@
       <div class="hinfo">
         <div class="name">상대</div>
         <div class="hp"><span class="armor-next" id="aiArmorNext"></span><span class="corpse-skull" id="aiCorpse" title="시체"></span></div>
-        <div class="pile">손패 <span id="aiHandCnt"></span> · 덱 <span id="aiDeckCnt"></span></div>
+        <div class="pile">손패 <span id="aiHandCnt" style="margin-right:.6em"></span>덱 <span id="aiDeckCnt"></span></div>
       </div>
     </div>
     <div class="label">상대 필드</div>
@@ -89,7 +89,7 @@
 <div id="overlay"><div id="overlayArt"></div><h2 id="overlayText"></h2><p id="overlayReward"></p><button class="end-turn" id="pvpAgainBtn" style="display:none">한 판 더</button><button class="end-turn sub" id="pvpReplayBtn" style="display:none">리플레이</button><button class="end-turn" onclick="goToMenu()">처음 화면으로</button></div>
 
 <div id="mulliganModal"><h3 id="mulliganTitle"></h3><div id="mulliganGrid"></div><button class="end-turn" id="mulliganOk"></button></div>
-<div id="discoverModal"><div class="deck-panel"><div class="deck-head"><h3 id="discoverTitle">발견 — 한 장을 고르세요</h3></div><p class="note" id="discoverNote"></p><div class="deck-grid" id="discoverGrid"></div></div></div>
+<div id="discoverModal"><div class="deck-panel"><div class="deck-head"><h3 id="discoverTitle">발견</h3></div><p class="note" id="discoverNote"></p><div class="deck-grid" id="discoverGrid"></div></div></div>
 <div id="deckModal" onclick="if(event.target===this) closeDeck()">
   <div class="deck-panel">
     <div class="deck-head"><h3 id="deckTitle"></h3><button class="end-turn sub" onclick="closeDeck()">닫기</button></div>
@@ -171,7 +171,7 @@
       <div class="mm-modes">
         <button type="button" class="mm-mode ai" onclick="showScreen('difficulty')"><span class="mm-art"><span class="mm-txt"><span class="mm-tag">혼자서</span><b>AI 대전</b><span class="mm-gold">이기면 골드</span></span></span></button>
         <button type="button" class="mm-mode pvp" onclick="PvpClient.openScreen()"><span class="mm-art"><span class="mm-txt"><span class="mm-tag">실시간</span><b>유저 대전</b><span class="mm-gold">이기면 <span class="pvpWinGold">50</span>골드</span></span></span></button>
-        <button type="button" class="mm-mode adv" onclick="openAdventure()"><span class="mm-art"><span class="mm-txt"><span class="mm-tag">스토리</span><b>모험 모드</b><span class="mm-desc">수능부터 졸업까지, 보스를 차례로 넘어서세요</span><span class="mm-gold">첫 클리어 보상 카드</span></span></span></button>
+        <button type="button" class="mm-mode adv" onclick="openAdventure()"><span class="mm-art"><span class="mm-txt"><span class="mm-tag">스토리</span><b>모험 모드</b><span class="mm-gold">첫 클리어 보상 카드</span></span></span></button>
       </div>
       <div class="mm-dev">
         <button class="menu-btn dev" id="btnTest" style="display:none" onclick="openTestScreen()">테스트<span class="desc">개발자 전용 · 중급2 AI와 연습 · 내 영웅 체력·시작 마나·덱 장수를 직접 설정 (보상·골드 없음)</span></button>
@@ -195,7 +195,7 @@
     <button class="menu-btn primary" id="shopBuy1" onclick="shopBuy(1)"></button>
     <button class="menu-btn" id="shopBuy5" onclick="shopBuy(5)"></button>
     <p class="notice warn" id="shopMsg"></p>
-    <button class="menu-btn cm-open" id="shopMakeBtn" onclick="openCardMaker()">카드 직접 만들기<span class="desc">효과를 골라 나만의 카드를 만들어요 · 100골드</span></button>
+    <button class="menu-btn cm-open" id="shopMakeBtn" onclick="openCardMaker()">카드 직접 만들기<span class="desc">100골드</span></button>
     <button class="menu-btn" id="shopHistBtn" onclick="toggleShopHistory()">최근 개봉 기록</button>
     <div class="bet-box shop-box" id="shopHistory" style="display:none"></div>
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
@@ -229,7 +229,7 @@
     <div class="boss-list" id="bossList"></div>
     <button class="menu-btn primary" id="advOfferBtn" style="display:none" onclick="showOffer(ServerStore.offers[0])"></button>
     <button class="menu-btn" id="advDeckBtn" onclick="openAdvDeckEditor()">모험 덱 편집<span class="desc" id="advDeckDesc"></span></button>
-    <p class="sub" id="advFreeNote" style="display:none">자유 보스전은 일반 덱으로 싸워요.</p>
+    <p class="sub" id="advFreeNote" style="display:none">일반 덱 사용</p>
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
   </div>
   <div class="screen" id="screen-bossedit">
@@ -356,7 +356,7 @@
       <div class="rec"><img src="/images/pvp/badge_lose.webp" alt="패"><b id="pvpLosses">0</b></div>
       <div class="rec"><img src="/images/pvp/badge_draw.webp" alt="무"><b id="pvpDraws">0</b></div>
     </div>
-    <div class="pvp-gauge" id="pvpGauge" title="오늘 거둔 승리 (10승마다 한 바퀴)">
+    <div class="pvp-gauge" id="pvpGauge" title="오늘 승리">
       <img src="/images/pvp/gauge.webp" alt=""><div class="gbar"><i id="pvpGaugeFill"></i></div><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i><i class="ggem off"></i>
     </div>
     <p class="sub gcap" id="pvpTodayCap" hidden>오늘 <b id="pvpToday">0</b>승</p>
@@ -364,7 +364,7 @@
       <div class="row2" id="pvpWaitingRow" hidden><span>대기 중</span><b id="pvpWaiting">-</b></div>
     </div>
     <p class="notice warn" id="pvpMsg" style="display:none"></p>
-    <button class="menu-btn" id="pvpFallbackBtn" style="display:none">랭크전 상대가 없어요 — 일반전으로 바꾸기</button>
+    <button class="menu-btn" id="pvpFallbackBtn" style="display:none">일반전으로 바꾸기</button>
     <button class="menu-btn primary" id="pvpFindBtn" disabled><img id="pvpSpin" class="pvp-spin" src="/images/pvp/pvp_spinner.webp" alt="" style="display:none"><span id="pvpFindTxt">서버에 연결하는 중…</span></button>
     <button class="menu-btn" id="pvpReplaysBtn">지난 판 다시 보기</button>
     <button class="menu-btn back" id="pvpBackBtn">뒤로</button>
@@ -374,10 +374,10 @@
     <div class="fr-box">
       <div class="fr-me"><span>내 아이디 <b id="frMyId">-</b></span><span>보이는 이름 <b id="frMyName">-</b></span></div>
       <form class="fr-row" id="frNickForm" autocomplete="off" hidden>
-        <input id="frNick" maxlength="12" placeholder="닉네임 (2~12자 · 한글·영문·숫자·_)">
+        <input id="frNick" maxlength="12" placeholder="닉네임 2~12자">
         <button type="submit" class="end-turn" id="frNickSave">닉네임 정하기</button>
       </form>
-      <p class="fr-note" id="frNickNote">닉네임은 대전 상대·친구·순위표에 보이는 이름이에요. 한 번 정하면 바꿀 수 없어요.</p>
+      <p class="fr-note" id="frNickNote">한 번 정하면 바꿀 수 없어요</p>
     </div>
     <div class="fr-box">
       <form class="fr-row" id="frAddForm" autocomplete="off">
@@ -389,7 +389,7 @@
     <div class="fr-section" id="frIncomingSec" hidden><h4>받은 친구 요청</h4><div class="fr-list" id="frIncoming"></div></div>
     <div class="fr-section"><h4>친구 <small id="frCount"></small></h4><div class="fr-list" id="frList"><p class="fr-empty">불러오는 중…</p></div></div>
     <div class="fr-section" id="frOutgoingSec" hidden><h4>보낸 요청</h4><div class="fr-list" id="frOutgoing"></div></div>
-    <p class="notice">친구 대전은 보상·랭크에 반영되지 않아요.</p>
+    <p class="notice">친구 대전은 기록에 남지 않아요</p>
     <button class="menu-btn back" onclick="Friends.close()">뒤로</button>
   </div>
   <div class="screen" id="screen-difficulty">
@@ -398,7 +398,7 @@
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
   </div>
   <div class="screen" id="screen-playmode">
-    <h3 id="playmodeTitle">중급 AI — 방식 선택</h3>
+    <h3 id="playmodeTitle">중급</h3>
     <button class="menu-btn" id="btnNormalMode" onclick="startGame(curKey,{mode:'normal'})"></button>
     <button class="menu-btn" id="btnBetMode" onclick="openBetScreen()"></button>
     <button class="menu-btn back" onclick="showScreen('difficulty')">뒤로</button>
@@ -418,12 +418,12 @@
       </div>
       <div class="bet-result" id="betResult"></div>
     </div>
-    <p class="notice warn">시작하면 바로 차감 · 중간에 나가면 환불 없음 · 200% 이상은 상대 AI에 치트</p>
+    <p class="notice warn">중간에 나가면 환불 없음</p>
     <button class="menu-btn primary" id="betGo" onclick="confirmBet()">배팅하고 시작</button>
     <button class="menu-btn back" onclick="showScreen('playmode')">뒤로</button>
   </div>
 </div>
-<div id="rotateHint" role="alertdialog" aria-label="가로 화면 안내"><div class="rh-icon img"><img src="/images/ui/btn_rotate.webp" alt="" draggable="false"></div><p>가로로 돌려서 플레이해 주세요</p><button type="button" id="rotateFsBtn">전체화면 · 가로로 보기</button><small></small></div>
+<div id="rotateHint" role="alertdialog" aria-label="가로 화면 안내"><div class="rh-icon img"><img src="/images/ui/btn_rotate.webp" alt="" draggable="false"></div><p>가로로 돌려 주세요</p><button type="button" id="rotateFsBtn">전체화면</button><small></small></div>
 <button type="button" id="logToggle" aria-label="전투 기록"><img src="/images/ui/btn_log.webp" alt="" draggable="false"></button>
 
 

@@ -18,7 +18,7 @@ const MenuTour = (() => {
   //  sel: 밝게 남길 곳 · until: 끝났는지 · lost: 엉뚱한 곳으로 빠졌으면 참 → back 단계로 돌아감 · skip: 참이면 건너뜀
   const STEPS = [
     { ch: 0, title: '메뉴 둘러보기', type: 'info',
-      say: [['J1', `마지막 5부예요! 이번엔 싸움 밖에서 할 일들을 둘러봐요. ${KW('덱 만들기')}, ${KW('상점')}, ${KW('카드 제작')}, ${KW('퀘스트')}, 그리고 ${KW('모드')}예요.`],
+      say: [['J1', `이번엔 싸움 밖을 둘러봐요.`],
             ['G2', '칼은 안 휘두르고 메뉴 구경이라니. 마법사다운 한가한 짓이군.'],
             ['J2', '준비가 반이에요, 가로쉬. 안내하는 곳만 밝게 남겨 둘게요. 거기를 직접 눌러 보세요.']] },
     // ---- 덱 ----
@@ -26,7 +26,7 @@ const MenuTour = (() => {
       say: [['J1', `먼저 ${KW('📚 내 덱')}이에요. 대전에 들고 갈 카드 30장을 정하는 곳이죠.`]],
       task: '<b>📚 내 덱</b>을 누르세요.' },
     { ch: 0, title: '덱 슬롯', type: 'info', sel: '#deckListModal .deck-panel',
-      say: [['J1', `덱은 여러 개 저장해 둘 수 있어요(${KW('덱 슬롯')}). <b>✔ 사용 중</b>인 덱이 AI 대전·유저 대전에 쓰여요.`],
+      say: [['J1', `덱은 여러 개 저장할 수 있어요. <b>사용 중</b>인 덱으로 싸워요.`],
             ['J3', '덱마다 <b>영웅 능력</b>을 따로 정할 수 있고, <b>📋 코드</b>로 친구에게 덱을 보내거나 <b>📥 코드로 가져오기</b>로 받을 수도 있어요.']] },
     { ch: 0, title: '새 덱 만들기', type: 'do', sel: '#dlNew', until: () => !!q('#confirmBox') || shown('deckEditor'), skip: deckFull,
       say: [['J2', '직접 하나 만들어 볼까요? <b>＋ 새 덱</b>을 눌러요.']],
@@ -37,8 +37,8 @@ const MenuTour = (() => {
       task: '덱 이름을 정하고 <b>확인</b>을 누르세요.' },
     { ch: 0, title: '덱 편집 화면', type: 'info', sel: '#edGrid', skip: () => !shown('deckEditor'),
       say: [['J1', '여기가 덱 편집 화면이에요. 카드를 누르거나 <b>＋ / −</b>로 넣고 빼요. 같은 카드는 <b>2장까지</b>, 모두 <b>30장</b>이어야 저장할 수 있어요.'],
-            ['J3', `카드 아래 <b>보유 n장</b>을 보세요. 가진 만큼만 넣을 수 있어요. ${KW('🔒 미보유')} 카드는 상점이나 제작으로 얻어야 해요.`],
-            ['J2', '<b>🔍 필터</b>를 열면 등급·비용·룬별로 골라 보고, 마나 곡선(비용 분포)도 볼 수 있어요.']] },
+            ['J3', `가진 카드만 넣을 수 있어요.`],
+            ['J2', '<b>필터</b>로 등급이나 비용별로 볼 수 있어요.']] },
     { ch: 0, title: '추천 덱으로 채우기', type: 'do', sel: '#edReset', until: edTotal30, skip: () => !shown('deckEditor'),
       say: [['J1', '처음엔 30장을 다 고르기 어렵죠. <b>추천 덱</b>을 누르면 바로 쓸 수 있는 30장이 채워져요. 거기서 한두 장씩 바꿔 가며 내 덱으로 만들면 돼요.']],
       task: '<b>추천 덱</b>을 누르세요.' },
@@ -55,11 +55,11 @@ const MenuTour = (() => {
     { ch: 1, title: '상점', type: 'do', sel: 'button[onclick="openShop()"]', until: () => screenOn('shop'),
       say: [['J1', `카드를 모으는 첫 번째 방법, ${KW('🛒 상점')}이에요.`]], task: '<b>🛒 상점</b>을 누르세요.' },
     { ch: 1, title: '카드 팩', type: 'info', sel: '#shopRates',
-      say: [['J1', () => `카드 팩은 <b>${fmt(SHOP.PACK_PRICE)}골드</b>에 ${SHOP.PACK_SIZE}장. 등급별로 나올 확률과 <b>내가 모은 수(수집 n/전체)</b>가 여기 보여요.`],
-            ['J3', '오래 안 나오면 <b>확정</b>으로 줘요. 아래 「특급 이상 확정까지」, 「전설 확정까지」가 남은 팩 수예요.']] },
+      say: [['J1', () => `카드 팩은 ${fmt(SHOP.PACK_PRICE)}골드에 ${SHOP.PACK_SIZE}장이에요.`],
+            ['J3', '오래 안 나오면 확정으로 줘요.']] },
     { ch: 1, title: '골드와 남는 카드', type: 'info', sel: '#shopDupNote',
       say: [['J1', '골드는 <b>대전 승리</b>, <b>일일 퀘스트</b>, <b>배팅</b>, 그리고 튜토리얼 보상으로 모여요.'],
-            ['J3', `같은 카드가 2장을 넘게 나오면 ${KW('남는 카드')}로 쌓여요. 버려지는 게 아니라 카드 제작에서 <b>가루</b>로 바꿀 수 있어요.`],
+            ['J3', `2장을 넘게 나온 카드는 ${KW('남는 카드')}가 돼요. 가루로 바꿀 수 있어요.`],
             ['G2', '팩을 뜯는다고? 진짜 전사는 전리품을 빼앗는다!'],
             ['J2', '지금 팩을 사지 않아도 돼요. 나중에 골드가 모이면 와요.']] },
     { ch: 1, title: '메뉴로', type: 'do', sel: '#screen-shop .menu-btn.back', until: () => screenOn('main'),
@@ -68,9 +68,9 @@ const MenuTour = (() => {
     { ch: 2, title: '카드 제작', type: 'do', sel: 'button[onclick="openCraft()"]', until: () => shown('craftModal'),
       say: [['J1', `두 번째 방법은 ${KW('🔨 카드 제작')}이에요. 원하는 카드를 콕 집어서 만들 수 있어요.`]], task: '<b>🔨 카드 제작</b>을 누르세요.' },
     { ch: 2, title: '가루', type: 'info', sel: '#craftModal .deck-panel',
-      say: [['J1', () => `카드를 <b>분해</b>하면 ${KW('가루')}가 나오고, 가루로 카드를 <b>제작</b>해요. 분해: 일반 ${D()['일반']} · 희귀 ${D()['희귀']} · 특급 ${D()['특급']} · 전설 ${D()['전설']}.`],
-            ['J3', () => `제작은 일반 ${C()['일반']} · 희귀 ${C()['희귀']} · 특급 ${C()['특급']} · 전설 ${fmt(C()['전설'])}. 분해보다 비싸니까, 쓰지 않는 카드를 모아 정말 원하는 카드로 바꾸는 거예요.`],
-            ['J2', '<b>⚒ 일괄 추출</b>은 덱 한도(2장)를 넘는 <b>남는 카드</b>만 한 번에 가루로 바꿔요. 덱에 쓰는 장수는 분해되지 않으니 안심하세요.']] },
+      say: [['J1', () => `카드를 <b>분해</b>하면 ${KW('가루')}가 나오고, 가루로 카드를 <b>제작</b>해요.`],
+            ['J3', () => '안 쓰는 카드를 원하는 카드로 바꾸는 곳이에요.'],
+            ['J2', '<b>일괄 추출</b>은 2장을 넘는 카드만 한꺼번에 가루로 바꿔요.']] },
     { ch: 2, title: '닫기', type: 'do', sel: 'button[onclick="closeCraft()"]', until: () => !shown('craftModal'),
       say: [['J1', '<b>닫기</b>를 눌러요.']], task: '<b>닫기</b>를 누르세요.' },
     // ---- 퀘스트 ----
@@ -84,19 +84,19 @@ const MenuTour = (() => {
       say: [['J1', '<b>뒤로</b>를 눌러요.']], task: '<b>뒤로</b>를 누르세요.' },
     // ---- 모드 ----
     { ch: 4, title: '모드', type: 'info', sel: '#screen-main .mm-modes',
-      say: [['J1', `마지막은 ${KW('모드')}! 메인 화면 가운데 카드 세 장이 대전 종류예요. 누르면 바로 시작해요.`]] },
-    { ch: 4, title: 'AI 대전 · 배팅', type: 'info', sel: '#screen-main button[onclick="showScreen(\'difficulty\')"]',
-      say: [['J1', `${KW('AI 대전')}: 컴퓨터와 1대1. 난이도를 고르고, 이기면 골드를 받아요. 연습하기 가장 좋아요.`],
-            ['J3', `난이도를 고른 뒤 ${KW('배팅')}을 고르면 골드를 걸고 싸워요. 배당이 높을수록 상대 AI가 <b>치트</b>를 더 써요. 질 수도 있으니 조심!`]] },
+      say: [['J1', `마지막은 ${KW('모드')}예요. 가운데 카드 세 장이 대전 종류예요.`]] },
+    { ch: 4, title: 'AI 대전', type: 'info', sel: '#screen-main button[onclick="showScreen(\'difficulty\')"]',
+      say: [['J1', `${KW('AI 대전')}은 컴퓨터와 싸워요. 연습하기 좋아요.`],
+            ['J3', `${KW('배팅')}을 고르면 골드를 걸어요. 배당이 높을수록 AI가 치트를 써요.`]] },
     { ch: 4, title: '유저 대전', type: 'info', sel: '#screen-main button[onclick="PvpClient.openScreen()"]',
-      say: [['J1', `${KW('유저 대전')}: 다른 사람과 실시간으로! <b>일반전</b>과 점수가 걸린 <b>랭크전</b>이 있고, 턴마다 시간 제한이 있어요.`],
+      say: [['J1', `${KW('유저 대전')}은 다른 사람과 싸워요. 일반전과 랭크전이 있어요.`],
             ['J3', '메인 메뉴의 <b>👥 친구</b>에서 친구에게 대전을 신청하거나 친구 판을 <b>관전</b>할 수 있고, 지난 판은 <b>🎞 리플레이</b>로 다시 볼 수 있어요.'],
             ['G3', '유저 대전이라면 내가 기다리고 있으마. 거기선 봐주지 않는다!']] },
     { ch: 4, title: '모험 모드', type: 'info', sel: '#screen-main button[onclick="openAdventure()"]',
-      say: [['J1', `${KW('🗺 모험 모드')}: 정해진 덱을 쓰는 <b>보스</b>들에게 도전해요. 도장깨기 챕터는 앞 단계를 깨야 다음이 열려요.`],
+      say: [['J1', `${KW('🗺 모험 모드')}에서는 보스를 차례로 이겨요.`],
             ['J2', '보스를 처음 깨면 <b>모험 전용 카드</b>를 줘요. 모험 전용 카드는 <b>모험 덱</b>에만 넣을 수 있어요.']] },
     { ch: 4, title: '그 밖의 메뉴', type: 'info', sel: '#screen-main',
-      say: [['J1', '왼쪽 메뉴의 <b>영웅 능력</b>에서 기본 영웅 능력을 고를 수 있어요. 위쪽 덱 · 능력 칸을 눌러도 돼요.'],
+      say: [['J1', '영웅 능력은 왼쪽 메뉴에서 고를 수 있어요.'],
             ['J3', '<b>🎓 튜토리얼</b>에서 튜토리얼을 언제든 다시 할 수 있어요.'],
             ['J2', '효과·규칙·모드 설명은 <b>🎓 튜토리얼</b> 맨 밑의 <b>📖 가이드</b>에 있어요. 튜토리얼을 안 깨도 볼 수 있어요!']] },
   ];
@@ -173,9 +173,9 @@ const MenuTour = (() => {
     if (!st) return finish();
     const box = els.coach.querySelector('.mt-chat'), sep = document.createElement('div'); sep.className = 'mt-sep'; sep.textContent = st.title; box.appendChild(sep);
     els.coach.querySelector('.mt-title').textContent = st.title;
-    els.coach.querySelector('.mt-badge').textContent = `5부 · ${idx + 1}/${STEPS.length}`;
-    els.coach.querySelector('.mt-chap').innerHTML = CHAPS.map((n, i) => `<i class="${i < st.ch ? 'done' : i === st.ch ? 'cur' : ''}" title="${n}"></i>`).join('') + `<span>${st.ch + 1}/${CHAPS.length} · ${CHAPS[st.ch]}</span>`;
-    const tk = els.coach.querySelector('.mt-task'); tk.innerHTML = st.task ? '해 보기 · ' + st.task : ''; tk.style.display = st.task ? '' : 'none';
+    els.coach.querySelector('.mt-badge').textContent = `5부 ${idx + 1}/${STEPS.length}`;
+    els.coach.querySelector('.mt-chap').innerHTML = CHAPS.map((n, i) => `<i class="${i < st.ch ? 'done' : i === st.ch ? 'cur' : ''}" title="${n}"></i>`).join('') + `<span>${CHAPS[st.ch]}</span>`;
+    const tk = els.coach.querySelector('.mt-task'); tk.innerHTML = st.task ? st.task : ''; tk.style.display = st.task ? '' : 'none';
     const t = st.sel && q(st.sel); if (t && t.scrollIntoView) try { t.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {}
     say(st.say || []); place();
   }
@@ -193,7 +193,7 @@ const MenuTour = (() => {
   }
   async function finish() {
     done = true; flush();
-    els.coach.querySelector('.mt-title').textContent = '완료!'; els.coach.querySelector('.mt-badge').textContent = '5부 · 완료';
+    els.coach.querySelector('.mt-title').textContent = '완료!'; els.coach.querySelector('.mt-badge').textContent = '5부 완료';
     els.coach.querySelector('.mt-task').style.display = 'none';
     els.coach.querySelector('.mt-chap').innerHTML = CHAPS.map(() => '<i class="done"></i>').join('') + '<span>모두 완료</span>';
     place(); els.ring.style.display = 'none';
@@ -202,9 +202,9 @@ const MenuTour = (() => {
     try { const r = await fetch('/api/tutorial/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ tutorial: 'menu' }) }); if (r.ok) { const d = await r.json(); state = (d.state && d.state.menu) || 'ready'; } } catch (_) {}
     try { await ServerStore.loadProgress(); } catch (_) {}
     const t = PROGRESS.TUTORIALS.find(x => x.id === 'menu'), box = document.createElement('div'); box.className = 'mt-win';
-    box.innerHTML = state === 'ready' ? `🎁 <b>첫 완료 보상(${t.rewardText})</b>이 준비됐어요!<div class="mt-wbtns"><button type="button" class="mt-claim">🎁 지금 받기</button><button type="button" class="mt-close">나중에 (첫 걸음에서)</button></div>`
+    box.innerHTML = state === 'ready' ? `🎁 <b>${t.rewardText}</b><div class="mt-wbtns"><button type="button" class="mt-claim">받기</button><button type="button" class="mt-close">나중에</button></div>`
       : state === 'claimed' ? '첫 완료 보상은 이미 받았어요.<div class="mt-wbtns"><button type="button" class="mt-close">닫기</button></div>'
-      : '⚠ 서버에 완료 기록을 남기지 못했어요. 다시 해 주세요.<div class="mt-wbtns"><button type="button" class="mt-close">닫기</button></div>';
+      : '완료 기록을 남기지 못했어요.<div class="mt-wbtns"><button type="button" class="mt-close">닫기</button></div>';
     const chat = els.coach.querySelector('.mt-chat'); setTimeout(() => { flush(); chat.appendChild(box); chat.scrollTop = chat.scrollHeight; }, 1600);
     const cl = box.querySelector('.mt-claim'); if (cl) cl.onclick = () => { stop(); claimTutorial('menu'); };
     box.querySelector('.mt-close').onclick = () => stop();

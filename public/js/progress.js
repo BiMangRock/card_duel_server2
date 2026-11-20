@@ -10,7 +10,7 @@ const PROGRESS = {
   MAX_GAMES_PER_DAY: 0,       // 하루에 퀘스트 진행으로 세는 판 수 (0 = 제한 없음)
   QUESTS: [
     { id: 'win2',     text: '게임에서 2번 승리하기',            stat: 'wins',    goal: 2,  gold: 60 },
-    { id: 'play3',    text: '게임 3판 하기 (승패 상관없음)',     stat: 'games',   goal: 3,  gold: 40 },
+    { id: 'play3',    text: '게임 3판 하기',     stat: 'games',   goal: 3,  gold: 40 },
     { id: 'spell10',  text: '주문 카드 10장 쓰기',              stat: 'spells',  goal: 10, gold: 50 },
     { id: 'minion15', text: '하수인 15마리 내기',               stat: 'minions', goal: 15, gold: 50 },
     { id: 'attack20', text: '하수인으로 20번 공격하기',         stat: 'attacks', goal: 20, gold: 50 },
@@ -19,7 +19,7 @@ const PROGRESS = {
     { id: 'big6',     text: '비용 5 이상 카드 6장 내기',         stat: 'big',     goal: 6,  gold: 50 },
     { id: 'pvp1',     text: '유저 대전 1판 하기',               stat: 'pvp',     goal: 1,  gold: 60 },
     { id: 'adv1',     text: '모험 모드 보스전 1판 하기',         stat: 'adv',     goal: 1,  gold: 50 },
-    { id: 'cheat2',   text: '특성이 있는 상대에게 2번 승리하기 (모험 · AI 배팅)', stat: 'cheatWins', goal: 2, gold: 70 },   // v163
+    { id: 'cheat2',   text: '특성이 있는 상대에게 2번 승리하기', stat: 'cheatWins', goal: 2, gold: 70 },   // v163
   ],
   CODEX_GOLD: 100,   // v163 특성 도감: 처음 이겨낸 특성마다 (서버가 지급)
   // ---- 첫 걸음 (v140): 튜토리얼 첫 완료 보상. 계정당 한 번만, 받으면 목록에서 사라진다. 일일 퀘스트 칸·바꾸기와 무관 ----
@@ -28,15 +28,15 @@ const PROGRESS = {
   //  needs: 이 튜토리얼을 끝내야 열린다 (화면에서 잠금)
   TUTORIALS: [
     { id: 'basic',    name: '기본 튜토리얼', text: '기본 튜토리얼 완료하기', url: '/tutorial/index.html',
-      desc: '처음이라면 · 대사와 함께 마나·도발·주문·돌진 등 기본 규칙을 직접 해 보며 배웁니다', reward: { gold: 1000 }, rewardText: '1,000골드' },
+      desc: '마나, 도발, 주문, 돌진', reward: { gold: 1000 }, rewardText: '1,000골드' },
     { id: 'advanced', name: '고급 튜토리얼', text: '고급 튜토리얼 완료하기', url: '/tutorial/advanced.html', needs: 'basic',
-      desc: '기본을 익혔다면 · 죽음의 메아리·발견·동결·주문 공격력 등 심화 규칙을 배웁니다', reward: { rarity: '전설' }, rewardText: '무작위 전설 카드 1장' },
+      desc: '죽음의 메아리, 발견, 빙결, 주문 공격력', reward: { rarity: '전설' }, rewardText: '무작위 전설 카드 1장' },
     { id: 'part1',    name: '실전 기본', text: '실전 기본 튜토리얼 완료하기', url: '/tutorial/part1.html', needs: 'advanced',
-      desc: '실제 대전처럼 · 선공·후공과 동전, 멀리건, 영웅 능력, 방어도, 하수인 놓을 자리를 배웁니다', reward: { rarity: '희귀' }, rewardText: '무작위 희귀 카드 1장' },
+      desc: '선공과 후공, 멀리건, 영웅 능력, 방어도', reward: { rarity: '희귀' }, rewardText: '무작위 희귀 카드 1장' },
     { id: 'part2',    name: '키워드', text: '키워드 튜토리얼 완료하기', url: '/tutorial/part2.html', needs: 'part1',
-      desc: '모면·생명력 흡수·환생·은신·독성·과부하·침묵·변신·선택·이중 주문·잔상·룬·질풍을 직접 써 봅니다', reward: { rarity: '특급' }, rewardText: '무작위 특급 카드 1장' },
+      desc: '모면, 생명력 흡수, 은신, 독성, 침묵 외', reward: { rarity: '특급' }, rewardText: '무작위 특급 카드 1장' },
     { id: 'menu',     name: '메뉴 둘러보기', text: '메뉴 둘러보기 튜토리얼 완료하기', url: '/#tour', needs: 'part2',
-      desc: '게임 밖 기능 · 덱 만들기와 덱 슬롯, 상점, 카드 제작, 퀘스트, 각 모드를 제이나와 함께 둘러봅니다', reward: { odds: { '희귀': 60, '특급': 30, '전설': 10 } }, rewardText: '무작위 희귀·특급·전설 카드 1장' },
+      desc: '덱, 상점, 카드 제작, 퀘스트', reward: { odds: { '희귀': 60, '특급': 30, '전설': 10 } }, rewardText: '무작위 희귀·특급·전설 카드 1장' },
   ],
   // 한 판에서 인정하는 최대치 (이상한 값을 막는 상한)
   STAT_CAP: { games: 1, wins: 1, spells: 999, minions: 999, attacks: 999, face: 9999, powers: 999, big: 999, pvp: 1, adv: 1, cheatWins: 1 },   // v133 판당 상한 사실상 없음 (판 수·승리만 1)

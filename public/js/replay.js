@@ -28,7 +28,7 @@ const Replay = (() => {
         st = r.state; evs = r.events;
         let what = ACT[step.a.type] || step.a.type;
         if (step.a.type === 'PLAY_CARD') { const prev = states[states.length - 1].seats[step.s].hand.find(c => c.id === step.a.cardId); if (prev) what = `「${prev.name}」`; }
-        label = `${R.names[step.s]} · ${what}${step.auto ? ' · 시간 초과' : ''}`;
+        label = `${R.names[step.s]}: ${what}${step.auto ? ' (시간 초과)' : ''}`;
       } else if (step.end) {
         st = structuredClone(st); st.over = true; st.winner = step.winner ?? null; label = step.end === 'turnlimit' ? '턴 수 초과로 무승부' : '판 종료';
       } else continue;
@@ -127,8 +127,8 @@ const Replay = (() => {
   function bar() {
     const b = barEl(), last = R.states.length - 1, st = R.states[R.i];
     b.querySelector('.rb-title').textContent = `${R.names[0]} vs ${R.names[1]}`;
-    let stepTxt = `${R.i} / ${last} · ${st ? st.turnNo : 0}턴`;
-    if (st && st.over) stepTxt += st.winner === null || st.winner === undefined ? ' · 무승부' : ` · 🏆 ${R.names[st.winner]} 승리${REASON[R.rep.reason] ? ` (${REASON[R.rep.reason]})` : ''}`;
+    let stepTxt = `${st ? st.turnNo : 0}턴, ${R.i} / ${last}`;
+    if (st && st.over) stepTxt += st.winner === null || st.winner === undefined ? ', 무승부' : `, ${R.names[st.winner]} 승리${REASON[R.rep.reason] ? ` (${REASON[R.rep.reason]})` : ''}`;
     else if (R.labels[R.i]) stepTxt += ' · ' + R.labels[R.i];
     b.querySelector('.rb-step').textContent = stepTxt;
     const rg = b.querySelector('.rb-range'); rg.max = last; rg.value = R.i;
@@ -158,7 +158,7 @@ const Replay = (() => {
     $id('menu').classList.add('hidden'); $id('overlay').classList.remove('show'); $id('logList').innerHTML = '';
     document.body.classList.add('pvp-mode', 'pvp-replay');
     $id('verBadge').textContent = typeof VERSION !== 'undefined' ? VERSION : '';
-    $id('diffBadge').textContent = `리플레이 · ${rep.friendly ? '친구 대전' : rep.ranked ? '랭크전' : '일반전'}`;
+    $id('diffBadge').textContent = '리플레이';
     applySeat();
     logLine(`리플레이: ${R.names[0]} vs ${R.names[1]}`);
     barEl().style.display = '';
@@ -191,7 +191,7 @@ const Replay = (() => {
     const rows = r.list.map(x => `<tr><td>${when(x.at)}</td><td>${esc(x.oppName)}</td><td>${x.friendly ? '친구' : x.ranked ? '랭크' : '일반'}</td><td>${RES[x.result] || ''}${REASON[x.reason] ? ` <small>${REASON[x.reason]}</small>` : ''}</td><td>${x.turns}턴</td>
       <td><button type="button" class="end-turn rp-go" data-id="${esc(x.matchId)}">▶ 보기</button></td></tr>`).join('');
     box.innerHTML = `<div class="rank-panel replay-panel"><h3>지난 판 다시 보기</h3>
-      <table class="rank-table"><tr><th>날짜</th><th>상대</th><th>모드</th><th>결과</th><th>길이</th><th></th></tr>${rows || '<tr><td colspan="6">아직 다시 볼 판이 없어요. 유저 대전을 한 판 해 보세요.</td></tr>'}</table>
+      <table class="rank-table"><tr><th>날짜</th><th>상대</th><th>모드</th><th>결과</th><th>길이</th><th></th></tr>${rows || '<tr><td colspan="6">기록 없음</td></tr>'}</table>
       <button type="button" class="menu-btn back">닫기</button></div>`;
     box.querySelector('.back').onclick = closeList;
     box.querySelectorAll('.rp-go').forEach(b => b.onclick = () => { b.disabled = true; open(b.dataset.id).finally(() => { b.disabled = false; }); });

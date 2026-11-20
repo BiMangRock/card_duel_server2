@@ -130,7 +130,7 @@
         { duration: 520, easing: 'cubic-bezier(.3,.8,.4,1)' }).finished;
       if (my !== run) return;
       // v159 팩을 눌러야 열린다 (하스스톤처럼)
-      root.classList.add('packready'); step('팩을 눌러 열어 보세요');
+      root.classList.add('packready'); step('팩을 누르세요');
       await new Promise(res => { packGo = res; });
       packGo = null; if (my !== run) return;
       root.classList.remove('packready'); step('');

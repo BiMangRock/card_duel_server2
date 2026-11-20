@@ -375,7 +375,7 @@ button.end-turn.sub.armed{background:var(--ember); color:#fff; border-color:var(
 .cheats .chip{cursor:help;}
 .cheat-info .chip{cursor:help;}
 .cheat-info .chip:hover, .cheats .chip:hover, .cheat-info .chip:focus, .cheats .chip:focus{background:rgba(178,58,46,.18); outline:none;}
-#tip{position:fixed; z-index:60; display:none; max-width:220px; padding:.4rem .6rem; border-radius:6px; pointer-events:none;
+#tip{position:fixed; white-space:pre-line; z-index:60; display:none; max-width:220px; padding:.4rem .6rem; border-radius:6px; pointer-events:none;
   background:#0d0b16; color:var(--parch); border:1px solid var(--gold-d); box-shadow:0 4px 14px rgba(0,0,0,.6);
   font-size:.78rem; line-height:1.4; font-weight:500;}
 #overlayReward{font-size:1.05rem; font-weight:700; text-align:center; line-height:1.6; margin:0;}
