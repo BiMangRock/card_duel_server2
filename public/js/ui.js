@@ -3002,7 +3002,7 @@ function bossButton(b, i, all, opts={}){
   const badge=opts.chapter ? (lock&&lock.passed?'<span class="clr">통과</span>':(!lock?'<span class="clr now">도전</span>':'')) : (done?'<span class="clr">클리어</span>':'');
   btn.innerHTML=`<span class="ic">${lock&&!lock.passed?'🔒':bossIconHTML(b)}</span><span class="bt">${badge}${stage}${escHtml(b.name)}`+
     `<span class="desc">${lock&&!lock.passed?escHtml(lock.why):escHtml(b.desc)}</span>`+
-    `<span class="tags">${opts.chapter?rankTag(bossRank(b))+' ':''}${deckBrief(b.deck)}${bad?', 덱 오류':''}</span>${chips&&!lock?`<span class="tags">${chips}</span>`:''}</span>`;
+    `<span class="tags">${opts.chapter?rankTag(bossRank(b))+' ':''}${bad?'덱 오류':''}</span>${chips&&!lock?`<span class="tags">${chips}</span>`:''}</span>`;
   btn.onclick=()=>startBoss(i);
   return btn;
 }

@@ -2031,3 +2031,18 @@ body.hand-open.hand-hover .hand::before{display:none;}
 .pvp-rope{--rope-max:min(34vw, 26rem); position:absolute; z-index:4; pointer-events:none; margin:0;
   right:calc(var(--side-w) + .3rem); top:calc(50% - 1.84rem);}
 @media (max-width:640px){ .pvp-rope{--rope-max:38vw; right:5.6rem;} }
+
+/* v171 메인 제목·덱/능력 칩 숨김, 계정·골드 크게 */
+#screen-main .mm-head{display:none;}
+#userBar{font-size:1rem; gap:.55rem; padding:.25rem .3rem .25rem .8rem;}
+#userBar .uname{max-width:11rem;}
+#userBar button{font-size:.85rem; padding:.15rem .7rem;}
+#menuWallet{font-size:1.15rem; padding:.3rem .9rem;}
+#menuWallet .ico{width:1.3em; height:1.3em;}
+@media (orientation:landscape) and (max-height:540px){
+  #screen-main .mm-body{padding-top:calc(2.9rem + env(safe-area-inset-top,0px));}
+  #userBar{font-size:.9rem; padding:.15rem .25rem .15rem .65rem;}
+  #userBar button{font-size:.78rem;}
+  #menuWallet{font-size:1rem; padding:.2rem .75rem;}
+}
+@media (orientation:portrait) and (max-width:820px){ #screen-main .mm-body{padding-top:3.2rem;} }
