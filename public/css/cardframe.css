@@ -41,3 +41,15 @@
   background:url(/images/ui/mana_full.webp) center/contain no-repeat; filter:drop-shadow(0 1px 2px rgba(0,0,0,.8));
   text-shadow:0 0 3px #000, 1px 1px 0 #06233f, -1px -1px 0 #06233f, 1px -1px 0 #06233f, -1px 1px 0 #06233f;}
 .hero-power.used .hp-cost:not(.hp-passive){filter:grayscale(1) drop-shadow(0 1px 2px rgba(0,0,0,.8));}
+
+/* v176 이름 띠 크게: 틀 그림에서 떼어 낸 이름 띠(images/ui/rib_minion · rib_spell.webp)를 원래 띠 위에 더 크게 덮는다.
+   틀 그림은 그대로라 원래 띠는 밑에 가려진다. 띠가 카드 양옆으로 살짝 나오는 것은 일부러 (하스스톤처럼) */
+:not(.zone) > .card.hs:not(.fatigue) .cframe::after{content:''; position:absolute; left:-3px; top:62.5px; width:112px; height:28px;
+  background:url(/images/ui/rib_minion.webp) center/100% 100% no-repeat; filter:drop-shadow(0 1.5px 1.5px rgba(0,0,0,.55));}
+:not(.zone) > .card.hs.spell:not(.fatigue) .cframe::after{background-image:url(/images/ui/rib_spell.webp); left:-1px; top:68.5px; width:102px; height:23px;}
+:not(.zone) > .card.hs:not(.fatigue) .cframe{z-index:2;}
+:not(.zone) > .card.hs:not(.fatigue) .cname{z-index:3; top:67px; height:17px; left:5px; right:5px; font-size:.68rem;}
+:not(.zone) > .card.hs.spell:not(.fatigue) .cname{top:70.5px; height:17px; left:6px; right:6px;}
+:not(.zone) > .card.hs.nm-l:not(.fatigue) .cname{font-size:.58rem;}
+:not(.zone) > .card.hs.nm-xl:not(.fatigue) .cname{font-size:.5rem;}
+:not(.zone) > .card.hs:not(.fatigue) .rgem, :not(.zone) > .card.hs:not(.fatigue) .cost, :not(.zone) > .card.hs .ldragon{z-index:7;}
