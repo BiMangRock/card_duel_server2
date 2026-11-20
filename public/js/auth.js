@@ -4,7 +4,7 @@
 // v141 닉네임이 없는 옛 계정이면 닉네임을 정하는 창을 띄운다 (한 번 정하면 바꿀 수 없다)
 (() => {
   window.CURRENT_USER = null;
-  const setName = n => { const el = document.querySelector('#userBar .uname'); if (el) el.textContent = '👤 ' + n; };
+  const setName = n => { const el = document.querySelector('#userBar .uname'); if (el) el.textContent = n; };
 
   function askNickname(user) {
     const box = document.createElement('div');
@@ -50,7 +50,7 @@
     if (!user.nickname) askNickname(user);
     const bar = document.getElementById('userBar');
     if (!bar) return;
-    const name = document.createElement('span'); name.className = 'uname'; name.textContent = '👤 ' + (user.name || user.username); name.title = '아이디: ' + user.username;   // v136 닉네임이 있으면 닉네임
+    const name = document.createElement('span'); name.className = 'uname'; name.textContent = (user.name || user.username); name.title = '아이디: ' + user.username;   // v136 닉네임이 있으면 닉네임
     const out = document.createElement('button'); out.type = 'button'; out.textContent = '로그아웃';
     out.onclick = async () => {
       try { await fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); } catch (_) {}

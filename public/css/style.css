@@ -2,7 +2,7 @@
   --felt:#14121f; --felt2:#1c1930; --gold:#c9a227; --gold-d:#8a6f1c;
   --parch:#ede3c8; --parch-d:#c9bd9c; --ink:#2a2417;
   --ember:#b23a2e; --teal:#3d8c86; --teal-l:#6fc2ba;
-  --hp:#8a2e2e; --font-d:'Black Han Sans','Noto Sans KR',sans-serif; --font-u:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  --hp:#8a2e2e; --font-d:'Hahmlet','Noto Serif KR','Black Han Sans',serif; --font-n:'Black Han Sans','Noto Sans KR',sans-serif; --font-u:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
   box-sizing:border-box;
 }
@@ -1471,7 +1471,7 @@ button.end-turn#endTurnBtn.no-moves{background:linear-gradient(180deg,#7fe07a,#2
   color:#efe3c4; font-size:.42rem; letter-spacing:.06em; white-space:nowrap;}
 :not(.zone) > .card.hs .stats.spelltype .rn{display:none;}
 /* 마나 보석 (왼쪽 위) */
-:not(.zone) > .card.hs .cost{top:-9px; left:-9px; width:27px; height:29px; border:0; border-radius:0; z-index:6; font:400 .98rem/1 var(--font-d); color:#fff;
+:not(.zone) > .card.hs .cost{top:-9px; left:-9px; width:27px; height:29px; border:0; border-radius:0; z-index:6; font:400 .98rem/1 var(--font-n); color:#fff;
   text-shadow:0 0 2px #000, 1px 1px 0 #0b2a4d, -1px -1px 0 #0b2a4d, 1px -1px 0 #0b2a4d, -1px 1px 0 #0b2a4d;
   background:radial-gradient(circle at 38% 30%,#cfefff 0%,#5ab2f2 28%,#1b5fb3 70%,#0d3a72 100%);
   clip-path:polygon(50% 0, 96% 24%, 96% 76%, 50% 100%, 4% 76%, 4% 24%); filter:drop-shadow(0 1px 1px rgba(0,0,0,.7));}
@@ -1556,7 +1556,7 @@ body.log-open #logPanel{display:flex;}
 .mana-bar{position:absolute; right:calc(.6rem + env(safe-area-inset-right,0px)); z-index:5; display:flex; flex-direction:column; align-items:flex-end; gap:.25rem; width:calc(var(--side-w) - 1.2rem);}
 .mana-bar.me{bottom:calc(.5rem + env(safe-area-inset-bottom,0px));}
 .mana-bar.opp{top:.45rem; flex-direction:column-reverse;}
-.mana-bar .mana{font:400 1.25rem/1 var(--font-d); color:#cfeaff; text-shadow:0 2px 6px #000; text-align:right;}
+.mana-bar .mana{font:400 1.25rem/1 var(--font-n); color:#cfeaff; text-shadow:0 2px 6px #000; text-align:right;}
 .mana-bar .mana b{font-weight:400; font-size:1.5em; color:#fff;}
 .mana-bar .mana .mx{color:#9fc6e8;}
 .mana-bar .mana small{display:block; margin-top:.15rem; font:600 .6rem/1.3 var(--font-u); color:#9fc6e8; white-space:normal; text-align:right;}
@@ -2040,7 +2040,7 @@ body.hand-open.hand-hover .hand::before{display:none;}
 #menuWallet{font-size:1.15rem; padding:.3rem .9rem;}
 #menuWallet .ico{width:1.3em; height:1.3em;}
 @media (orientation:landscape) and (max-height:540px){
-  #screen-main .mm-body{padding-top:calc(2.9rem + env(safe-area-inset-top,0px));}
+  #screen-main .mm-body{padding-top:calc(3.6rem + env(safe-area-inset-top,0px));}
   #userBar{font-size:.9rem; padding:.15rem .25rem .15rem .65rem;}
   #userBar button{font-size:.78rem;}
   #menuWallet{font-size:1rem; padding:.2rem .75rem;}
