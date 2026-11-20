@@ -13,8 +13,8 @@ function validateDeckScope(names, pool, deckMode) {
   const by = new Map(pool.map(c => [c.name, c]));
   for (const n of names) {
     const sc = cardScope(by.get(n));
-    if (sc === 'boss') return `보스 전용 카드는 덱에 넣을 수 없습니다: ${n}`;
-    if (sc === 'adventure' && deckMode !== 'adventure') return `모험 전용 카드는 모험 덱에만 넣을 수 있습니다: ${n}`;
+    if (sc === 'boss') return `보스 전용 카드는 덱에 넣을 수 없어요: ${n}`;
+    if (sc === 'adventure' && deckMode !== 'adventure') return `모험 전용 카드는 모험 덱에만 넣을 수 있어요: ${n}`;
   }
   return null;
 }
@@ -42,7 +42,7 @@ function starterCollection(pool, deckList) {
 function validateDeckOwned(names, owned) {
   const need = {};
   for (const n of names) need[n] = (need[n] || 0) + 1;
-  for (const n of Object.keys(need)) if (((owned && owned[n]) || 0) < need[n]) return `보유하지 않은 카드가 있습니다: ${n}`;
+  for (const n of Object.keys(need)) if (((owned && owned[n]) || 0) < need[n]) return `보유하지 않은 카드가 있어요: ${n}`;
   return null;
 }
 if (typeof module !== 'undefined') { module.exports = { RARITY_ORDER, STARTER_COMMON_COPIES, STARTER_COMMON_SHARE, starterCommons, starterCollection, validateDeckOwned, CARD_SCOPE_LABEL, cardScope, validateDeckScope }; }

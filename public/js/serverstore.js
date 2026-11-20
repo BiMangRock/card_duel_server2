@@ -256,7 +256,7 @@
 
   // ---------- 시작: 서버에서 불러오기 ----------
   S.ready = (async () => {
-    overlay('불러오는 중…');
+    overlay(Flavor.wait('boot'));
     for (;;) {
       try {
         const r = await fetch('/api/save', { credentials: 'same-origin', cache: 'no-store' });

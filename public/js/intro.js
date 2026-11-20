@@ -128,7 +128,7 @@
           <div class="mi-vs"><img class="mi-fx" src="${IMG}slash.webp" alt=""><b>VS</b></div>
           <div class="mi-side opp"><div class="mi-av" style="--ah:${hue(info.opp)}">${esc(first(info.opp))}</div><div class="mi-name">${esc(info.opp)}</div></div>
         </div>
-        <div class="mi-sub">곧 대전이 시작됩니다…</div>`;
+        <div class="mi-sub">곧 대전이 시작돼요…</div>`;
       document.body.appendChild(box);
       requestAnimationFrame(() => box.classList.add('on'));
       setTimeout(() => box.classList.add('slam'), 450);

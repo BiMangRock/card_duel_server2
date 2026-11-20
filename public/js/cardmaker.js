@@ -56,7 +56,7 @@
           <p class="notice warn" id="cmMsg"></p>
         </div>
       </div>
-      <div class="cm-box cm-mine"><h4>내가 만든 카드</h4><div id="cmMine">불러오는 중…</div></div>
+      <div class="cm-box cm-mine"><h4>내가 만든 카드</h4><div id="cmMine">${Flavor.wait('mine')}</div></div>
       <button class="menu-btn back" onclick="openShop()">← 상점으로</button>`;
     q('menu').appendChild(scr);
 
@@ -256,7 +256,7 @@
     const btn = q('cmCreate');
     btn.disabled = !!blocked;
     const label = !st.edit ? '카드 만들기' : st.edit.status === 'rejected' ? '고쳐서 다시 승인 요청' : '고친 내용 저장';
-    btn.textContent = st.busy ? '저장하는 중…' : `${label}, ${fmt(price)}골드`;
+    btn.textContent = st.busy ? Flavor.wait('save') : `${label}, ${fmt(price)}골드`;
   }
   async function checkNameRemote() {
     const n = q('cmName').value.trim();
@@ -339,7 +339,7 @@
   }
   function renderMine(max) {
     const box = q('cmMine');
-    if (!st.mine.length) { box.innerHTML = '<p class="cm-empty">아직 만든 카드가 없어요</p>'; return; }
+    if (!st.mine.length) { box.innerHTML = Flavor.empty('mine'); return; }
     box.innerHTML = (max ? `<p class="cm-count">${st.mine.length} / ${max}장</p>` : '');
     for (const it of st.mine) {
       const row = document.createElement('div'); row.className = 'cm-mine-row';
@@ -400,7 +400,7 @@
     let me = null;
     try { const r = await fetch('/api/me', { credentials: 'same-origin' }); const d = await r.json(); me = d.user && d.user.id; } catch (_) {}
     const send = async body => {
-      const msg = m.querySelector('.g-msg'); msg.textContent = '저장하는 중…'; msg.className = 'cm-msg g-msg';
+      const msg = m.querySelector('.g-msg'); msg.textContent = Flavor.wait('save'); msg.className = 'cm-msg g-msg';
       if (typeof ServerStore !== 'undefined' && ServerStore.waitSaved) await ServerStore.waitSaved();
       const r = await fetch('/api/customcards/admin/gold', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ userId: me, ...body }) });
       const d = await r.json().catch(() => ({}));
