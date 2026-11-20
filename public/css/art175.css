@@ -1,0 +1,63 @@
+/* art175.css — v175 새 그림 연결 (전장 바탕 · 결과 문장 · AI 상대 · 동전 · 주문 속성 아이콘 · 퀘스트 · 제목 판 · 장식 줄) */
+
+/* ---------- 전투 전장: 주점 탁자 그림 ---------- */
+body:has(#menu.hidden){background:
+  radial-gradient(ellipse 75% 70% at 50% 50%, rgba(10,8,6,0) 40%, rgba(6,4,3,.55) 100%),
+  url(/images/ui/bg_battle.webp) center/cover no-repeat fixed, #120d08;}
+/* 판 가운데 칸: 보라 판 대신 탁자 위 펠트가 비치게, 가는 금테만 */
+body:has(#menu.hidden) .board::before{background:radial-gradient(ellipse at center, rgba(12,30,20,.18), rgba(8,14,10,.42) 75%);
+  box-shadow:inset 0 0 0 1px rgba(201,162,39,.32), inset 0 0 50px rgba(0,0,0,.5), 0 8px 30px rgba(0,0,0,.35);}
+
+/* ---------- 결과 창: 방패 문장 + 띠 위 한 단어 ---------- */
+#overlay.has-crest #overlayText{display:none;}
+.ov-crest{position:relative; width:min(19rem, 70vw); animation:crestIn .6s cubic-bezier(.2,1.3,.4,1) both;}
+#overlayArt .ov-crest img{width:100%; max-width:none; max-height:none; height:auto; display:block; filter:drop-shadow(0 10px 22px rgba(0,0,0,.7));}
+.ov-crest b{position:absolute; left:0; right:0; text-align:center; font:400 clamp(1.4rem, 5.4vmin, 2.2rem) var(--font-d); letter-spacing:.12em; pointer-events:none;}
+.ov-crest.win b{bottom:8.5%; color:#4a2c06; text-shadow:0 1px 0 rgba(255,236,180,.8);}
+.ov-crest.lose b{bottom:9%; color:#1d2026; text-shadow:0 1px 0 rgba(220,225,235,.5);}
+.ov-crest.draw b{position:static; display:block; margin-top:.3rem; color:var(--gold); text-shadow:0 2px 0 #000, 0 3px 8px rgba(0,0,0,.8);}
+.ov-crest.lose{animation-name:crestDrop;}
+@keyframes crestIn{from{opacity:0; transform:scale(1.5)} 60%{opacity:1; transform:scale(.95)} to{transform:scale(1)}}
+@keyframes crestDrop{from{opacity:0; transform:translateY(-40px)} 70%{opacity:1; transform:translateY(4px)} to{transform:none}}
+@media (max-height:540px){ .ov-crest{width:min(11rem, 40vw);} }
+
+/* 보상 골드: 동전 더미 */
+#overlayReward .plus{display:inline-flex; flex-direction:column; align-items:center;}
+#overlayReward .plus::before{content:''; width:6.5rem; aspect-ratio:320/222; background:url(/images/ui/coin_pile.webp) center/contain no-repeat;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); margin-bottom:.15rem; animation:crestIn .5s .25s cubic-bezier(.2,1.3,.4,1) both;}
+
+/* ---------- 동전이 지갑으로 ---------- */
+.coin-fly{position:fixed; left:0; top:0; width:28px; height:28px; margin:-14px 0 0 -14px; z-index:9800; pointer-events:none; filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));}
+.walletView.coin-hit{animation:coinHit .35s ease-out;}
+@keyframes coinHit{0%{transform:scale(1)} 40%{transform:scale(1.18); filter:brightness(1.5)} 100%{transform:scale(1)}}
+
+/* ---------- 주문 종류 띠: 속성 아이콘 ---------- */
+.stats.spelltype > span{display:inline-flex; align-items:center; justify-content:center; gap:.25em; letter-spacing:.06em;}
+.sch-ic{width:1.6em; height:1.6em; flex:none; margin:-.35em 0; filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
+
+/* ---------- 퀘스트: 게시판 바탕 · 의뢰서 ---------- */
+#menu#menu:has(#screen-quests.show){background:linear-gradient(180deg, rgba(10,7,4,.55), rgba(10,7,4,.78)), url(/images/ui/bg_quest.webp) center/cover no-repeat fixed, #120d08;}
+#screen-quests .quest{position:relative; padding-left:3.1rem;}
+#screen-quests .quest::before{content:''; position:absolute; left:.55rem; top:50%; width:2.1rem; height:2.3rem; transform:translateY(-50%) rotate(-4deg);
+  background:url(/images/ui/quest_note.webp) center/contain no-repeat; filter:drop-shadow(0 2px 3px rgba(0,0,0,.55));}
+#screen-quests .quest:nth-child(even)::before{transform:translateY(-50%) rotate(3deg);}
+#screen-quests .quest.done::before{filter:grayscale(.7) brightness(.7) drop-shadow(0 2px 3px rgba(0,0,0,.55));}
+
+/* ---------- 제목 판 ---------- */
+.screen h2, #screen-quests h3{display:block; width:fit-content; max-width:92%; margin-left:auto; margin-right:auto; box-sizing:border-box;
+  padding:.55em 2.6em .6em; background:url(/images/ui/plaque.webp) center/100% 100% no-repeat; color:#f3e0ae; text-align:center;
+  text-shadow:0 2px 0 #000, 0 3px 6px rgba(0,0,0,.8);}
+#screen-quests h3{font-size:1.05rem; padding:.5em 2.4em .55em;}
+
+/* ---------- 카드 크게 보기: 플레이버 위 장식 줄 ---------- */
+#cardDetail .cd-flavor::before{content:''; display:block; width:min(16rem, 90%); aspect-ratio:480/61; margin:.1rem auto .4rem;
+  background:url(/images/ui/divider.webp) center/contain no-repeat; opacity:.9;}
+
+/* ---------- 난이도 고르기: 상대 얼굴 · 이름 ---------- */
+#difficultyList .menu-btn.df-btn{display:flex; align-items:center; gap:.8rem; text-align:left; padding-top:.35rem; padding-bottom:.35rem;}
+.df-face{width:3rem; height:3rem; flex:none; border-radius:50%; object-fit:cover; border:2px solid #c9a227; box-shadow:0 2px 6px rgba(0,0,0,.6);}
+.df-txt{display:flex; flex-direction:column; line-height:1.2;}
+.df-txt small{font-size:.74rem; color:#d9c39a; font-weight:400;}
+/* 화면 제목(h3)도 제목 판 위에 */
+#screen-difficulty > h3, #screen-playmode > h3, #screen-bet > h3{display:block; width:fit-content; max-width:92%; margin-left:auto; margin-right:auto;
+  padding:.5em 2.6em .55em; background:url(/images/ui/plaque.webp) center/100% 100% no-repeat; color:#f3e0ae; text-shadow:0 2px 0 #000, 0 3px 6px rgba(0,0,0,.8);}

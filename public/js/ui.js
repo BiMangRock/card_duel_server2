@@ -21,9 +21,12 @@ const Host = {
 };
 // 난이도 → 상대 Player. bot:null 이면 아직 구현 전이라 선택할 수 없다.
 const DIFFICULTY = {
-  easy:   {label:'초급', desc:'무작위로 둔다',      bot:BotPlayers.random},
-  normal: {label:'중급', desc:'정해진 규칙대로 둔다',      bot:BotPlayers.rule},
-  normal2:{label:'중급2', desc:'한 수 앞을 본다', bot:BotPlayers.rule2},
+  easy:   {label:'초급', desc:'무작위로 둔다',      bot:BotPlayers.random, who:'견습생 토비', face:'/images/ai/easy.webp',
+           hello:['자, 잘 부탁드려요!', '카드는… 이렇게 쥐는 거 맞죠?', '오늘은 꼭 한 판 이길 거예요!']},
+  normal: {label:'중급', desc:'정해진 규칙대로 둔다',      bot:BotPlayers.rule, who:'단골 보리스', face:'/images/ai/normal.webp',
+           hello:['한 잔 걸고 한 판 어때?', '이 자리는 내 단골석이라고.', '크하하, 덤벼 보게!']},
+  normal2:{label:'중급2', desc:'한 수 앞을 본다', bot:BotPlayers.rule2, who:'외눈 카드꾼 그렌', face:'/images/ai/normal2.webp',
+           hello:['네 패는 이미 다 보인다.', '한 수 앞을 못 보면 끝이지.', '앉아라. 오래 걸리진 않을 거다.']},
   hard:   {label:'상급', desc:'학습한 AI',               bot:null},   // TODO: 학습한 정책(BotPlayer)이 준비되면 연결
 };
 // v153 터치에서 확실히 눌리는 카드 선택 (멀리건 · 발견 공용)
@@ -512,6 +515,9 @@ function fxBurnFire(wrap){                           // 손패 초과로 소멸�
 const fxIsSpellDmg = (ev,ctx) => !!ctx && ev.type==='damage' && ev.cause!=='combat' && ev.cause!=='fatigue' && ev.cause!=='lifecost' && (ev.cause==='spell' || (!!ev.src && !!ctx.name && ev.src.name===ctx.name));
 const fxByName = n => /번개/.test(n||'') ? {proj:undefined, pre:undefined, hit:['lightning','bolt_big','bolt_strike'], aoe:'lightning', up:0} : {};   // v91: 이름에 '번개'가 든 주문(자연 속성)은 번개 이펙트
 const fxPending = [];                                  // 소환 연출은 화면이 다시 그려져 하수인이 생긴 뒤에 재생
+// v175 주문 속성 아이콘 (images/ui/school_*.webp). 그림이 없는 속성은 빈 문자열
+const SCHOOL_ICON={'비전':'arcane','지옥':'fel','화염':'fire','냉기':'frost','신성':'holy','암흑':'shadow','자연':'nature'};
+function schoolIcon(sch){ const k=SCHOOL_ICON[sch]; return k?`<img class="sch-ic" src="/images/ui/school_${k}.webp" alt="" draggable="false">`:''; }
 const fxSchoolOf = card => (card && ((card.school&&card.school[0]) || ((CARD_POOL.find(x=>x.name===card.name)||{}).school||[])[0])) || null;
 function fxCenterOf(t){ const el=elOf(t); if(!el) return null; const r=el.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2, w:r.width, h:r.height, s:Math.max(r.width,r.height)}; }
 function fxMake(name, box, cls){
@@ -1251,6 +1257,7 @@ const HERO_PORTRAIT={fireblast:'화염 정령', armorUp:'강철 파수대장', r
 const HERO_POWER_ART=Object.fromEntries(['fireblast','armorUp','recruit','lesserHeal','dagger','lifeTap','steadyShot','shapeshift','totem','inspire','frostTouch','cram','nag'].map(id=>[id, `/images/hp/${id}.webp`]));
 const hpArtOf = id => (id && HERO_POWER_ART[id]) || null;
 function portraitOf(seat, side){
+  if(seat===OPP && game && !game.boss && game.mode!=='pvp' && DIFFICULTY[game.key] && DIFFICULTY[game.key].face) return {img:DIFFICULTY[game.key].face};   // v175 AI 상대 캐릭터 초상화
   if(seat===OPP && game && game.boss && game.boss.icon){ const ic=String(game.boss.icon); if(/[\/.](jpg|jpeg|png|webp)$/i.test(ic) || ic.includes('/')) return {img:ic.startsWith('/')?ic:'/'+ic}; return {emoji:ic}; }
   const hp=side && side.heroPower, nm=hp && HERO_PORTRAIT[hp.id], art=nm && cardArt(cardByName(nm));
   if(art) return {img:art};
@@ -1290,7 +1297,7 @@ function sendEmote(id){
   const reply={hello:['hello',.9], wp:['thanks',.8], thanks:['wp',.35], wow:['thanks',.6], oops:[null,0], threat:['threat',.5]}[id];   // AI 상대의 대답
   if(reply && reply[0] && Math.random()<reply[1]) setTimeout(()=>{ if(game && !(view && view.over)){ const r=PROGRESS.EMOTES.find(e=>e.id===reply[0]); showBubble(OPP, r.text); } }, 900+Math.random()*700);
 }
-function aiGreet(){ if(game && game.mode!=='pvp' && Math.random()<.7) setTimeout(()=>{ if(game && !(view && view.over)) showBubble(OPP, '안녕하세요!'); }, 1400); }
+function aiGreet(){ if(game && game.mode!=='pvp' && Math.random()<.7) setTimeout(()=>{ if(!game || (view && view.over)) return; const d=!game.boss && DIFFICULTY[game.key], h=d && d.hello; showBubble(OPP, h ? h[Math.floor(Math.random()*h.length)] : '안녕하세요!'); }, 1400); }   // v175 캐릭터마다 인사
 document.addEventListener('contextmenu', e=>{                                         // 오른쪽 클릭(폰은 꾹 누르기): 내 영웅 → 감정 표현 / 상대 영웅 → 감정 표현 끄기·켜기
   const mine=e.target.closest && e.target.closest('#playerHero'), opp=e.target.closest && e.target.closest('#aiHero');
   if(mine){ toggleEmoteMenu(e); }
@@ -1759,7 +1766,7 @@ function cardEl(c, opts={}){
   if(c.type==='spell'){
     el.classList.add('spell');
     if(c.fatigue) el.classList.add('fatigue');
-    el.innerHTML=`${c.fatigue?'':`<div class="cost">${c.cost}</div>`}<div class="cname">${c.name}</div>${art?`<div class="card-art"><img src="${art}" alt="${c.name}" loading="lazy"></div>`:''}<div class="effect">${effH?`<span class="et">${effH}</span>`:''}</div><div class="stats spelltype"><span>✦ ${c.fatigue?'탈진':((c.school&&c.school.length?c.school.join('·'):'')+'주문')} ✦</span>${runeOf(c).length?`<small class="rn">${runeOf(c).join('·')} 룬</small>`:''}</div>`;
+    el.innerHTML=`${c.fatigue?'':`<div class="cost">${c.cost}</div>`}<div class="cname">${c.name}</div>${art?`<div class="card-art"><img src="${art}" alt="${c.name}" loading="lazy"></div>`:''}<div class="effect">${effH?`<span class="et">${effH}</span>`:''}</div><div class="stats spelltype"><span>${c.fatigue?'':schoolIcon(c.school&&c.school[0])}${c.fatigue?'탈진':((c.school&&c.school.length?c.school.join('·'):'')+' 주문').trim()}</span>${runeOf(c).length?`<small class="rn">${runeOf(c).join('·')} 룬</small>`:''}</div>`;
   } else {
     el.innerHTML=`<div class="cost">${c.cost}</div><div class="cname">${c.name}</div>${art?`<div class="card-art"><img src="${art}" alt="${c.name}" loading="lazy"></div>`:''}<div class="effect">${tags?`<span class="tg">${tags}</span>`:''}${effH?`<span class="et">${effH}</span>`:''}</div><div class="stats"><span class="atk">${c.atk}</span>${(c.tribe||runeOf(c).length)?`<span class="race">${c.tribe?c.tribe.replace(/ \/ /g,'·'):''}${runeOf(c).length?`<small class="rn">${runeOf(c).join('·')} 룬</small>`:''}</span>`:''}<span class="life">${c.hp}</span></div>`;
   }
@@ -1988,7 +1995,12 @@ function render(){
     }
     $('overlayText').textContent = (game && game.mode==='pvp') ? game.pvpTitle : v.winner===null ? '무승부' : (v.winner===MY ? '승리했어요!' : '패배했어요...');
     $('overlayReward').innerHTML = rewardHTML();
-    $('overlayArt').innerHTML = (game && game.mode==='pvp') ? (game.pvpArt||'') : '';   // 유저 대전 결과 일러스트 (골드·보상 없음·무승부·무효)
+    { // v175 AI 대전 · 모험: 결과 문장 대신 방패 문장(紋章) 그림 + 띠 위에 한 단어
+      const crest = !(game && game.mode==='pvp') && v.winner!==undefined ? (v.winner===null ? ['draw','무승부'] : v.winner===MY ? ['win','승리'] : ['lose','패배']) : null;
+      $('overlay').classList.toggle('has-crest', !!crest);
+      const artH = crest ? `<div class="ov-crest ${crest[0]}"><img src="/images/ui/result_${crest[0]}.webp" alt=""><b>${crest[1]}</b></div>` : (game && game.mode==='pvp') ? (game.pvpArt||'') : '';
+      if($('overlayArt').dataset.h!==artH){ $('overlayArt').dataset.h=artH; $('overlayArt').innerHTML=artH; }   // 다시 그릴 때마다 애니메이션이 처음부터 돌지 않게
+    }   // 유저 대전 결과 일러스트 (골드·보상 없음·무승부·무효)
   }
   if($('deckModal').classList.contains('show')) renderDeckModal();
 }
@@ -1997,7 +2009,7 @@ function render(){
 // 덱 목록에서 하수인 / 주문을 나누는 제목 줄
 function sectionLabel(type){
   const d=document.createElement('div');
-  d.textContent = type==='spell' ? '✦ 주문' : '하수인';
+  d.textContent = type==='spell' ? '주문' : '하수인';
   d.style.cssText='flex-basis:100%; grid-column:1/-1; width:100%; font-family:var(--font-d); color:var(--gold); font-size:1rem; padding:.2rem 0; border-bottom:1px solid rgba(201,162,39,.3);';
   return d;
 }
@@ -2102,7 +2114,7 @@ function renderDeckEditor(){
   // 카드 종류(주문/하수인)로 먼저 나누고, 각 종류 안에서 속성별로 묶은 뒤 코스트 오름차순 정렬
   const typeOrder=['spell','minion'];
   const schoolOrder=['비전','화염','냉기','자연','신성','암흑','지옥','혈기','부정','무속성'];
-  const typeNames={spell:'✦ 주문',minion:'하수인'};
+  const typeNames={spell:'주문',minion:'하수인'};
   const schoolOf=c=>(c.school&&c.school.length)?c.school[0]:'무속성';
   const tribeOrder=['야수','언데드','악마','용족','정령','해적','토템','기계','무종족'];   // v106 하수인은 종족별로 묶는다 (종족이 둘이면 첫 번째)
   const tribeOf=c=>((c.tribe||'').split('/')[0].trim())||'무종족';
@@ -2536,9 +2548,30 @@ function showScreen(name){
   if(name==='main') updatePowerMenuDesc();
   document.querySelectorAll('#menu .screen').forEach(el=>el.classList.toggle('show', el.id==='screen-'+name));
 }
+let walletLast=null;
 function updateWallet(){
-  const g=fmt(Economy.get().gold);
+  const now=Economy.get().gold, g=fmt(now);
   document.querySelectorAll('.walletView').forEach(el=>el.innerHTML=`${ICO('gold','골드')} ${g}`);
+  if(walletLast!=null && now>walletLast) coinFly(now-walletLast);   // v175
+  walletLast=now;
+}
+// v175 골드가 늘면 동전이 화면 가운데서 지갑으로 날아간다 (보이는 지갑이 없으면 건너뜀)
+function coinFly(amount){
+  try{
+    if(document.hidden || (window.PlayFx && !PlayFx.Opt.get())) return;
+    const w=[...document.querySelectorAll('.walletView')].find(el=>el.offsetParent!==null && el.getBoundingClientRect().width>0); if(!w) return;
+    const r=w.getBoundingClientRect(), tx=r.left+18, ty=r.top+r.height/2;
+    const n=Math.max(3, Math.min(12, Math.round(Math.log10(amount+1)*4)));
+    const fx=innerWidth/2, fy=innerHeight*.45;
+    for(let i=0;i<n;i++){
+      const c=document.createElement('img'); c.src='/images/ui/coin.webp'; c.className='coin-fly'; c.alt=''; document.body.appendChild(c);
+      const sx=fx+(Math.random()-.5)*160, sy=fy+(Math.random()-.5)*90, mx=(sx+tx)/2+(Math.random()-.5)*120, my=Math.min(sy,ty)-60-Math.random()*80;
+      const a=c.animate([{transform:`translate(${sx}px,${sy}px) scale(.3)`,opacity:0},{transform:`translate(${sx}px,${sy-20}px) scale(1)`,opacity:1,offset:.15},
+        {transform:`translate(${mx}px,${my}px) scale(.9) rotate(180deg)`,opacity:1,offset:.55},{transform:`translate(${tx}px,${ty}px) scale(.45) rotate(360deg)`,opacity:.9}],
+        {duration:900+Math.random()*250, delay:i*70, easing:'cubic-bezier(.4,.1,.5,1)', fill:'forwards'});
+      a.onfinish=()=>{ c.remove(); if(i===n-1){ w.classList.remove('coin-hit'); void w.offsetWidth; w.classList.add('coin-hit'); try{ if(window.Sound) Sound.play('gold',{gap:0}); }catch(_){} } };
+    }
+  }catch(e){ console.warn('coinFly', e); }
 }
 function rewardDesc(key){
   if(key==='easy') return `승리 ${ECON.EASY_WIN}골드`;
@@ -2551,7 +2584,8 @@ function buildDifficultyButtons(){
     const b=document.createElement('button');
     b.className='menu-btn';
     const rd=d.bot?rewardDesc(key):'';
-    b.innerHTML=`${d.label}${d.bot?'':'<span class="soon">준비 중</span>'}`;
+    b.innerHTML=d.face ? `<img class="df-face" src="${d.face}" alt="" draggable="false"><span class="df-txt"><b>${d.label}</b><small>${escHtml(d.who||'')}</small></span>` : `${d.label}${d.bot?'':'<span class="soon">준비 중</span>'}`;   // v175 상대 얼굴 · 이름
+    if(d.face) b.classList.add('df-btn');
     b.disabled=!d.bot;
     b.onclick=()=> (key==='normal' || key==='normal2') ? openPlayMode(key) : startGame(key,{mode:'normal'});
     box.appendChild(b);
@@ -2560,7 +2594,7 @@ function buildDifficultyButtons(){
 // ---- 중급: 일반 / 배팅 선택 ----
 function openPlayMode(key='normal'){
   curKey=key;
-  $('playmodeTitle').textContent=`${DIFFICULTY[key].label}`;
+  $('playmodeTitle').textContent=DIFFICULTY[key].who ? `${DIFFICULTY[key].label} · ${DIFFICULTY[key].who}` : `${DIFFICULTY[key].label}`;
   const sv=Economy.get(), pool=Economy.poolNow(sv);
   $('btnNormalMode').innerHTML='일반 모드';
   const mb=Economy.maxBet(sv);
@@ -2645,7 +2679,7 @@ function startGame(key, opts={}){
   const tag = key==='easy' ? `승리 +${ECON.EASY_WIN}G` : mode==='bet' ? `배팅 ${fmt(game.bet)}G ${tier}%` : `보상 ${game.pool}G`;
   $('verBadge').textContent=VERSION;
   $('diffBadge').textContent=`${d.label}, ${tag}`;
-  document.querySelector('#aiHero .name').textContent=`AI ${d.label}`;   // v156 위 제목줄 대신, 상대 이름판에 상대가 누구인지
+  document.querySelector('#aiHero .name').textContent=d.who || `AI ${d.label}`;   // v156 상대 이름판 · v175 캐릭터 이름
   $('menu').classList.add('hidden');
   updateWallet();
   const iFirst = Host.state.first===MY;
