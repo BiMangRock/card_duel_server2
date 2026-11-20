@@ -144,10 +144,10 @@ const PvpClient = (() => {
     if (st) {
       const r = st.record || { wins: 0, losses: 0, draws: 0 };
       el('pvpWins').textContent = r.wins; el('pvpLosses').textContent = r.losses; el('pvpDraws').textContent = r.draws;
-      el('pvpToday').textContent = st.rewardsToday || 0;
+      el('pvpToday').textContent = st.rewardsToday || 0; el('pvpTodayCap').hidden = !st.rewardsToday;   // v168 0승이면 숨김
       setGauge(st.rewardsToday || 0);
       const w = S.mode === 'rank' ? (st.waitingRank || 0) : (st.waiting || 0);
-      el('pvpWaiting').textContent = st.state === 'queue' ? `나 포함 ${w}명` : `${w}명`;
+      el('pvpWaiting').textContent = st.state === 'queue' ? `나 포함 ${w}명` : `${w}명`; el('pvpWaitingRow').hidden = !w && st.state !== 'queue';
       renderRank(st.rank);
     }
     document.querySelectorAll('#pvpModes button').forEach(x => { x.classList.toggle('on', x.dataset.mode === S.mode); x.disabled = !!(st && st.state === 'queue'); });
@@ -192,8 +192,7 @@ const PvpClient = (() => {
   function renderRank(rk) {
     if (!rk) return;
     el('pvpRankBadge').innerHTML = rankLine(rk);
-    el('pvpRankSub').textContent = rk.tier >= RANK.LEGEND ? `전설 승수 ${rk.legendWins}승 · 승수가 많을수록 순위가 올라가요` :
-      `이기면 별 +${rk.streak >= RANK.STREAK_BONUS_FROM - 1 ? 2 : 1}${rk.tier === 0 ? '' : ' · 지면 별 -1'}${rk.streak ? ` · ${rk.streak}연승` : ''}`;
+    el('pvpRankSub').textContent = rk.tier >= RANK.LEGEND ? `${rk.legendWins}승` : rk.streak >= 2 ? `${rk.streak}연승` : '';   // v168 규칙 설명 뺌
     el('pvpRankBar').style.width = Math.round(ladderIndex(rk) / ladderIndex({ tier: RANK.LEGEND }) * 100) + '%';
   }
   async function openBoard() {

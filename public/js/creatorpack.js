@@ -161,7 +161,7 @@
     if (my !== run) return;
     // v159 카드는 뒷면으로 빛나며 기다린다 → 하나씩 눌러 뒤집기
     cards.forEach(c => c.classList.add('await'));
-    root.classList.add('choosing'); step('카드를 눌러 한 장씩 뒤집어 보세요');
+    root.classList.add('choosing'); step('');
     busy = false;
     await new Promise(res => { allDone = res; });
     allDone = null; if (my !== run) return;

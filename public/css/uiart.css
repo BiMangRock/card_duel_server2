@@ -82,3 +82,7 @@
 .pk-pack-sm b, .pk-pack-sm small{display:none;}
 .pk-pack:not(.pk-pack-sm) b{position:absolute; left:0; right:0; bottom:22%; text-align:center;}
 .pk-pack:not(.pk-pack-sm) small{position:absolute; left:0; right:0; bottom:13%; text-align:center;}
+
+/* v168 안내 문구를 뺀 자리: 빈 줄이 남지 않게 */
+#pvpTodayCap[hidden], #pvpWaitingRow[hidden]{display:none !important;}
+.note:empty, .sub:empty, .mm-item .desc:empty, #pkInfo:empty, #pvpRankSub:empty, #shopDupNote:empty, .roll-sub:empty{display:none;}

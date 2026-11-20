@@ -32,7 +32,7 @@ const Friends = (() => {
     const n = S.data ? S.data.incoming.length : 0, u = unreadTotal(), b = $id('friendBadge');
     if (b) { b.textContent = n + u > 99 ? '99+' : n + u; b.hidden = !(n + u); }
     const d = $id('friendMenuDesc');
-    if (d && S.data) { const on = S.data.friends.filter(f => f.online).length; d.textContent = `친구 ${S.data.friends.length}명 · 접속 중 ${on}명${n ? ` · 받은 요청 ${n}개` : ''}${u ? ` · 💬 안 읽은 메시지 ${u}개` : ''}`; }
+    if (d && S.data) { const on = S.data.friends.filter(f => f.online).length; d.textContent = (S.data.friends.length ? `${on}명 접속` : '') + (n ? ` · 요청 ${n}` : '') + (u ? ` · 새 메시지 ${u}` : ''); }   // v168 짧게
   }
   const STATE = { idle: '접속 중', queue: '대전 상대 찾는 중', spectate: '관전 중', match: '대전 중', offline: '오프라인' };
   const MODE = { normal: '일반전', rank: '랭크전', friend: '친구 대전' };
