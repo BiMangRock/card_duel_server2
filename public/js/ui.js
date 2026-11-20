@@ -1068,7 +1068,7 @@ function turnNotices(){                                  // 내 턴이 시작될
 // ---------- v132 일일 퀘스트 화면 ----------
 function updateQuestMenuDesc(){ const el=$('questMenuDesc'), p=window.ServerStore && ServerStore.progress; if(!el || !p) return;
   const L=p.quests.list, done=L.filter(q=>q.done).length, ready=tutRewardsReady().length;
-  const left=L.filter(q=>!q.done).reduce((t,q)=>t+q.gold,0); el.textContent=(ready?`보상 ${ready}, `:'')+`${done}/${L.length}`+(left?`, +${left}`:'');   // v168 짧게
+  const left=L.filter(q=>!q.done).reduce((t,q)=>t+q.gold,0); el.textContent=(ready?`보상 ${ready}, `:'')+`${done}/${L.length}`;   // v168 짧게
   const bd=$('questBadge'); if(bd){ bd.hidden=!ready; bd.textContent=ready; } }
 
 // ---------- v140 튜토리얼 · 첫 걸음 (튜토리얼 첫 완료 보상, 계정당 한 번) ----------
@@ -1083,9 +1083,7 @@ function updateTutorialMenuDesc(){
   const el=$('tutMenuDesc'); if(!el || tutState('basic')==null) return;
   const T=PROGRESS.TUTORIALS, left=T.filter(t=>tutState(t.id)!=='claimed'), ready=tutRewardsReady();
   el.textContent = ready.length ? `보상 받기`   // v168 짧게
-    : !left.length ? '모두 완료'
-    : T.every(t=>tutState(t.id)==='todo') ? '+1,000'
-    : `${T.length-left.length}/${T.length}, +${left[0].rewardText}`;
+    : '';
    // v144 가이드는 튜토리얼 화면 맨 밑으로 옮김
   const bd=$('tutBadge'); if(bd){ bd.hidden=!ready.length; bd.textContent=ready.length; }
 }
@@ -2545,7 +2543,7 @@ function buildDifficultyButtons(){
     const b=document.createElement('button');
     b.className='menu-btn';
     const rd=d.bot?rewardDesc(key):'';
-    b.innerHTML=`${d.label}${d.bot?'':'<span class="soon">준비 중</span>'}<span class="desc">${d.desc}</span>${rd?`<span class="desc">${ICO('gold','골드')} ${rd}</span>`:''}`;
+    b.innerHTML=`${d.label}${d.bot?'':'<span class="soon">준비 중</span>'}`;
     b.disabled=!d.bot;
     b.onclick=()=> (key==='normal' || key==='normal2') ? openPlayMode(key) : startGame(key,{mode:'normal'});
     box.appendChild(b);
@@ -2556,10 +2554,10 @@ function openPlayMode(key='normal'){
   curKey=key;
   $('playmodeTitle').textContent=`${DIFFICULTY[key].label}`;
   const sv=Economy.get(), pool=Economy.poolNow(sv);
-  $('btnNormalMode').innerHTML=`일반 모드<span class="desc">승리 <b>${pool}골드</b></span>`;
+  $('btnNormalMode').innerHTML='일반 모드';
   const mb=Economy.maxBet(sv);
   $('btnBetMode').disabled = mb<1;
-  $('btnBetMode').innerHTML=`배팅 모드${mb<1?'<span class="soon">골드 부족</span>':''}<span class="desc">배당 ${ECON.BET_TIERS[0]}~${ECON.BET_TIERS[ECON.BET_TIERS.length-1]}%</span>`;
+  $('btnBetMode').innerHTML=`배팅 모드${mb<1?'<span class="soon">골드 부족</span>':''}`;
   showScreen('playmode');
 }
 // ---- 배팅 화면 ----
@@ -3004,7 +3002,7 @@ function bossButton(b, i, all, opts={}){
   const badge=opts.chapter ? (lock&&lock.passed?'<span class="clr">통과</span>':(!lock?'<span class="clr now">도전</span>':'')) : (done?'<span class="clr">클리어</span>':'');
   btn.innerHTML=`<span class="ic">${lock&&!lock.passed?'🔒':bossIconHTML(b)}</span><span class="bt">${badge}${stage}${escHtml(b.name)}`+
     `<span class="desc">${lock&&!lock.passed?escHtml(lock.why):escHtml(b.desc)}</span>`+
-    `<span class="tags">${opts.chapter?rankTag(bossRank(b))+' ':''}${deckBrief(b.deck)}, ${gold}골드${cards}${bad?', 덱 오류':''}</span>${chips&&!lock?`<span class="tags">${chips}</span>`:''}</span>`;
+    `<span class="tags">${opts.chapter?rankTag(bossRank(b))+' ':''}${deckBrief(b.deck)}${bad?', 덱 오류':''}</span>${chips&&!lock?`<span class="tags">${chips}</span>`:''}</span>`;
   btn.onclick=()=>startBoss(i);
   return btn;
 }

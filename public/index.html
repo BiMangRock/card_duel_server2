@@ -153,12 +153,12 @@
       <button type="button" class="mm-item" onclick="openCraft()"><img class="mm-ic" src="/images/ui/ic_craft.webp" alt="" draggable="false"><span class="mm-label">카드 제작</span><span class="desc" id="craftMenuDesc"></span></button>
       <button type="button" class="mm-item" onclick="showScreen('power')"><img class="mm-ic" src="/images/ui/ic_power.webp" alt="" draggable="false"><span class="mm-label">영웅 능력</span></button>
       <button type="button" class="mm-item" onclick="openQuests()"><img class="mm-ic" src="/images/ui/ic_quest.webp" alt="" draggable="false"><span class="mm-label">퀘스트</span><b class="fr-badge" id="questBadge" hidden></b><span class="desc" id="questMenuDesc"></span></button>
-      <button type="button" class="mm-item" onclick="openCodex()"><img class="mm-ic" src="/images/ui/ic_codex.webp" alt="" draggable="false"><span class="mm-label">특성 도감</span><span class="desc" id="codexMenuDesc">특성마다 +100</span></button>
+      <button type="button" class="mm-item" onclick="openCodex()"><img class="mm-ic" src="/images/ui/ic_codex.webp" alt="" draggable="false"><span class="mm-label">특성 도감</span><span class="desc" id="codexMenuDesc"></span></button>
       <button type="button" class="mm-item" onclick="Friends.open()"><img class="mm-ic" src="/images/ui/ic_friends.webp" alt="" draggable="false"><span class="mm-label">친구</span><b class="fr-badge" id="friendBadge" hidden></b><span class="desc" id="friendMenuDesc"></span></button>
-      <button type="button" class="mm-item" onclick="SuneungFx.mockExam()"><img class="mm-ic" src="/images/ui/ic_exam.webp" alt="" draggable="false"><span class="mm-label">모의고사</span><span class="desc">전 과목 30문제</span></button>   <!-- v167 -->
+      <button type="button" class="mm-item" onclick="SuneungFx.mockExam()"><img class="mm-ic" src="/images/ui/ic_exam.webp" alt="" draggable="false"><span class="mm-label">모의고사</span></button>   <!-- v167 -->
       <span class="mm-gap"></span>
-      <button type="button" class="mm-item mm-sub" onclick="openTutorials()"><img class="mm-ic" src="/images/ui/ic_tutorial.webp" alt="" draggable="false"><span class="mm-label">튜토리얼</span><b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc">+1,000</span></button>
-      <button type="button" class="mm-item mm-sub" onclick="openSettings()"><img class="mm-ic" src="/images/ui/ic_settings.webp" alt="" draggable="false"><span class="mm-label">설정</span><span class="desc">전체 화면</span></button>
+      <button type="button" class="mm-item mm-sub" onclick="openTutorials()"><img class="mm-ic" src="/images/ui/ic_tutorial.webp" alt="" draggable="false"><span class="mm-label">튜토리얼</span><b class="fr-badge" id="tutBadge" hidden></b><span class="desc" id="tutMenuDesc"></span></button>
+      <button type="button" class="mm-item mm-sub" onclick="openSettings()"><img class="mm-ic" src="/images/ui/ic_settings.webp" alt="" draggable="false"><span class="mm-label">설정</span></button>
     </nav>
     <div class="mm-body">
       <header class="mm-head">
@@ -169,9 +169,9 @@
         </div>
       </header>
       <div class="mm-modes">
-        <button type="button" class="mm-mode ai" onclick="showScreen('difficulty')"><span class="mm-art"><span class="mm-txt"><span class="mm-tag">혼자서</span><b>AI 대전</b><span class="mm-gold">이기면 골드</span></span></span></button>
-        <button type="button" class="mm-mode pvp" onclick="PvpClient.openScreen()"><span class="mm-art"><span class="mm-txt"><span class="mm-tag">실시간</span><b>유저 대전</b><span class="mm-gold">이기면 <span class="pvpWinGold">50</span>골드</span></span></span></button>
-        <button type="button" class="mm-mode adv" onclick="openAdventure()"><span class="mm-art"><span class="mm-txt"><span class="mm-tag">스토리</span><b>모험 모드</b><span class="mm-gold">첫 클리어 보상 카드</span></span></span></button>
+        <button type="button" class="mm-mode ai" onclick="showScreen('difficulty')"><span class="mm-art"><span class="mm-txt"><b>AI 대전</b></span></span></button>
+        <button type="button" class="mm-mode pvp" onclick="PvpClient.openScreen()"><span class="mm-art"><span class="mm-txt"><b>유저 대전</b></span></span></button>
+        <button type="button" class="mm-mode adv" onclick="openAdventure()"><span class="mm-art"><span class="mm-txt"><b>모험 모드</b></span></span></button>
       </div>
       <div class="mm-dev">
         <button class="menu-btn dev" id="btnTest" style="display:none" onclick="openTestScreen()">테스트<span class="desc">개발자 전용 · 중급2 AI와 연습 · 내 영웅 체력·시작 마나·덱 장수를 직접 설정 (보상·골드 없음)</span></button>
@@ -337,7 +337,7 @@
   <div class="screen" id="screen-mode">
     <h3>모드 선택</h3>
     <button class="menu-btn" onclick="showScreen('difficulty')">AI 대전</button>
-    <button class="menu-btn" onclick="PvpClient.openScreen()"><img class="mi" src="/images/pvp/pvp_button.webp" alt="">유저 대전<span class="desc">승리 +<span class="pvpWinGold">50</span></span></button>
+    <button class="menu-btn" onclick="PvpClient.openScreen()"><img class="mi" src="/images/pvp/pvp_button.webp" alt="">유저 대전</button>
     <button class="menu-btn" onclick="openAdventure()">모험 모드</button>
     <button class="menu-btn back" onclick="showScreen('main')">뒤로</button>
   </div>
