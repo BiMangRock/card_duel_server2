@@ -157,7 +157,7 @@ const PvpClient = (() => {
     const b = el('pvpFindBtn'), q = st && st.state === 'queue';
     b.disabled = S.replaced ? false : (!S.esOpen || !st);                // v148 자리를 넘긴 탭: 누르면 이 탭으로 다시 가져온다
     b.classList.toggle('waiting', !!q && !S.replaced);
-    el('pvpFindTxt').textContent = S.replaced ? '다른 탭에서 열려 있어요. 눌러서 여기로 가져오기' : !S.esOpen ? '서버에 연결하는 중…' : q ? `상대 찾는 중 ${sec(Date.now() - S.queuedAt)}초` : (S.mode === 'rank' ? '랭크전 상대 찾기' : '일반전 상대 찾기');
+    el('pvpFindTxt').textContent = S.replaced ? '다른 탭에서 열려 있어요. 눌러서 여기로 가져오기' : !S.esOpen ? Flavor.wait('connect') : q ? `상대 찾는 중 ${sec(Date.now() - S.queuedAt)}초` : (S.mode === 'rank' ? '랭크전 상대 찾기' : '일반전 상대 찾기');
     el('pvpSpin').style.display = q && !S.replaced ? '' : 'none';
     document.querySelectorAll('.pvpWinGold').forEach(x => { x.textContent = PVP.WIN_GOLD; });
   }
@@ -198,13 +198,13 @@ const PvpClient = (() => {
   async function openBoard() {
     let box = el('rankModal');
     if (!box) { box = document.createElement('div'); box.id = 'rankModal'; box.className = 'rank-modal'; box.onclick = e => { if (e.target === box) box.classList.remove('show'); }; document.body.appendChild(box); }
-    box.innerHTML = '<div class="rank-panel"><h3>순위표</h3><p class="sub">불러오는 중…</p></div>'; box.classList.add('show');
+    box.innerHTML = '<div class="rank-panel"><h3>순위표</h3><p class="sub">' + Flavor.wait('rank') + '</p></div>'; box.classList.add('show');
     const r = await fetch('/api/pvp/ranking', { credentials: 'same-origin' }).then(x => x.json()).catch(() => null);
     if (!r) { box.querySelector('.sub').textContent = '순위표를 불러오지 못했어요.'; return; }
     const B = r.board || { total: 0, rows: [], counts: r.counts }, mine = r.myRow;
     const cell = x => x.tier >= RANK.LEGEND ? `${ladderHtml(x)} <b>${x.legendWins}승</b>` : `${ladderHtml(x)} <span class="stars">${ladderStars(x)}</span>`;
     const line = x => `<tr${mine && mine.place === x.place ? ' class="me"' : ''}><td>${x.place}</td><td>${escHtml(x.name)}</td><td>${cell(x)}</td><td>${x.wins}승 ${x.losses}패</td></tr>`;
-    let rows = B.rows.map(line).join('') || '<tr><td colspan="4">아직 아무도 없어요.</td></tr>';
+    let rows = B.rows.map(line).join('') || `<tr><td colspan="4">${Flavor.empty('rank')}</td></tr>`;
     if (mine && !B.rows.some(x => x.place === mine.place)) rows += `<tr class="gap"><td colspan="4">⋯</td></tr>${line(mine)}`;
     const counts = RANK.TIERS.map((t, i) => `<span>${rankIco(i)} ${t} <b>${(B.counts || [])[i] || 0}</b></span>`).join('');
     box.innerHTML = `<div class="rank-panel"><h3>순위표</h3><p class="sub">내 등급: ${rankLine(r.me)}${mine ? ` · 전체 ${B.total}명 중 <b>${mine.place}위</b>` : ''}</p>
@@ -336,11 +336,11 @@ const PvpClient = (() => {
   function resultHTML(r) {
     const sign = n => `<span class="plus">+${fmt(n)}골드</span>`;
     const reasonText = ({
-      surrender: r.youWon ? '상대가 항복했습니다' : '항복했습니다',
-      timeout: r.youWon ? '상대가 시간 초과로 졌습니다' : '시간 초과로 패배했습니다',
-      disconnect: r.youWon ? '상대의 연결이 끊겨 승리했습니다' : '연결이 끊겨 패배 처리되었습니다',
-      turnlimit: `${PVP.MAX_TURNS}턴을 넘겨 무승부로 끝났습니다`,
-      void: '연결 문제로 판이 취소되었습니다. 전적과 보상은 없습니다',
+      surrender: r.youWon ? '상대가 항복했어요' : '항복했어요',
+      timeout: r.youWon ? '상대가 시간 초과로 졌어요' : '시간 초과로 패배했어요',
+      disconnect: r.youWon ? '상대의 연결이 끊겨 승리했어요' : '연결이 끊겨 패배 처리되었어요',
+      turnlimit: `${PVP.MAX_TURNS}턴을 넘겨 무승부로 끝났어요`,
+      void: '연결 문제로 판이 취소되었어요. 전적과 보상은 없어요',
     })[r.reason] || '';
     const why = ({
       error: '보상 처리 중 문제가 생겨 골드가 지급되지 않았어요',
@@ -360,16 +360,16 @@ const PvpClient = (() => {
     const r = m.result; S.over = true; clearTimeout(S.waitTimer);
     game.result = r;
     if (r.spectate) {                                                      // v136 관전: 누가 이겼는지만
-      game.pvpTitle = r.void ? '판이 취소되었습니다' : r.draw ? '무승부' : `${r.winnerName} 승리!`;
+      game.pvpTitle = r.void ? '판이 취소되었어요' : r.draw ? '무승부' : `${r.winnerName} 승리!`;
       game.pvpArt = r.void ? `<img src="/images/pvp/void.webp" alt="무효 판">` : r.draw ? `<span class="draw-art"><img src="/images/pvp/draw.webp" alt=""><span>무승부</span></span>` : '';
       const why = ({ surrender: '항복', timeout: '시간 초과', disconnect: '연결 끊김', turnlimit: `${PVP.MAX_TURNS}턴 초과` })[r.reason];
       game.pvpHTML = `<span class="sub2">${escHtml((r.names || []).join(' vs '))}${why ? ', ' + why : ''}</span>`;
       el('pvpAgainBtn').style.display = 'none'; el('specLeaveBtn').style.display = 'none';
       el('pvpTimer').style.display = 'none'; el('pvpRope').style.display = 'none'; banner(null);
-      logLine(r.void ? '판이 취소되었습니다.' : r.draw ? '무승부' : `${r.winnerName} 승리!`);
+      logLine(r.void ? '판이 취소되었어요.' : r.draw ? '무승부' : `${r.winnerName} 승리!`);
       return;
     }
-    game.pvpTitle = r.void || r.draw ? '' : r.youWon ? '승리했습니다!' : '패배했습니다...';   // 무효·무승부 배너 그림이 제목을 대신한다
+    game.pvpTitle = r.void || r.draw ? '' : r.youWon ? '승리했어요!' : '패배했어요...';   // 무효·무승부 배너 그림이 제목을 대신한다
     const IMG = '/images/pvp/';
     game.pvpArt = r.void ? `<img src="${IMG}void.webp" alt="무효 판">`
       : r.draw ? `<span class="draw-art"><img src="${IMG}draw.webp" alt=""><span>무승부</span></span>`
@@ -382,7 +382,7 @@ const PvpClient = (() => {
     el('pvpAgainBtn').style.display = r.friendly ? 'none' : '';
     S.replayId = r.void ? null : m.matchId; el('pvpReplayBtn').style.display = r.void ? 'none' : '';   // v137 방금 판 리플레이
     el('pvpTimer').style.display = 'none'; el('pvpRope').style.display = 'none'; banner(null);
-    logLine(r.void ? '판이 취소되었습니다.' : r.draw ? '무승부' : r.youWon ? `승리!${r.reward > 0 ? ` +${fmt(r.reward)}골드` : ''}` : '패배...');
+    logLine(r.void ? '판이 취소되었어요.' : r.draw ? '무승부' : r.youWon ? `승리!${r.reward > 0 ? ` +${fmt(r.reward)}골드` : ''}` : '패배...');
   }
   function afterMatch() {                                                  // 결과 화면의 "처음 화면으로" (ui.js 의 goToMenu 가 부른다)
     MY = 0; OPP = 1; S.matchId = null; S.over = false; S.lastSeq = -1; S.phase = null; S.oppOffAt = 0;
@@ -467,7 +467,7 @@ const PvpClient = (() => {
     } else { t.style.display = 'none'; rope.style.display = 'none'; }
     if (S.replaced) banner('다른 탭에서 접속했어요. 새로고침해 주세요.', true);
     else if (!S.esOpen) banner('서버와 연결이 끊겼어요. 다시 연결하는 중이에요.', true);
-    else if (S.oppOffAt && !S.spectate) banner(`상대의 연결이 끊겼어요. ${sec(S.reconnectMs - (Date.now() - S.oppOffAt))}초 안에 돌아오지 않으면 승리합니다.`, false);
+    else if (S.oppOffAt && !S.spectate) banner(`상대의 연결이 끊겼어요. ${sec(S.reconnectMs - (Date.now() - S.oppOffAt))}초 안에 돌아오지 않으면 승리해요.`, false);
     else banner(null);
   }
 

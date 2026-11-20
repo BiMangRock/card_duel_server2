@@ -63,7 +63,7 @@ const Friends = (() => {
                                          : `<button type="button" class="end-turn" data-act="invite" data-id="${f.id}">대전 신청</button>`);
       btns.push(`<button type="button" class="end-turn sub fr-del${S.armed === f.id ? ' armed' : ''}" data-act="remove" data-id="${f.id}">${S.armed === f.id ? '정말 삭제?' : '삭제'}</button>`);
       return `<div class="fr-item${on ? ' on' : ''}"><span class="fr-dot ${st}"></span><span class="fr-who">${who(f)}<small class="fr-st">${esc(label)}</small></span><span class="fr-btns">${btns.join('')}</span></div>`;
-    }).join('') : '<p class="fr-empty">친구 없음</p>';
+    }).join('') : Flavor.empty('friends');
   }
 
   // ---------- 버튼 ----------
@@ -167,12 +167,12 @@ const Friends = (() => {
     p.querySelector('.cp-more').hidden = !C.more;
     let lastDay = '', html = '';
     const lastMine = [...C.msgs].reverse().find(m => m.from !== C.fid);
-    if (!C.msgs.length) html = `<p class="cp-empty">${C.loading ? '불러오는 중…' : `${esc(C.name || '친구')}님에게 첫 메시지를 보내 보세요.`}</p>`;
+    if (!C.msgs.length) html = C.loading ? `<p class="cp-empty">${Flavor.wait('chat')}</p>` : Flavor.empty('chat', { name: C.name || '친구' });
     for (const m of C.msgs) {
       const day = dayOf(m.at); if (day !== lastDay) { html += `<div class="cp-day">${day}</div>`; lastDay = day; }
       const mine = m.from !== C.fid;
       const tail = mine && lastMine && m.id === lastMine.id && m.read ? '<span class="cp-read">읽음</span>' : '';
-      html += `<div class="cp-msg${mine ? ' mine' : ''}${m.pending ? ' pending' : ''}"><div class="cp-bub">${esc(m.text)}</div><span class="cp-time">${tail}${m.pending ? '보내는 중…' : hm(m.at)}</span></div>`;
+      html += `<div class="cp-msg${mine ? ' mine' : ''}${m.pending ? ' pending' : ''}"><div class="cp-bub">${esc(m.text)}</div><span class="cp-time">${tail}${m.pending ? Flavor.wait('send') : hm(m.at)}</span></div>`;
     }
     list.innerHTML = html;
     if (keepScroll === 'older') body.scrollTop = body.scrollHeight - oldH + oldTop;
@@ -309,7 +309,7 @@ const Friends = (() => {
       n.addEventListener('click', e => { if (e.target.closest('button')) { PvpClient.open(); connNotice(); } }); }
     const P = PvpClient._state || {};
     const txt = P.replaced ? '다른 탭에서 같은 계정이 열려 있어서 대전 신청이 그쪽으로 가요. <button type="button" class="end-turn sub">여기서 받기</button>'
-      : !P.esOpen ? '서버에 다시 연결하는 중… 연결되면 친구의 접속 상태와 대전 신청이 보여요.' : '';
+      : !P.esOpen ? Flavor.wait('reconnect') + ' 연결되면 친구의 접속 상태와 대전 신청이 보여요.' : '';
     if (n.dataset.t !== txt) { n.dataset.t = txt; n.innerHTML = txt; n.hidden = !txt; }
   }
   setInterval(() => { if (shown()) connNotice(); }, 1000);

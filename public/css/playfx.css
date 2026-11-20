@@ -1,0 +1,73 @@
+/* playfx.css — v174 카드 연출 · 보스 등장/격파 (playfx.js) */
+.pfx{position:fixed; inset:0; z-index:9500; overflow:hidden; cursor:pointer; -webkit-tap-highlight-color:transparent;}
+.pfx-spell:not(.pfx-legend){pointer-events:none;}          /* 보통 주문은 짧아서 화면을 막지 않는다 */
+.pfx-dim{position:absolute; inset:0; background:radial-gradient(ellipse at 50% 45%, rgba(40,26,8,.55), rgba(4,3,8,.88) 70%);}
+.pfx-dim.soft{background:radial-gradient(ellipse at 50% 45%, rgba(40,26,8,.25), rgba(4,3,8,.6) 75%);}
+.pfx-dim.deep{background:radial-gradient(ellipse at 35% 50%, rgba(70,12,8,.55), rgba(3,2,6,.95) 70%);}
+
+/* 금빛 빛줄기 (돌아간다) */
+.pfx-rays{position:absolute; left:50%; top:46%; width:150vmax; height:150vmax; pointer-events:none;
+  background:repeating-conic-gradient(from 0deg, rgba(255,214,120,.38) 0deg 5deg, rgba(255,214,120,0) 5deg 15deg);
+  -webkit-mask:radial-gradient(circle, #000 0, rgba(0,0,0,.6) 18%, transparent 46%); mask:radial-gradient(circle, #000 0, rgba(0,0,0,.6) 18%, transparent 46%);
+  mix-blend-mode:screen;}
+.pfx-burst{position:absolute; left:50%; top:46%; width:70vmin; height:70vmin; border-radius:50%; opacity:0; pointer-events:none;
+  background:radial-gradient(circle, rgba(255,250,220,.95) 0, rgba(255,200,80,.65) 25%, rgba(255,140,20,0) 65%); mix-blend-mode:screen;}
+.pfx-glow{position:absolute; left:50%; top:46%; width:58vmin; height:58vmin; border-radius:50%; opacity:0; pointer-events:none;
+  background:radial-gradient(circle, var(--c1) 0, var(--c2) 30%, transparent 68%); mix-blend-mode:screen; filter:blur(4px);}
+.pfx-spell.opp .pfx-glow, .pfx-spell.opp .pfx-card{top:40%;}
+.pfx-spell.mine .pfx-glow, .pfx-spell.mine .pfx-card{top:50%;}
+
+/* 카드: 원래 크기(92×146)로 만들고 transform 으로 키운다 */
+.pfx-card{position:absolute; left:50%; top:46%; width:92px; height:146px; transform-origin:50% 50%; will-change:transform, opacity, filter;}
+.pfx-card > .card{width:92px; height:146px; min-height:0; margin:0; transform:none !important; transition:none;
+  box-shadow:0 0 0 2px rgba(255,220,130,.0), 0 18px 40px rgba(0,0,0,.65);}
+.pfx-legend .pfx-card > .card{box-shadow:0 0 22px 6px rgba(255,200,80,.55), 0 18px 40px rgba(0,0,0,.7);}
+
+/* 이름 띠 */
+.pfx-banner{position:absolute; left:50%; bottom:9vh; transform:translate(-50%,0); opacity:0; text-align:center; white-space:nowrap;
+  padding:.45rem 3.2rem .55rem; pointer-events:none;
+  background:linear-gradient(90deg, transparent, rgba(12,8,4,.92) 18%, rgba(12,8,4,.92) 82%, transparent);
+  border-top:1px solid rgba(255,214,120,.55); border-bottom:1px solid rgba(255,214,120,.55);}
+.pfx-banner small{display:block; font:700 .72rem var(--font-u, sans-serif); letter-spacing:.35em; color:#e8c87a; opacity:.9;}
+.pfx-banner b{display:block; font:400 clamp(1.4rem, 4.2vmin, 2.4rem) var(--font-d, serif); color:#ffe39a;
+  text-shadow:0 0 14px rgba(255,170,40,.7), 0 2px 0 #3a2400, 0 3px 6px #000;}
+
+/* 불똥 */
+.pfx-spark{position:absolute; left:50%; top:46%; border-radius:50%; pointer-events:none; mix-blend-mode:screen;}
+.pfx-spell.opp .pfx-spark{top:40%;} .pfx-spell.mine .pfx-spark{top:50%;}
+
+/* ---------- 보스 등장 ---------- */
+.pfx-boss .pfx-bar{position:absolute; left:0; right:0; height:13vh; background:linear-gradient(180deg, #000, #0b0604);}
+.pfx-boss .pfx-bar.top{top:0; border-bottom:2px solid rgba(201,162,39,.6);}
+.pfx-boss .pfx-bar.bot{bottom:0; border-top:2px solid rgba(201,162,39,.6);}
+.pb-pic{position:absolute; left:30%; top:50%; width:min(42vmin, 340px); aspect-ratio:1; border-radius:50%; overflow:hidden; opacity:0;
+  border:3px solid #c9a227; box-shadow:0 0 0 6px rgba(0,0,0,.6), 0 0 40px 10px rgba(180,30,10,.55); background:#140b06;
+  display:flex; align-items:center; justify-content:center;}
+.pb-pic img{width:100%; height:100%; object-fit:cover; object-position:50% 25%;}
+.pb-pic span{font-size:min(22vmin, 170px); line-height:1;}
+.pb-slash{position:absolute; left:30%; top:50%; width:min(70vmin, 560px); height:10px; opacity:0; pointer-events:none; transform-origin:50% 50%;
+  background:linear-gradient(90deg, transparent, #fff 40%, #ffd27a 60%, transparent); box-shadow:0 0 18px 6px rgba(255,190,90,.75); border-radius:50%;}
+.pb-txt{position:absolute; left:calc(30% + min(24vmin, 190px)); right:6vw; top:50%; transform:translateY(-50%); opacity:0;}
+.pb-txt small{display:inline-block; padding:.12rem .6rem; margin-bottom:.35rem; font:700 .8rem var(--font-u, sans-serif); letter-spacing:.25em;
+  color:#ffd9a0; background:rgba(150,20,10,.75); border:1px solid rgba(255,190,120,.5);}
+.pb-txt b{display:block; font:400 clamp(1.8rem, 6.5vmin, 3.6rem) var(--font-d, serif); line-height:1.1; color:#ffe7b0;
+  text-shadow:0 0 18px rgba(255,90,30,.6), 0 3px 0 #2a0c00, 0 4px 10px #000;}
+.pb-txt p{margin:.5rem 0 0; max-width:34rem; font:500 clamp(.78rem, 2.2vmin, 1rem)/1.45 var(--font-u, sans-serif); color:#e6d6b8;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-shadow:0 1px 3px #000;}
+.pb-skip{position:absolute; right:1.2rem; bottom:calc(13vh + .6rem); font:600 .72rem var(--font-u, sans-serif); color:rgba(230,214,184,.55);}
+@media (orientation:portrait){
+  .pb-pic{left:50%; top:38%;}
+  .pb-slash{left:50%; top:38%;}
+  .pb-txt{left:8vw; right:8vw; top:68%; text-align:center;}
+  .pb-txt p{margin-left:auto; margin-right:auto;}
+}
+
+/* ---------- 보스 격파 (글자 없음: 금 → 번쩍 → 조각) ---------- */
+.pfx-defeat{pointer-events:none; cursor:default; z-index:9600;}
+.pd-box{position:fixed; border-radius:50%; overflow:hidden; pointer-events:none;}
+.pd-box svg{position:absolute; inset:0; width:100%; height:100%;}
+.pd-box path{stroke-dasharray:1; stroke-dashoffset:1;}
+.pd-flash{position:absolute; inset:0; border-radius:50%; opacity:0; background:radial-gradient(circle, #fff 0, rgba(255,244,210,.9) 45%, rgba(255,220,140,0) 75%);}
+.pd-shard{pointer-events:none; will-change:transform, opacity; z-index:1;}
+.pd-at{position:absolute; width:0; height:0;}
+.pd-at .pfx-spark{left:0; top:0;}

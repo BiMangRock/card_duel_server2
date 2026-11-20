@@ -1,0 +1,15 @@
+/* flavor.css — 빈 화면 대사 (flavor.js 의 Flavor.empty). 얼굴 동그라미 + 말풍선 */
+.fl-empty{display:flex; align-items:center; gap:.7rem; max-width:28rem; margin:1.1rem auto; padding:0 .4rem; text-align:left;}
+.fl-face{flex:none; width:3.4rem; height:3.4rem; border-radius:50%; object-fit:cover; object-position:50% 20%;
+  border:2px solid rgba(201,162,39,.75); box-shadow:0 2px 8px rgba(0,0,0,.6); background:#1a140c;}
+.fl-bub{position:relative; flex:1; padding:.55rem .75rem; border-radius:10px; background:rgba(28,21,12,.88);
+  border:1px solid rgba(201,162,39,.45); color:var(--parch, #f3e3bb); font-size:.82rem; line-height:1.45; box-shadow:0 3px 10px rgba(0,0,0,.45);}
+.fl-bub::before{content:''; position:absolute; left:-7px; top:50%; width:12px; height:12px; transform:translateY(-50%) rotate(45deg);
+  background:inherit; border-left:1px solid rgba(201,162,39,.45); border-bottom:1px solid rgba(201,162,39,.45);}
+.fl-bub b{display:block; font:400 .78rem var(--font-d, inherit); color:var(--gold, #c9a227); margin-bottom:.1rem; letter-spacing:.03em;}
+.fl-bub span{display:block;}
+/* 표 안 (순위표 · 지난 판) */
+td .fl-empty{margin:.6rem auto;}
+/* 채팅 창: 가운데쯤 */
+#chatPanel .fl-empty{margin-top:2rem;}
+@media (max-height:540px){ .fl-empty{margin:.5rem auto;} .fl-face{width:2.6rem; height:2.6rem;} .fl-bub{font-size:.74rem; padding:.4rem .6rem;} }

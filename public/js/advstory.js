@@ -128,7 +128,7 @@ const AdvStory = (() => {
       <div class="as-big"></div>
       <div class="as-black"></div>
       ${canSkip ? '<button type="button" class="as-skip">건너뛰기 ⏭</button>' : ''}
-      <div class="as-load">불러오는 중…</div>`;
+      <div class="as-load">${Flavor.wait('story')}</div>`;
     document.body.appendChild(w);
     return w;
   }

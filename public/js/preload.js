@@ -96,7 +96,7 @@ const Preload = (() => {
   function ui() {
     if (box) return box;
     box = document.createElement('div'); box.id = 'loadScreen';
-    box.innerHTML = '<div class="ld-card"><div class="ld-title">게임 로딩 중</div>'
+    box.innerHTML = '<div class="ld-card"><div class="ld-title">' + Flavor.wait('game') + '</div>'
       + '<div class="ld-bar"><i></i></div><div class="ld-pct">0%</div></div>';
     document.body.appendChild(box);
     return box;

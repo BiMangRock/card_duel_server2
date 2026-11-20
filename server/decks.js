@@ -137,7 +137,7 @@ router.post('/decks/:slot/activate', (req, res) => {
   if (!row) return fail(res, 404, '없는 덱이에요.');
   const list = JSON.parse(row.deck_json);
   const p = activeProblem(list, uid, !!req.user.isAdmin);
-  if (p) return fail(res, 400, list.length < CONFIG.DECK_SIZE ? `아직 ${list.length}/${CONFIG.DECK_SIZE}장이라 쓸 수 없어요.` : p.replace('보유하지 않은 카드가 있습니다', '아직 없는 카드가 있어요 (카드 제작에서 만들 수 있어요)'));
+  if (p) return fail(res, 400, list.length < CONFIG.DECK_SIZE ? `아직 ${list.length}/${CONFIG.DECK_SIZE}장이라 쓸 수 없어요.` : p.replace('보유하지 않은 카드가 있어요', '아직 없는 카드가 있어요 (카드 제작에서 만들 수 있어요)'));
   db.exec('BEGIN IMMEDIATE');
   try { writeActiveDeck(uid, list); setActive(uid, slot); db.exec('COMMIT'); }
   catch (e) { try { db.exec('ROLLBACK'); } catch (_) {} console.error('decks/activate 실패:', e); return fail(res, 500, '서버 오류가 났어요.'); }

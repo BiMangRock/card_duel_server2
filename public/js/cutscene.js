@@ -704,7 +704,7 @@
       <div class="cs-layer"></div>
       <div class="cs-top"><span class="cs-title"></span><button type="button" class="cs-auto">▶ 자동</button>${canSkip ? '<button type="button" class="cs-skip">건너뛰기 ⏭</button>' : ''}</div>
       <div class="cs-endcard"><small></small><b></b><span></span></div>
-      <div class="cs-load">불러오는 중…</div>`;
+      <div class="cs-load">${Flavor.wait('scene')}</div>`;
     root.querySelector('.cs-title').textContent = sc.title;   // v154 이모지 없이 (vnbox.css 에서 금색 제목 글꼴)
     document.body.appendChild(root);
     return root;
