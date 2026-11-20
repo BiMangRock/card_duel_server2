@@ -461,6 +461,20 @@ const FX_AURA = {                        // 주문 시전 카드 뒤에 깔리�
 // n=프레임 수, w/h=프레임 크기, dur=기본 재생 ms, ax/ay=기준점(0~1, 대상 중심에 맞춰짐)
 const FX_ANIM = {"slash":{"n":9,"w":336,"h":184,"dur":520,"ax":0.5,"ay":0.5,"blend":"glow"},"goldburst":{"n":9,"w":256,"h":256,"dur":620,"ax":0.5,"ay":0.5,"blend":"glow"},"shield":{"n":17,"w":208,"h":208,"dur":900,"ax":0.5,"ay":0.5,"blend":"glow"},"poison":{"n":17,"w":208,"h":208,"dur":1000,"ax":0.5,"ay":0.5,"blend":"glow"},"lightning":{"n":9,"w":384,"h":206,"dur":620,"ax":0.5,"ay":0.82,"blend":"glow"},"ice":{"n":9,"w":256,"h":256,"dur":720,"ax":0.5,"ay":0.5,"blend":"glow"},"heal":{"n":17,"w":208,"h":208,"dur":1000,"ax":0.5,"ay":0.8,"blend":"glow"},"fireboom":{"n":9,"w":256,"h":256,"dur":760,"ax":0.5,"ay":0.5,"blend":"glow"},"burn":{"n":15,"w":256,"h":256,"dur":1500,"ax":0.496996996996997,"ay":0.5045045045045045,"blend":"glow","cardw":0.5135135135135135,"cardh":0.7267267267267267}};
 const FX_STATIC_NEW = ['fireball','bolt_big','ice_burst','heal_pillar'];
+// v165 새 프레임 애니메이션 (images/fx_a_<이름>.webp, 4×4 생성 시트 → 가로 15프레임). sc = 그림 둘레 여백만큼 키우는 배율, loop = 투사체가 날아가는 동안 반복할 프레임 구간
+Object.assign(FX_ANIM, {
+  fireball:     {n:15, w:238, h:238, dur:600,  ax:.5, ay:.5, sc:1.15, loop:[3,14]},
+  shadow_bolt:  {n:15, w:238, h:238, dur:600,  ax:.5, ay:.5, sc:1.7,  loop:[0,14]},
+  fire_burst:   {n:15, w:238, h:238, dur:720,  ax:.5, ay:.5, sc:1.15},
+  ice_shatter:  {n:15, w:238, h:238, dur:780,  ax:.5, ay:.54, sc:1.15},
+  bolt_strike:  {n:15, w:188, h:188, dur:640,  ax:.5, ay:.5, sc:1.15},
+  holy_beam:    {n:15, w:238, h:238, dur:860,  ax:.5, ay:.5, sc:1.12},
+  heal_pillar:  {n:15, w:238, h:238, dur:1000, ax:.5, ay:.5, sc:1.12},
+  deathecho:    {n:15, w:238, h:238, dur:1050, ax:.5, ay:.6, sc:1.12},
+  summon_crack: {n:15, w:238, h:238, dur:800,  ax:.5, ay:.55, sc:1.15},
+  victory_burst:{n:15, w:238, h:238, dur:1300, ax:.5, ay:.5, sc:1.15},
+});
+
 const fxV = a => Array.isArray(a) ? a[Math.floor(Math.random()*a.length)] : a;     // 배열이면 무작위로 하나 (여러 이미지 섞어 쓰기)
 const FX_HM = {holy_beam:1.9, bolt_strike:1.9, lightning:2.6, bolt_big:2.3, fireboom:2.2, ice:2.1, ice_burst:2.0, goldburst:2.1, poison:2.1};   // 명중 이미지 크기 배율
 const FX_UP = {lightning:0, fireboom:0, ice:0, goldburst:0, poison:0, ice_burst:0, bolt_big:.3};                                              // 명중 이미지를 위로 올리는 비율 (신규 이미지별)
@@ -469,7 +483,7 @@ const FX_PB = {fireball:200};                                                   
 function fxAnim(name, x, y, box, o={}){              // 프레임 스트립 재생. o.from/o.to = 프레임 구간, o.bw/bh = 가로·세로 직접 지정
   const m=FX_ANIM[name]; if(!m) return null;
   const from=o.from||0, to=(o.to==null?m.n-1:o.to), cnt=to-from+1;
-  const k=box/Math.max(m.w,m.h), w=o.bw||m.w*k, h=o.bh||m.h*k;
+  const k=box*(m.sc||1)/Math.max(m.w,m.h), w=o.bw||m.w*k, h=o.bh||m.h*k;
   const d=document.createElement('div'); d.className='fxs glow'+(o.cls?' '+o.cls:'');
   d.style.width=w+'px'; d.style.height=h+'px'; d.style.backgroundImage='url(images/fx_a_'+name+'.png)';
   d.style.backgroundSize=(m.n*w)+'px '+h+'px'; d.style.backgroundRepeat='no-repeat'; d.style.transformOrigin=(m.ax*100)+'% '+(m.ay*100)+'%';
@@ -516,7 +530,24 @@ function fxSprite(name, x, y, box, o={}){            // 제자리에서 팡 나�
   a.finished.then(()=>m.im.remove(), ()=>m.im.remove());
   return a;
 }
+function fxShootAnim(name, from, to, box, ms){       // v165 프레임 애니메이션 투사체: 날아가는 동안 loop 구간을 반복
+  const m=FX_ANIM[name], [f0,f1]=m.loop||[0,m.n-1], cnt=f1-f0+1;
+  const k=box*(m.sc||1)/Math.max(m.w,m.h), w=m.w*k, h=m.h*k;
+  const d=document.createElement('div'); d.className='fxs glow';
+  d.style.width=w+'px'; d.style.height=h+'px'; d.style.backgroundImage='url(images/fx_a_'+name+'.png)';
+  d.style.backgroundSize=(m.n*w)+'px '+h+'px'; d.style.backgroundRepeat='no-repeat';
+  const ang=Math.atan2(to.y-from.y, to.x-from.x), T=(x,y,sc)=>`translate(${x}px,${y}px) translate(-50%,-50%) rotate(${ang}rad) scale(${sc})`;
+  document.body.appendChild(d);
+  const kf=[]; for(let i=0;i<cnt;i++) kf.push({backgroundPosition:(-(f0+i)*w)+'px 0px', offset:i/cnt, easing:'step-end'});
+  kf.push({backgroundPosition:(-f1*w)+'px 0px', offset:1});
+  d.animate(kf,{duration:Math.max(240, m.dur*cnt/m.n), iterations:Infinity});
+  const dx=to.x-from.x, dy=to.y-from.y;
+  const a=d.animate([{opacity:0,transform:T(from.x,from.y,.55)},{opacity:1,transform:T(from.x+dx*.1,from.y+dy*.1,1),offset:.1},
+                     {opacity:1,transform:T(to.x,to.y,1),offset:.92},{opacity:0,transform:T(to.x,to.y,1.15)}], {duration:ms, easing:'ease-in', fill:'forwards'});
+  return a.finished.then(()=>d.remove(), ()=>d.remove());
+}
 function fxShoot(name, from, to, box, ms){           // 시전자 → 대상으로 날아가는 투사체
+  if(FX_ANIM[name] && FX_ANIM[name].loop) return fxShootAnim(name, from, to, box, ms);
   const m=fxMake(name, box); if(!m) return Promise.resolve();
   const ang=Math.atan2(to.y-from.y, to.x-from.x), T=(x,y,sc)=>`translate(${x}px,${y}px) translate(-50%,-50%) rotate(${ang}rad) scale(${sc})`;
   document.body.appendChild(m.im);
@@ -1939,7 +1970,7 @@ function render(){
   if(v.over && !(game && game.replay)){   // v137 리플레이는 결과 창 대신 아래 조작 막대에 결과를 보여 준다
     const snHold = !!(game && game.mode==='adventure' && v.winner===MY && !game.spectate && !game.snEndDone && window.SuneungFx && SuneungFx.isSuneung(game.boss));   // v169 수능 보스를 이기면 VICTORY·결과 창 없이 바로 엔딩 (몰입), 결과 창은 엔딩 뒤
     if(snHold && !SuneungFx.endingActive()){ const g=game; SuneungFx.queueEnding(); SuneungFx.afterEnding(()=>{ g.snEndDone=true; if(game===g) render(); }); }   // 정산보다 먼저 그려져도 엔딩이 꼭 돌고, 끝나면 결과 창이 뜬다
-    if(!snHold && !$('overlay').classList.contains('show') && v.winner!==null) fxSprite(v.winner===MY?'victory':'defeat',innerWidth/2,innerHeight*.26,Math.min(innerWidth*.8,520),{dur:3400,z:300,kf:fxPop});   // v89: 승리·패배 연출
+    if(!snHold && !$('overlay').classList.contains('show') && v.winner!==null) { if(v.winner===MY) fxSprite('victory_burst',innerWidth/2,innerHeight*.26,Math.min(innerWidth*.9,640),{z:299}); fxSprite(v.winner===MY?'victory':'defeat',innerWidth/2,innerHeight*.26,Math.min(innerWidth*.8,520),{dur:3400,z:300,kf:fxPop}); }   // v89: 승리·패배 연출
     if(!snHold) $('overlay').classList.add('show');
     $('overlayText').textContent = (game && game.mode==='pvp') ? game.pvpTitle : v.winner===null ? '무승부' : (v.winner===MY ? '승리했습니다!' : '패배했습니다...');
     $('overlayReward').innerHTML = rewardHTML();
