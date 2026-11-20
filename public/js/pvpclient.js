@@ -188,7 +188,7 @@ const PvpClient = (() => {
   // ---------- v127 랭크전: 모드 탭 · 등급 배지 · 순위표 · 일반전 전환 ----------
   document.querySelectorAll('#pvpModes button').forEach(b => b.onclick = () => { if (S.status && S.status.state === 'queue') return; S.mode = b.dataset.mode; showMsg(''); renderScreen(); });
   el('pvpFallbackBtn').onclick = async () => { S.mode = 'normal'; S.queuedAt = Date.now(); const r = await post('/api/pvp/queue', { mode: 'normal', heroPower: HeroPowerPref.get() }); if (!r.ok) showMsg(r.data.error || '일반전으로 바꾸지 못했어요.'); renderScreen(); };
-  const rankLine = rk => !rk ? '-' : rk.tier >= RANK.LEGEND ? `${ladderLabel(rk)}${rk.place ? ` · ${rk.place}위` : ''}` : `${ladderLabel(rk)} <span class="stars">${ladderStars(rk)}</span>`;
+  const rankLine = rk => !rk ? '-' : rk.tier >= RANK.LEGEND ? `${ladderHtml(rk)}${rk.place ? ` · ${rk.place}위` : ''}` : `${ladderHtml(rk)} <span class="stars">${ladderStars(rk)}</span>`;
   function renderRank(rk) {
     if (!rk) return;
     el('pvpRankBadge').innerHTML = rankLine(rk);
@@ -203,11 +203,11 @@ const PvpClient = (() => {
     const r = await fetch('/api/pvp/ranking', { credentials: 'same-origin' }).then(x => x.json()).catch(() => null);
     if (!r) { box.querySelector('.sub').textContent = '순위표를 불러오지 못했어요.'; return; }
     const B = r.board || { total: 0, rows: [], counts: r.counts }, mine = r.myRow;
-    const cell = x => x.tier >= RANK.LEGEND ? `${ladderLabel(x)} <b>${x.legendWins}승</b>` : `${ladderLabel(x)} <span class="stars">${ladderStars(x)}</span>`;
+    const cell = x => x.tier >= RANK.LEGEND ? `${ladderHtml(x)} <b>${x.legendWins}승</b>` : `${ladderHtml(x)} <span class="stars">${ladderStars(x)}</span>`;
     const line = x => `<tr${mine && mine.place === x.place ? ' class="me"' : ''}><td>${x.place}</td><td>${escHtml(x.name)}</td><td>${cell(x)}</td><td>${x.wins}승 ${x.losses}패</td></tr>`;
     let rows = B.rows.map(line).join('') || '<tr><td colspan="4">아직 아무도 없어요.</td></tr>';
     if (mine && !B.rows.some(x => x.place === mine.place)) rows += `<tr class="gap"><td colspan="4">⋯</td></tr>${line(mine)}`;
-    const counts = RANK.TIERS.map((t, i) => `<span>${RANK.ICONS[i]} ${t} <b>${(B.counts || [])[i] || 0}</b></span>`).join('');
+    const counts = RANK.TIERS.map((t, i) => `<span>${rankIco(i)} ${t} <b>${(B.counts || [])[i] || 0}</b></span>`).join('');
     box.innerHTML = `<div class="rank-panel"><h3>순위표</h3><p class="sub">내 등급: ${rankLine(r.me)}${mine ? ` · 전체 ${B.total}명 중 <b>${mine.place}위</b>` : ''}</p>
       <table class="rank-table"><tr><th>순위</th><th>이름</th><th>등급</th><th>랭크 승/패</th></tr>${rows}</table>
       <h4>등급별 인원</h4><div class="rank-counts">${counts}</div>
@@ -354,7 +354,7 @@ const PvpClient = (() => {
     let rk = '';                                                              // v127 랭크전: 별 변화
     if (r.ranked && r.rank) { const a = r.rank.after, g = r.rank.gained;
       const what = a.tier >= RANK.LEGEND && !r.rank.toLegend ? (g > 0 ? `전설 승수 +1 (${a.legendWins}승)` : '전설 승수 그대로') : g > 0 ? `별 +${g}` : g < 0 ? '별 -1' : '별 변화 없음';
-      rk = `<span class="sub2 rank-line">${rankLine({ ...a, place: r.rank.place })} · ${what}${r.rank.toLegend ? ' · 👑 전설 달성!' : r.rank.promoted ? ' · ⬆ 승급!' : r.rank.demoted ? ' · ⬇ 강등' : ''}</span>`; }
+      rk = `<span class="sub2 rank-line">${rankLine({ ...a, place: r.rank.place })} · ${what}${r.rank.toLegend ? ' · ' + rankIco(RANK.LEGEND) + ' 전설 달성!' : r.rank.promoted ? ' · ⬆ 승급!' : r.rank.demoted ? ' · ⬇ 강등' : ''}</span>`; }
     return `<span class="sub2">${r.friendly ? '친구 대전 · ' : r.ranked ? '랭크전 · ' : ''}${r.oppName ? 'vs ' + escHtml(r.oppName) : ''}${reasonText ? ' · ' + reasonText : ''}</span>${top}${rk}${sub ? `<span class="sub2">${sub}</span>` : ''}<span class="sub2">보유 골드 ${fmt(Economy.get().gold)}</span>`;
   }
   function finishUi(m) {

@@ -324,7 +324,7 @@ function showEffect(ev){
   else if(ev.type==='heroAtk'){ floatOn(heroT(ev.seat),'공격력 +'+ev.amount,'buff'); }
   else if(ev.type==='spellburst'){ floatOn(minionT(ev.seat, ev.id),'주문폭주!','buff'); }
   else if(ev.type==='haste'){ floatOn(ev.target,'급습!','buff'); const el=elOf(ev.target); if(el) el.classList.remove('sick'); }
-  else if(ev.type==='freeze'){ floatOn(ev.target,'❄ 빙결','shield'); const el=elOf(ev.target); if(el) el.classList.add('frozen'); }
+  else if(ev.type==='freeze'){ floatOn(ev.target,'빙결','shield','freeze'); const el=elOf(ev.target); if(el) el.classList.add('frozen'); }
   else if(ev.type==='silence'){ floatOn(ev.target,'침묵','shield'); const el=elOf(ev.target); if(el) el.classList.remove('taunt','shielded','frozen','stealthed'); }
   else if(ev.type==='shieldGain'){ floatOn(ev.target,'보호막','shield','shield'); }
   else if(ev.type==='recall'){ floatOn(ev.target,'회수','shield','recall'); }
@@ -1251,7 +1251,7 @@ function portraitOf(seat, side){
   if(seat===OPP && game && game.boss && game.boss.icon){ const ic=String(game.boss.icon); if(/[\/.](jpg|jpeg|png|webp)$/i.test(ic) || ic.includes('/')) return {img:ic.startsWith('/')?ic:'/'+ic}; return {emoji:ic}; }
   const hp=side && side.heroPower, nm=hp && HERO_PORTRAIT[hp.id], art=nm && cardArt(cardByName(nm));
   if(art) return {img:art};
-  return {emoji: hp ? hp.icon : (seat===MY?'🙂':'👤')};
+  return {img: seat===MY ? '/images/hp/default_me.webp' : '/images/hp/default_opp.webp'};   // v166 그림 없는 능력·기본 = 기본 초상화
 }
 function renderPortrait(id, seat, side){
   const box=$(id); if(!box) return; const sp=box.firstElementChild, p=portraitOf(seat, side), key=p.img||p.emoji;
@@ -1680,22 +1680,22 @@ function boardDecor(el, m){
   if(l){ const mx=m.maxHp ?? m.hp; l.classList.toggle('hurt', m.hp<mx); l.classList.toggle('buffed', m.hp>=mx && typeof base.hp==='number' && mx>base.hp); }
   const eff=el.querySelector('.effect'), txt=(eff ? eff.textContent : '')+' '+(effectText(m)||''), ic=[];
   const add=(i,t)=>{ if(!ic.some(x=>x[1]===t)) ic.push([i,t]); };
-  if(/죽음의 메아리/.test(txt)) add('💀','죽음의 메아리');
-  if(BOARD_TRIGGER_RE.test(effectText(m)||'') || m.spellburst) add('⚡','발동 효과');
-  if(m.poison) add('☠','독성');
-  if(m.lifesteal) add('🩸','생명력 흡수');
-  if(m.windfury) add('≋','질풍');
+  if(/죽음의 메아리/.test(txt)) add('img:deathrattle','죽음의 메아리');
+  if(BOARD_TRIGGER_RE.test(effectText(m)||'') || m.spellburst) add('img:trigger','발동 효과');
+  if(m.poison) add('img:poison','독성');
+  if(m.lifesteal) add('img:lifesteal','생명력 흡수');
+  if(m.windfury) add('img:windfury','질풍');
   if(m.revive) add('img:revive','환생');
-  if(m.elusive) add('✧','모면');
-  if(m.cantAttack) add('⛔','공격 불가');
-  if(m.confused) add('🌀', (m.confusedPerm?'영구 ':'')+'혼란');
-  if(m.stunned) add('💫','기절');
-  if(m.resting) add('💤','휴식');
+  if(m.elusive) add('img:elusive','모면');
+  if(m.cantAttack) add('img:cantattack','공격 불가');
+  if(m.confused) add('img:confuse', (m.confusedPerm?'영구 ':'')+'혼란');
+  if(m.stunned) add('img:stun','기절');
+  if(m.resting) add('img:rest','휴식');
   if(m.burnout) add('img:burnout','번아웃');
   if(m.mutiny) add('img:strife','내부분열');
   if(m.probation) add('img:warning','경고장 '+m.probation);
-  if(m.timidTemp||m.timidPerm) add('😳','소심함');
-  if(m.freezeNext) add('😨','겁먹음');
+  if(m.timidTemp||m.timidPerm) add('img:timid','소심함');
+  if(m.freezeNext) add('img:scared','겁먹음');
   if(m.knightBy) add('img:shield','흑기사');
   if(m.airpods) add('img:noisecancel','노이즈 캔슬링');
   if(m.obese) add('img:overfed','비만');
@@ -1724,7 +1724,7 @@ function cardEl(c, opts={}){
   if(c.lifesteal) tags+='<span class="tag lifesteal">생명력 흡수</span>';
   if(c.poison) tags+='<span class="tag poison">독성</span>';
   if(c.cantAttack) tags+='<span class="tag" style="background:#4a4a4a;color:#ddd">공격 불가</span>';   // v117 비문학 지문
-  if(c.confused) tags+=`<span class="tag" style="background:#5a2a7a;color:#f0d0ff">🌀 ${c.confusedPerm?'영구 ':''}혼란</span>`;
+  if(c.confused) tags+=`<span class="tag" style="background:#5a2a7a;color:#f0d0ff">${ICO('confuse')} ${c.confusedPerm?'영구 ':''}혼란</span>`;
   if(c.knightBy) tags+=`<span class="tag" style="background:#2a3a5a;color:#cfe0ff">${ICO('shield')} 흑기사</span>`;
   if(c.caffeineDoom) tags+=`<span class="tag" style="background:#7a3a10;color:#ffd9a0">${ICO('caffeine')} 카페인 쇼크 예정</span>`;
   if(c.freezeNext) tags+='<span class="tag frozen">겁먹음</span>';
@@ -1737,12 +1737,12 @@ function cardEl(c, opts={}){
   if(c.stealth) tags+='<span class="tag" style="background:#2c2c3c;color:#c8c8e8">은신</span>';
   if(c.frozen) tags+='<span class="tag frozen">빙결</span>';
   if(c.infect) tags+='<span class="tag" style="background:#5a1a3a;color:#ffb8d4">감염</span>';
-  if(c.resting) tags+='<span class="tag" style="background:#3a3a5a;color:#d8d8ff">💤 휴식</span>';                 // v118 과방 소파에서의 쪽잠
+  if(c.resting) tags+=`<span class="tag" style="background:#3a3a5a;color:#d8d8ff">${ICO('rest')} 휴식</span>`;                 // v118 과방 소파에서의 쪽잠
   if(c.airpods) tags+=`<span class="tag" style="background:#1f4a5a;color:#c8f4ff">${ICO('noisecancel')} 노캔</span>`;                // v118 에어팟 노이즈 캔슬링
   if(c.timidTemp||c.timidPerm) tags+='<span class="tag" style="background:#5a4a2a;color:#ffe8b0">소심함</span>';   // v118 공격력 1
   if(c.burnout) tags+=`<span class="tag" style="background:#4a3a3a;color:#ffc8b0">${ICO('burnout')} 번아웃</span>`;           // v119 3학년 보스 상태이상
   if(c.mutiny) tags+=`<span class="tag" style="background:#5a2a2a;color:#ffc0c0">${ICO('strife')} 내부분열</span>`;
-  if(c.stunned) tags+='<span class="tag" style="background:#3a3a3a;color:#f0f0a0">💫 기절</span>';
+  if(c.stunned) tags+=`<span class="tag" style="background:#3a3a3a;color:#f0f0a0">${ICO('stun')} 기절</span>`;
   if(c.caffeineOD) tags+=`<span class="tag" style="background:#6a3a10;color:#ffd9a0">${ICO('caffeine')} 카페인 과다</span>`;
   if(c.probation) tags+=`<span class="tag" style="background:#6a1a1a;color:#ffd0d0">${ICO('warning')} 경고장 ${c.probation}</span>`;
   if(c.pfTurn) tags+='<span class="tag" style="background:#2a4a2a;color:#d0ffd0">P/F</span>';   // v121
@@ -2463,7 +2463,7 @@ function modeGuidePages(){
     pvp:[
       {t:'⚔️ 유저 대전', s:gsteps([['🔎','상대<br>찾기'],['🔄',`멀리건<br>${sec(P.MULLIGAN_MS)}초`],['⏱',`한 턴<br>${sec(P.TURN_MS)}초`],['🏆',`승리<br>${P.WIN_GOLD}골드`]]),
        x:`<p>다른 사람과 실시간으로 대전합니다. 저장된 <b>내 덱</b>으로 싸우고, 이기면 매번 <b>${P.WIN_GOLD}골드</b>를 받습니다 (하루 횟수 제한 없음).</p><p>한 턴은 <b>${sec(P.TURN_MS)}초</b>. 시간이 지나면 턴이 자동으로 넘어가고, <b>연속 ${P.MAX_TIMEOUTS}번</b> 넘어가면 패배합니다. 연결이 끊기면 <b>${sec(P.RECONNECT_MS)}초</b> 안에 돌아와야 해요.</p>`},
-      {t:'🏆 일반전 · 랭크전', s:gsteps(R.TIERS.map((n,i)=>[['🥉','🥈','🥇','💠','💎','👑'][i]||'⭐', n])),
+      {t:'🏆 일반전 · 랭크전', s:gsteps(R.TIERS.map((n,i)=>[rankIco(i), n])),
        x:`<p>두 탭은 대기열이 따로입니다. <b>랭크전</b>은 ${R.TIERS.slice(0,-1).join(' → ')}(각 ${R.DIVS}단계, 단계마다 별 ${R.STARS_PER_DIV}개) → ${R.TIERS[R.TIERS.length-1]}로 올라갑니다.</p><p>이기면 별 +1, <b>${R.STREAK_BONUS_FROM}연승째부터 +2</b>, 지면 −1 (브론즈는 안 줄어요). 실버 이상은 한 번 오르면 그 등급 아래로 안 떨어지고, 전설은 거둔 승수로 순위를 매깁니다. 랭크전 상대가 ${sec(R.FALLBACK_MS)}초 안에 안 잡히면 일반전으로 바꿀 수 있어요.</p>`},
       {t:'🎞 리플레이 · 친구', s:gboxes([['🎞','지난 판<br>다시 보기'],['👥','친구<br>대전'],['👁','관전']]),
        x:`<p><b>🎞 지난 판 다시 보기</b>로 최근 ${P.REPLAY_KEEP}판을 양쪽 손패까지 다시 볼 수 있어요. <b>👥 친구</b> 화면에서 접속 중인 친구에게 대전을 신청하거나 관전할 수 있습니다. 친구 대전은 연습용이라 골드·랭크·전적·일일 퀘스트에 반영되지 않아요.</p>`}],

@@ -320,7 +320,7 @@ const Sound = (() => {
   // ---------- 설정 화면 ----------
   function setOpt(p) { Object.assign(opt, p); saveOpt(); applyVol(); syncUI(); if (!opt.mute) unlock(); }
   function syncUI() {
-    const b = document.getElementById('sndBtn'); if (b) b.textContent = opt.mute ? '🔇' : '🔊';
+    const b = document.getElementById('sndBtn'); if (b) b.innerHTML = `<img src="/images/ui/${opt.mute ? 'btn_sound_off' : 'btn_sound_on'}.webp" alt="${opt.mute ? '소리 꺼짐' : '소리 켜짐'}" draggable="false">`;   // v166 그림 버튼
     const c = document.getElementById('optSound'); if (c) c.checked = !opt.mute;
     const p = document.getElementById('sndPanel'); if (!p) return;
     p.querySelector('[data-k="mute"]').checked = !opt.mute;

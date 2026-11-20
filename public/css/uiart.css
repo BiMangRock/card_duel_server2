@@ -43,3 +43,42 @@
   linear-gradient(180deg, rgba(10,8,18,.55), rgba(10,8,18,.78)), url(/images/ui/bg_sub.webp) center/cover no-repeat fixed, var(--felt);}
 #menu#menu:has(#screen-pvp.show, #screen-friends.show, #screen-settings.show, #screen-difficulty.show, #screen-playmode.show, #screen-bet.show, #screen-mode.show, #screen-adventure.show){background:
   linear-gradient(180deg, rgba(10,8,18,.5), rgba(10,8,18,.78)), url(/images/ui/bg_sub2.webp) center/cover no-repeat fixed, var(--felt);}
+
+/* ======================= v166 두 번째 묶음 ======================= */
+/* 카드 뒷면 (상대 손패 · 뽑는 카드) */
+.card-back{border:0; border-radius:3px; background:url(/images/card_back.webp) center/100% 100% no-repeat; box-shadow:0 2px 5px rgba(0,0,0,.6);}
+
+/* 마나 수정 */
+.mana-bar .crystal, .crystal{clip-path:none; border-radius:0; box-shadow:none; background:url(/images/ui/mana_full.webp) center/contain no-repeat; filter:drop-shadow(0 0 3px rgba(90,200,255,.75));}
+.mana-bar .crystal{width:16px; height:18px;}
+.mana-bar .crystal.empty, .crystal.empty{background:url(/images/ui/mana_empty.webp) center/contain no-repeat; filter:none; opacity:1;}
+.mana-bar.opp .crystal{width:11px; height:13px;}
+
+/* 턴 종료 버튼: 할 일 남음 = 금색 / 다 함 = 초록 / 상대 턴 = 어두운 청동 */
+.controls button.end-turn#endTurnBtn{border:0; border-radius:0; background:url(/images/ui/endturn_opp.webp) center/100% 100% no-repeat; color:#b9ad92; box-shadow:none; text-shadow:0 1px 2px #000; opacity:1;}
+.controls button.end-turn#endTurnBtn.has-moves{background-image:url(/images/ui/endturn_ready.webp); color:#ffe9a8; text-shadow:0 1px 3px #000, 0 0 8px rgba(255,190,70,.6);}
+.controls button.end-turn#endTurnBtn.no-moves{background-image:url(/images/ui/endturn_done.webp); color:#eaffe6; text-shadow:0 1px 3px #000, 0 0 8px rgba(110,230,120,.8);
+  box-shadow:none; filter:drop-shadow(0 0 6px rgba(80,210,100,.55)); animation:endTurnGlowImg 1.6s ease-in-out infinite;}
+@keyframes endTurnGlowImg{50%{filter:drop-shadow(0 0 14px rgba(80,210,100,.95));}}
+@media (prefers-reduced-motion:reduce){ .controls button.end-turn#endTurnBtn.no-moves{animation:none;} }
+.controls button.end-turn#endTurnBtn:disabled{cursor:not-allowed;}
+
+/* 카드 희귀도 보석 (그림이 이미 마름모라 돌리지 않는다) */
+:not(.zone) > .card.hs .rgem{transform:none; border:0; border-radius:0; box-shadow:none; width:13px; height:13px; margin-left:-6.5px; background:url(/images/ui/gem_common.webp) center/contain no-repeat;}
+:not(.zone) > .card.hs.rar-1 .rgem{background:url(/images/ui/gem_rare.webp) center/contain no-repeat;}
+:not(.zone) > .card.hs.rar-2 .rgem{background:url(/images/ui/gem_epic.webp) center/contain no-repeat;}
+:not(.zone) > .card.hs.rar-3 .rgem{background:url(/images/ui/gem_legend.webp) center/contain no-repeat; box-shadow:none; filter:drop-shadow(0 0 4px rgba(255,181,52,.9));}
+
+/* 상점 카드 팩 */
+.pk-pack{border:0; border-radius:0; background:url(/images/ui/card_pack.webp) center/100% 100% no-repeat; box-shadow:none; filter:drop-shadow(0 8px 18px rgba(0,0,0,.6)); justify-content:flex-end; padding-bottom:12%;}
+.pk-pack::before{inset:3% 4%; border-radius:6px;}
+.pk-pack i{display:none;}
+.pk-pack b, .pk-pack small{text-shadow:0 1px 3px #000, 0 0 6px #000;}
+
+/* 등급 그림 · 소리 버튼 */
+.rank-ico{width:1.55em; height:1.55em; vertical-align:-.45em;}
+#sndBtn:has(img){border:0; padding:0; background:none; width:2rem; height:2rem;}
+#sndBtn img{width:100%; height:100%; object-fit:contain; display:block;}
+.pk-pack-sm b, .pk-pack-sm small{display:none;}
+.pk-pack:not(.pk-pack-sm) b{position:absolute; left:0; right:0; bottom:22%; text-align:center;}
+.pk-pack:not(.pk-pack-sm) small{position:absolute; left:0; right:0; bottom:13%; text-align:center;}

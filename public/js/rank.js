@@ -45,4 +45,8 @@ const ladderStars = s => !s || s.tier >= RANK.LEGEND ? '' : '★'.repeat(s.stars
 // 브론즈 3단계 0별부터 센 별 개수 (진행도 막대용)
 const ladderIndex = s => s.tier >= RANK.LEGEND ? RANK.LEGEND * RANK.DIVS * RANK.STARS_PER_DIV : (s.tier * RANK.DIVS + (RANK.DIVS - s.div)) * RANK.STARS_PER_DIV + s.stars;
 
+// v166 등급 그림 (화면용 HTML). ladderLabel 은 글자(이모지) 그대로 — 서버·테스트가 쓴다
+const rankIco = t => `<img class="ico rank-ico" src="/images/rank/tier_${Math.max(0, Math.min(RANK.LEGEND, t | 0))}.webp" alt="${RANK.TIERS[t] || ''}" draggable="false">`;
+const ladderHtml = s => !s ? '' : rankIco(s.tier) + ' ' + ladderLabel(s).replace(/^\S+\s/, '');
+
 if (typeof module !== 'undefined') { module.exports = { RANK, ladderNew, ladderApply, ladderLabel, ladderStars, ladderIndex }; }

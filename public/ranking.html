@@ -32,6 +32,7 @@
   .foot { text-align:center; margin-top:1.4rem; font-size:.8rem; color:var(--parch-d); }
   .foot a { color:#7fd4ff; }
   @media (max-width:520px) { th.hide-s, td.hide-s { display:none; } th, td { padding:.45rem .4rem; font-size:.85rem; } }
+.rk-ico{width:1.5em;height:1.5em;vertical-align:-.4em;object-fit:contain}
 </style>
 </head>
 <body>
@@ -48,12 +49,12 @@
     <tbody id="rows"><tr><td colspan="4" class="empty">불러오는 중…</td></tr></tbody>
   </table>
   <div class="pager"><button id="prev" type="button">◀ 이전</button><span id="page"></span><button id="next" type="button">다음 ▶</button></div>
-  <p class="foot">랭크전을 아직 안 한 계정은 🥉 브론즈 3 · ★0 으로 표시돼요. 1분마다 자동으로 새로고침돼요.<br><a href="/">게임으로 가기</a></p>
+  <p class="foot">랭크전을 아직 안 한 계정은 브론즈 3 · ★0 으로 표시돼요. 1분마다 자동으로 새로고침돼요.<br><a href="/">게임으로 가기</a></p>
 </main>
 <script>
 (() => {
   const TIERS = ['브론즈', '실버', '골드', '플래티넘', '다이아', '전설'];
-  const ICONS = ['🥉', '🥈', '🥇', '💠', '💎', '👑'];
+  const ICONS = [0, 1, 2, 3, 4, 5].map(i => `<img class="rk-ico" src="/images/rank/tier_${i}.webp" alt="">`);   // v166 등급 그림
   const LEGEND = 5, STARS = 3, PER = 50;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
