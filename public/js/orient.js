@@ -48,7 +48,7 @@
     let g = document.getElementById('rotateHint');
     if (!g) {
       g = document.createElement('div'); g.id = 'rotateHint'; g.setAttribute('role', 'alertdialog'); g.setAttribute('aria-label', '가로 화면 안내');
-      g.innerHTML = '<div class="rh-icon">📱</div><p>가로로 돌려서 플레이해 주세요</p><button type="button" class="rh-btn" id="rotateFsBtn">전체화면 · 가로로 보기</button><small></small>';
+      g.innerHTML = '<div class="rh-icon img"><img src="/images/ui/btn_rotate.webp" alt="" draggable="false"></div><p>가로로 돌려서 플레이해 주세요</p><button type="button" class="rh-btn" id="rotateFsBtn">전체화면 · 가로로 보기</button><small></small>';
       document.body.appendChild(g);
     }
     if (!g.dataset.wired) {

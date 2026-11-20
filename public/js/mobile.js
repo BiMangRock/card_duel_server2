@@ -27,7 +27,7 @@
   function syncBtn() {
     const b = $('fsBtn'); if (!b) return;
     b.classList.toggle('can', canFs);
-    b.textContent = isFs() ? '⛶ 전체화면 끄기' : '⛶ 전체화면';
+    b.innerHTML = '<img class="ico ico-btn" src="/images/ui/btn_fullscreen.webp" alt="" draggable="false"> ' + (isFs() ? '전체화면 끄기' : '전체화면');
   }
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
     if (!isFs()) { userExited = true; try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (_) {} }

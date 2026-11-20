@@ -299,17 +299,20 @@ function elOf(t){
   if(t.kind==='hero') return heroEl(t.seat);
   return zoneEl(t.seat).querySelector(`.card[data-id="${t.id}"]`);
 }
-function floatOn(t, text, cls){
+// v165 그림 아이콘: 이모지 대신 images/status/<이름>.webp (작은 상태·재화 아이콘). 글자 크기에 맞춰 줄 안에 들어간다
+const ICO = (name, alt='') => `<img class="ico" src="/images/status/${name}.webp" alt="${alt}" draggable="false">`;
+const icoHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function floatOn(t, text, cls, icon){
   const el=elOf(t); if(!el) return;
   const r=el.getBoundingClientRect(), f=document.createElement('div');
-  f.className='float '+cls; f.textContent=text;
+  f.className='float '+cls; if(icon) f.innerHTML=ICO(icon)+' '+icoHtml(text); else f.textContent=text;
   f.style.left=(r.left+r.width/2)+'px'; f.style.top=(r.top+r.height/2)+'px';
   document.body.appendChild(f); setTimeout(()=>f.remove(), 950);
   return f;
 }
 function showEffect(ev){
   if(ev.type==='damage'){
-    if(ev.immune) floatOn(ev.target,'면역','shield'); else if(ev.absorbed) floatOn(ev.target, ev.shieldLeft ? '🛡 남은 '+ev.shieldLeft : '🛡', 'shield');
+    if(ev.immune) floatOn(ev.target,'면역','shield'); else if(ev.absorbed) floatOn(ev.target, ev.shieldLeft ? '남은 '+ev.shieldLeft : '', 'shield', 'shield');
     else { const f=floatOn(ev.target,'-'+ev.amount,'dmg'); if(window.Juice) Juice.sizeDmg(f, ev.amount); }   // v154 큰 피해일수록 숫자가 크게
   } else if(ev.type==='heal'){ floatOn(ev.target,'+'+ev.amount,'heal'); }
   else if(ev.type==='shrinkStat'){ floatOn(ev.target, `-${ev.atk}/-${ev.hp}`, 'buff'); }
@@ -323,12 +326,12 @@ function showEffect(ev){
   else if(ev.type==='haste'){ floatOn(ev.target,'급습!','buff'); const el=elOf(ev.target); if(el) el.classList.remove('sick'); }
   else if(ev.type==='freeze'){ floatOn(ev.target,'❄ 빙결','shield'); const el=elOf(ev.target); if(el) el.classList.add('frozen'); }
   else if(ev.type==='silence'){ floatOn(ev.target,'침묵','shield'); const el=elOf(ev.target); if(el) el.classList.remove('taunt','shielded','frozen','stealthed'); }
-  else if(ev.type==='shieldGain'){ floatOn(ev.target,'🛡 보호막','shield'); }
-  else if(ev.type==='recall'){ floatOn(ev.target,'↩ 회수','shield'); }
+  else if(ev.type==='shieldGain'){ floatOn(ev.target,'보호막','shield','shield'); }
+  else if(ev.type==='recall'){ floatOn(ev.target,'회수','shield','recall'); }
   else if(ev.type==='statSet'){ floatOn(ev.target, ev.hp!=null ? `${ev.atk}/${ev.hp}` : `공격력 ${ev.atk}`, 'buff'); }
-  else if(ev.type==='transform'){ floatOn(ev.target,'🐑 변이','shield'); }
-  else if(ev.type==='toDeck'){ floatOn(ev.target, ev.vanish ? '✕' : '↩ 덱', 'shield'); }   // v71
-  else if(ev.type==='bounce'){ floatOn(ev.target, ev.burned ? '🔥 소멸' : '↩ 손', 'shield'); }   // v72
+  else if(ev.type==='transform'){ floatOn(ev.target,'변이','shield','polymorph'); }
+  else if(ev.type==='toDeck'){ (ev.vanish ? floatOn(ev.target,'✕','shield') : floatOn(ev.target,'덱','shield','recall')); }   // v71
+  else if(ev.type==='bounce'){ (ev.burned ? floatOn(ev.target,'소멸','shield','destroy') : floatOn(ev.target,'손','shield','recall')); }   // v72
   else if(ev.type==='deckCopy'){ floatOn(ev.target||heroT(ev.seat!=null?ev.seat:ev.src.seat),'×'+ev.count+' 복사','buff'); }
 }
 const attackerElOf = ev => ev.attackerId==='hero' ? heroEl(ev.seat) : elOf(minionT(ev.seat, ev.attackerId));   // v80: 영웅도 공격자
@@ -1167,7 +1170,7 @@ function closeCraft(){ $('craftModal').classList.remove('show'); }
 function renderCraft(){
   const modal=$('craftModal'); if(!modal || !modal.classList.contains('show')) return;
   const p=ServerStore.progress, dust=p ? p.dust : 0, need=deckNeedsLocal();
-  $('craftDust').textContent=`✨ 가루 ${fmt(dust)}`;
+  $('craftDust').innerHTML=`${ICO('dust','가루')} 가루 ${fmt(dust)}`;
   const extra=CARD_POOL.filter(craftableCard).reduce((t,c)=>t+Math.max(0, ServerStore.owned(c.name)-CONFIG.COPIES),0);
   const extraGain=CARD_POOL.filter(craftableCard).reduce((t,c)=>t+Math.max(0, ServerStore.owned(c.name)-CONFIG.COPIES)*PROGRESS.DISENCHANT[c.rarity],0);
   const xb=$('craftExtra'); xb.textContent=extra?`일괄 추출 ${extra}장 · +${fmt(extraGain)}`:'일괄 추출'; xb.disabled=!extra;
@@ -1193,10 +1196,10 @@ function renderCraftGrid(dust, need){
     const el=cardEl(c); item.appendChild(el);
     const cp=document.createElement('div'); cp.className='copies'; cp.textContent=`×${n}`; item.appendChild(cp);
     const btns=document.createElement('div'); btns.className='craft-btns';
-    const mk=document.createElement('button'); mk.type='button'; mk.className='mk'; mk.textContent=`🔨 ${cost}`; mk.title=`가루 ${cost}로 1장 만들기`;
+    const mk=document.createElement('button'); mk.type='button'; mk.className='mk'; mk.innerHTML=`${ICO('craft','제작')} ${cost}`; mk.title=`가루 ${cost}로 1장 만들기`;
     mk.disabled = n>=CONFIG.COPIES || dust<cost;
     mk.onclick=()=>armConfirm(mk, async()=>{ const r=await ServerStore.craft(c.name); $('craftNote').textContent=r.ok?`✔ ${c.name} 1장을 만들었어요. 가루 -${cost}`:''+r.error; renderCraft(); updateDeckMenuDesc(); }, c.rarity==='전설'||c.rarity==='특급');
-    const de=document.createElement('button'); de.type='button'; de.className='de'; de.textContent=`✨ +${gain}`; de.title=keep?`덱에 ${keep}장 쓰는 중 — 그보다 많은 장수만 분해할 수 있어요`:`1장 분해해서 가루 ${gain} 얻기`;
+    const de=document.createElement('button'); de.type='button'; de.className='de'; de.innerHTML=`${ICO('dust','가루')} +${gain}`; de.title=keep?`덱에 ${keep}장 쓰는 중 — 그보다 많은 장수만 분해할 수 있어요`:`1장 분해해서 가루 ${gain} 얻기`;
     de.disabled = n<=keep;
     de.onclick=async()=>{                                   // v134 2장 이하인 카드를 분해하면 경고 (남는 카드는 바로 분해)
       if(n<=CONFIG.COPIES && !await confirmBox('정말 분해할까요?', `「${c.name}」은(는) 지금 ${n}장뿐이라 남는 카드가 아닙니다.\n분해하면 ${n-1}장만 남아 덱에 ${n-1===0?'넣을 수 없게':`${n-1}장까지만 넣을 수 있게`} 돼요.\n가루 +${gain} · 다시 만들려면 가루 ${cost}`, '그래도 분해', true)) return;
@@ -1682,22 +1685,22 @@ function boardDecor(el, m){
   if(m.poison) add('☠','독성');
   if(m.lifesteal) add('🩸','생명력 흡수');
   if(m.windfury) add('≋','질풍');
-  if(m.revive) add('♻','환생');
+  if(m.revive) add('img:revive','환생');
   if(m.elusive) add('✧','모면');
   if(m.cantAttack) add('⛔','공격 불가');
   if(m.confused) add('🌀', (m.confusedPerm?'영구 ':'')+'혼란');
   if(m.stunned) add('💫','기절');
   if(m.resting) add('💤','휴식');
-  if(m.burnout) add('🔥','번아웃');
-  if(m.mutiny) add('⚔','내부분열');
-  if(m.probation) add('📜','경고장 '+m.probation);
+  if(m.burnout) add('img:burnout','번아웃');
+  if(m.mutiny) add('img:strife','내부분열');
+  if(m.probation) add('img:warning','경고장 '+m.probation);
   if(m.timidTemp||m.timidPerm) add('😳','소심함');
   if(m.freezeNext) add('😨','겁먹음');
-  if(m.knightBy) add('🛡','흑기사');
-  if(m.airpods) add('🎧','노이즈 캔슬링');
-  if(m.obese) add('🍗','비만');
+  if(m.knightBy) add('img:shield','흑기사');
+  if(m.airpods) add('img:noisecancel','노이즈 캔슬링');
+  if(m.obese) add('img:overfed','비만');
   if(ic.length){ const k=document.createElement('div'); k.className='kw';
-    k.innerHTML=ic.slice(0,5).map(([i,t])=>`<span title="${t}">${i}</span>`).join('')+(ic.length>5?`<span title="${ic.slice(5).map(x=>x[1]).join(', ')}">+${ic.length-5}</span>`:'');
+    k.innerHTML=ic.slice(0,5).map(([i,t])=>`<span title="${t}">${i.startsWith('img:')?ICO(i.slice(4),t):i}</span>`).join('')+(ic.length>5?`<span title="${ic.slice(5).map(x=>x[1]).join(', ')}">+${ic.length-5}</span>`:'');
     el.appendChild(k); }
   return el;
 }
@@ -1722,8 +1725,8 @@ function cardEl(c, opts={}){
   if(c.poison) tags+='<span class="tag poison">독성</span>';
   if(c.cantAttack) tags+='<span class="tag" style="background:#4a4a4a;color:#ddd">공격 불가</span>';   // v117 비문학 지문
   if(c.confused) tags+=`<span class="tag" style="background:#5a2a7a;color:#f0d0ff">🌀 ${c.confusedPerm?'영구 ':''}혼란</span>`;
-  if(c.knightBy) tags+='<span class="tag" style="background:#2a3a5a;color:#cfe0ff">🛡 흑기사</span>';
-  if(c.caffeineDoom) tags+='<span class="tag" style="background:#7a3a10;color:#ffd9a0">⚡ 카페인 쇼크 예정</span>';
+  if(c.knightBy) tags+=`<span class="tag" style="background:#2a3a5a;color:#cfe0ff">${ICO('shield')} 흑기사</span>`;
+  if(c.caffeineDoom) tags+=`<span class="tag" style="background:#7a3a10;color:#ffd9a0">${ICO('caffeine')} 카페인 쇼크 예정</span>`;
   if(c.freezeNext) tags+='<span class="tag frozen">겁먹음</span>';
   if(c.deathPoisonShot||c.deathLunch||c.deathKill||c.deathFace||c.deathCaffeine||c.deathKillAlly||c.deathHandMinion) tags+='<span class="tag revive">죽음의 메아리</span>';
   if(c.deathSummonCost) tags+='<span class="tag revive">죽음의 메아리</span>'; 
@@ -1735,15 +1738,15 @@ function cardEl(c, opts={}){
   if(c.frozen) tags+='<span class="tag frozen">빙결</span>';
   if(c.infect) tags+='<span class="tag" style="background:#5a1a3a;color:#ffb8d4">감염</span>';
   if(c.resting) tags+='<span class="tag" style="background:#3a3a5a;color:#d8d8ff">💤 휴식</span>';                 // v118 과방 소파에서의 쪽잠
-  if(c.airpods) tags+='<span class="tag" style="background:#1f4a5a;color:#c8f4ff">🎧 노캔</span>';                // v118 에어팟 노이즈 캔슬링
+  if(c.airpods) tags+=`<span class="tag" style="background:#1f4a5a;color:#c8f4ff">${ICO('noisecancel')} 노캔</span>`;                // v118 에어팟 노이즈 캔슬링
   if(c.timidTemp||c.timidPerm) tags+='<span class="tag" style="background:#5a4a2a;color:#ffe8b0">소심함</span>';   // v118 공격력 1
-  if(c.burnout) tags+='<span class="tag" style="background:#4a3a3a;color:#ffc8b0">🔥 번아웃</span>';           // v119 3학년 보스 상태이상
-  if(c.mutiny) tags+='<span class="tag" style="background:#5a2a2a;color:#ffc0c0">⚔ 내부분열</span>';
+  if(c.burnout) tags+=`<span class="tag" style="background:#4a3a3a;color:#ffc8b0">${ICO('burnout')} 번아웃</span>`;           // v119 3학년 보스 상태이상
+  if(c.mutiny) tags+=`<span class="tag" style="background:#5a2a2a;color:#ffc0c0">${ICO('strife')} 내부분열</span>`;
   if(c.stunned) tags+='<span class="tag" style="background:#3a3a3a;color:#f0f0a0">💫 기절</span>';
-  if(c.caffeineOD) tags+='<span class="tag" style="background:#6a3a10;color:#ffd9a0">⚡ 카페인 과다</span>';
-  if(c.probation) tags+=`<span class="tag" style="background:#6a1a1a;color:#ffd0d0">📜 경고장 ${c.probation}</span>`;
+  if(c.caffeineOD) tags+=`<span class="tag" style="background:#6a3a10;color:#ffd9a0">${ICO('caffeine')} 카페인 과다</span>`;
+  if(c.probation) tags+=`<span class="tag" style="background:#6a1a1a;color:#ffd0d0">${ICO('warning')} 경고장 ${c.probation}</span>`;
   if(c.pfTurn) tags+='<span class="tag" style="background:#2a4a2a;color:#d0ffd0">P/F</span>';   // v121
-  if(c.obese) tags+='<span class="tag" style="background:#5a4a1a;color:#fff0c0">🍗 비만</span>';
+  if(c.obese) tags+=`<span class="tag" style="background:#5a4a1a;color:#fff0c0">${ICO('overfed')} 비만</span>`;
   const fullEff=effectText(c), eff=frontText(c, fullEff), art=cardArt(c);                    // v120 앞면은 짧은 문구 (전체 문구는 상세 창)
   const effH=kwHtml(eff);                                                                          // v158 키워드 굵게
   { const sc=effSizeClass((eff||'').length + (tags ? 8 : 0)); if(sc) el.classList.add(sc); }       // v158 긴 문장은 글씨를 조금 줄여 칸에 맞춘다
@@ -2401,9 +2404,9 @@ function guideRule(){
    {t:'🏆 승리 조건', s:`<div class="gp-row">${gcol(ghero('🙂',C.HERO_HP),'내 영웅 체력 '+C.HERO_HP)}${gcol(ghero('😈',C.HERO_HP),'상대 영웅 체력 '+C.HERO_HP)}</div><div class="gp-sep"></div>
       <div class="gp-row">${gcol(ghero('😈',0,{dead:true}),'상대 체력 0')}<span class="gp-arrow">=</span>${gcol('<div style="font-size:2rem">🏆</div>','승리!')}</div>`,
     x:`<p>상대 영웅의 체력을 <b>0</b>으로 만들면 승리! 반대로 내 체력이 0이 되면 패배입니다. 영웅 체력은 <b>${C.HERO_HP}</b>에서 시작합니다.</p>`},
-   {t:'🖐 조작법', s:`<div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'손패 카드',c:3}),'잡아서')}<span class="gp-arrow">⤴</span>${gcol('<div class="slot" style="width:64px;height:84px"></div>','전장에 놓기 = 내기')}</div>
+   {t:'조작법', s:`<div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'손패 카드',c:3}),'잡아서')}<span class="gp-arrow"><img class="ico-ctl" src="/images/ui/ctl_drag.webp" alt="" draggable="false"></span>${gcol('<div class="slot" style="width:64px;height:84px"></div>','전장에 놓기 = 내기')}</div>
       <div class="gp-row">${gcol(gmc({cls:'me',art:ME,nm:'내 하수인',a:3,h:4}),'잡아서 끌면 화살표')}<span class="gp-arrow">➶</span>${gcol(gmc({cls:'en',art:EN,nm:'상대',a:2,h:3}),'적 위에서 놓기 = 공격')}</div><div class="gp-sep"></div>
-      <div class="gp-row"><div class="step"><i>🖱</i><span>PC<br>마우스 올리기</span></div><div class="step"><i>👆</i><span>폰<br>길게 누르기</span></div><span class="gp-arrow">=</span><div class="step"><i>🔍</i><span>카드<br>자세한 설명</span></div></div>`,
+      <div class="gp-row"><div class="step"><i><img class="ico-ctl" src="/images/ui/ctl_mouse.webp" alt="" draggable="false"></i><span>PC<br>마우스 올리기</span></div><div class="step"><i><img class="ico-ctl" src="/images/ui/ctl_tap.webp" alt="" draggable="false"></i><span>폰<br>길게 누르기</span></div><span class="gp-arrow">=</span><div class="step"><i>🔍</i><span>카드<br>자세한 설명</span></div></div>`,
     x:'<p><b>카드 내기</b>: 손패 카드를 잡고 전장으로 끌어다 놓으면 냅니다. 하수인은 놓는 위치가 곧 자리예요. 대상이 필요한 주문은 끌면 화살표가 나오고, 대상 위에서 손을 떼면 씁니다.</p><p><b>공격</b>: 내 하수인을 잡고 적 하수인이나 영웅 위에서 놓습니다. 빈 곳에서 놓으면 취소돼요. <b>누르고 → 대상 누르기</b>(탭 두 번)도 똑같이 됩니다.</p><p><b>설명 보기</b>: PC는 카드 위에 마우스를 올리고, 폰은 카드를 <b>길게 누르세요</b>. 손을 떼면 닫힙니다.</p>'},
    {t:'🃏 게임 준비', s:`<div class="gp-row">${gcol(gback(3),'덱 <b style="color:#f0c869">'+C.DECK_SIZE+'장</b>')}${gcol(`<div style="display:flex;gap:6px">${gmc({cls:'me',art:ME,nm:'같은 카드',c:4})}${gmc({cls:'me',art:ME,nm:'같은 카드',c:4})}</div>`,'같은 카드는 최대 '+C.COPIES+'장')}</div><div class="gp-sep"></div>
       <div class="gp-row">${gcol(gback(C.START_HAND),'선공 · 시작 손패 '+C.START_HAND+'장')}${gcol(`<div style="display:flex;align-items:center;gap:8px">${gback(C.START_HAND+C.SECOND_HAND)}<div class="coin">동전</div></div>`,'후공 · +'+C.SECOND_HAND+'장과 동전 1장')}</div>`,
@@ -2450,10 +2453,10 @@ function modeGuidePages(){
     ai:[
       {t:'🤖 AI 대전', s:gboxes([['🎲','초급<br>무작위로 행동'],['📏','중급<br>규칙대로 행동'],['🧠','중급2<br>한 수 앞을 계산']]),
        x:`<p>컴퓨터와 1대1로 싸웁니다. <b>📚 내 덱</b>에 저장한 덱을 그대로 씁니다.</p><p><b>초급</b>은 이기면 <b>${ECON.EASY_WIN}골드</b>. <b>중급·중급2</b>는 다음 화면에서 <b>일반 모드</b>와 <b>배팅 모드</b> 중 하나를 고릅니다.</p>`},
-      {t:'💰 일반 모드 · 배팅 모드', s:gboxes([['🆓','일반 모드<br>참가비 없음'],['🎲','배팅 모드<br>골드를 건다']]),
+      {t:'일반 모드 · 배팅 모드', s:gboxes([['🆓','일반 모드<br>참가비 없음'],['🎲','배팅 모드<br>골드를 건다']]),
        x:`<p><b>일반 모드</b>: 이기면 <b>오늘의 보상</b>(하루 시작 ${ECON.POOL_START}골드)을 받습니다. 이기면 다음 보상이 +${pct(ECON.POOL_UP)}%, 지면 −${pct(ECON.POOL_DOWN)}%가 되고, 매일 새벽 ${ECON.RESET_HOUR}시에 ${ECON.POOL_START}골드로 돌아갑니다.</p><p><b>배팅 모드</b>: 골드를 걸고 배당(${B[0]}~${B[B.length-1]}%)을 고릅니다. 지면 건 골드를 모두 잃고, <b>배당 200% 이상이면 상대 AI가 치트를 받습니다</b>.</p>`}],
     bet:[
-      {t:'🎲 배팅 모드', s:gsteps([['💰','금액<br>정하기'],['📈','배당<br>고르기'],['⚔️','대전'],['🏆','이기면<br>건 금액 × 배당']]),
+      {t:'🎲 배팅 모드', s:gsteps([[ICO('gold','골드'),'금액<br>정하기'],['📈','배당<br>고르기'],['⚔️','대전'],['🏆','이기면<br>건 금액 × 배당']]),
        x:`<p>건 골드는 <b>시작하는 순간 빠져나가고</b>, 도중에 나가면 돌려받지 못합니다. 이기면 건 골드에 더해 <b>건 골드 × 배당%</b>를 받아요. (예: 100골드 · 배당 200% → 이기면 300골드를 돌려받음) 무승부면 건 골드를 그대로 돌려받습니다.</p>`},
       {t:'😈 치트', s:gboxes(tiers),
        x:`<p>배당이 높을수록 상대 AI가 <b>치트</b>(특수 능력)를 더 받습니다. 치트는 게임을 시작할 때 후보 중에서 <b>무작위로 뽑히고</b>, 판 위쪽 상대 쪽에 칩으로 표시됩니다. 칩에 마우스를 올리면(폰은 탭) 효과가 보여요.</p>${ex?`<p>예: ${ex}. 배당이 높을수록 더 센 치트도 후보에 들어갑니다.</p>`:''}`}],
@@ -2527,7 +2530,7 @@ function showScreen(name){
 }
 function updateWallet(){
   const g=fmt(Economy.get().gold);
-  document.querySelectorAll('.walletView').forEach(el=>el.textContent=`💰 ${g}`);
+  document.querySelectorAll('.walletView').forEach(el=>el.innerHTML=`${ICO('gold','골드')} ${g}`);
 }
 function rewardDesc(key){
   if(key==='easy') return `승리 시 ${ECON.EASY_WIN}골드 · 패배 시 0골드`;
@@ -2540,7 +2543,7 @@ function buildDifficultyButtons(){
     const b=document.createElement('button');
     b.className='menu-btn';
     const rd=d.bot?rewardDesc(key):'';
-    b.innerHTML=`${d.label}${d.bot?'':'<span class="soon">준비 중</span>'}<span class="desc">${d.desc}</span>${rd?`<span class="desc">💰 ${rd}</span>`:''}`;
+    b.innerHTML=`${d.label}${d.bot?'':'<span class="soon">준비 중</span>'}<span class="desc">${d.desc}</span>${rd?`<span class="desc">${ICO('gold','골드')} ${rd}</span>`:''}`;
     b.disabled=!d.bot;
     b.onclick=()=> (key==='normal' || key==='normal2') ? openPlayMode(key) : startGame(key,{mode:'normal'});
     box.appendChild(b);
@@ -3145,7 +3148,7 @@ function openBossEdit(){
 }
 function bossAdd(){
   const list=BossBook.get(); let n=list.length+1; while(list.some(b=>b.id==='boss'+n)) n++;
-  list.push({id:'boss'+n, name:'새 보스 '+n, icon:'👹', desc:'', cheats:[], reward:0, tier:'mid', bot:'rule2', model:'', deck:defaultDeckList()});
+  list.push({id:'boss'+n, name:'새 보스 '+n, icon:'images/boss/default.webp', desc:'', cheats:[], reward:0, tier:'mid', bot:'rule2', model:'', deck:defaultDeckList()});
   bossListSave(list); openBossForm(list.length-1);
 }
 // v117: 챕터 틀 추가 (예: 영남대 9단계). 이미 같은 id 의 보스가 있으면 건너뛴다. 덱은 추천 덱으로 채워 둔다
@@ -3190,7 +3193,7 @@ function openBossForm(i){
   refreshBossForm(); showScreen('bossform');
 }
 function readBossForm(){
-  bossDraft.name=$('bfName').value.trim()||'이름 없음'; bossDraft.icon=$('bfIcon').value.trim()||'👹'; bossDraft.desc=$('bfDesc').value.trim();
+  bossDraft.name=$('bfName').value.trim()||'이름 없음'; bossDraft.icon=$('bfIcon').value.trim()||'images/boss/default.webp'; bossDraft.desc=$('bfDesc').value.trim();
   bossDraft.chapter=$('bfChapter').value; bossDraft.stage=Math.max(0,Math.floor(Number($('bfStage').value)||0));
   bossDraft.rewardCards=$('bfRewardCards').value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);
   bossDraft.rewardChoice=$('bfRewardChoice').value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);
@@ -3329,7 +3332,7 @@ const cardByName = (()=>{ let m=null; return n=>{ if(!m){ m=new Map(); CARD_POOL
 function shopCost(n){ return SHOP.PACK_PRICE*n; }
 function renderShop(){
   const info=shopInfo, gold=Economy.get().gold;
-  $('shopGold').textContent=`💰 ${fmt(gold)}`;
+  $('shopGold').innerHTML=`${ICO('gold','골드')} ${fmt(gold)}`;
   $('shopPackSize').textContent=`${SHOP.PACK_SIZE}장`;
   $('shopSub').textContent=`카드 ${SHOP.PACK_SIZE}장, ${SHOP.GUARANTEE_MIN} 이상 1장 보장`;   // v167
   // 등급별 확률 · 내 수집 현황 · 중복 환급
@@ -3358,7 +3361,7 @@ function renderShopHistory(){
   list.forEach(h=>{
     const row=document.createElement('div'); row.className='sh-row';
     const t=document.createElement('div'); t.className='sh-t'; const d=new Date(h.openedAt);
-    t.textContent=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`+(h.refund?` · 환급 +${h.refund}💰`:'')+(h.pityHit?' · 천장 확정':'');
+    t.innerHTML=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`+(h.refund?` · 환급 +${h.refund} ${ICO('gold','골드')}`:'')+(h.pityHit?' · 천장 확정':'');
     row.appendChild(t);
     const cs=document.createElement('div'); cs.className='sh-c';
     h.cards.forEach(c=>{ const s=document.createElement('span'); s.className='sh-chip r'+RARITY_ORDER.indexOf(c.rarity)+(c.dup||c.extra?' dup':''); s.textContent=(c.dup||c.extra?'♻ ':c.isNew?'✨ ':'')+c.name; cs.appendChild(s); });
@@ -3418,7 +3421,7 @@ function revealSlots(p){
     const tag=document.createElement('div'); tag.className='pk-tag';
     tag.innerHTML=`<span class="ed-rar r-${RARITY_ORDER.indexOf(c.rarity)}"></span><em></em>`;
     tag.firstChild.textContent=c.rarity;
-    tag.lastChild.textContent=c.dup?`중복 +${c.refund}💰`:c.extra?'남는 카드':(c.isNew?'NEW':'');   // v134 남는 카드 = 덱 한도(2장) 초과분 → 분해해서 가루로
+    tag.lastChild.innerHTML=c.dup?`중복 +${c.refund} ${ICO('gold','골드')}`:c.extra?'남는 카드':(c.isNew?'NEW':'');   // v134 남는 카드 = 덱 한도(2장) 초과분 → 분해해서 가루로
     tag.lastChild.className=c.dup||c.extra?'dup':'new';
     slot.appendChild(tag);
     const doFlip=()=>flipSlot(slot,c,p);
@@ -3963,7 +3966,7 @@ function showBossBriefing(boss){
         <div class="brief-reward"><span>${first?'첫 클리어 보상':'재도전 보상'}</span><b></b></div></div>
       <div class="brief-right"><div class="brief-power"></div><h4 class="brief-h"></h4><div class="brief-traits"></div><p class="brief-tip"></p>
         <div class="brief-btns"><button type="button" class="btn-back">돌아가기</button><button type="button" class="btn-go">도전하기</button></div></div></div>`;
-    const pt=m.querySelector('.brief-portrait'); if(img) pt.style.backgroundImage=`url("${ic.startsWith('/')?ic:'/'+ic}")`; else pt.textContent=ic||'👹';
+    const pt=m.querySelector('.brief-portrait'); if(img) pt.style.backgroundImage=`url("${ic.startsWith('/')?ic:'/'+ic}")`; else if(ic) pt.textContent=ic; else pt.style.backgroundImage='url("/images/boss/default.webp")';
     m.querySelector('.brief-stage').textContent=boss.chapter ? `${(ADV_CHAPTERS.find(c=>c.id===boss.chapter)||{}).name||''} · ${boss.stage||''}단계` : '자유 보스전';
     m.querySelector('.brief-name').textContent=boss.name;
     { const rk=rankInfo(bossRank(boss)); m.querySelector('.brief-rank').textContent=`${rk[1]||''} · 특성 ${traits.length}`; }

@@ -46,7 +46,7 @@ const ADV_ICON_IMG_RE = /^\/?images\/[A-Za-z0-9_\-./]{1,100}\.(png|jpe?g|webp|gi
 const advIsImgIcon = icon => typeof icon === 'string' && ADV_ICON_IMG_RE.test(icon) && !icon.includes('..');
 // v146 보스 기본 초상화: 서버에 이미 저장된 보스의 아이콘이 아직 이모지면 이 그림을 쓴다 (개발자가 그림 경로를 직접 정했으면 그쪽이 먼저)
 const BOSS_ICON_IMG = { boss1: 'images/boss/boss1_flame.jpg', ynu_2: 'images/boss/ynu_2_fail.jpg' };
-const advBossIcon = b => { const ic = advCleanIcon(b && b.icon); return advIsImgIcon(ic) ? ic : (BOSS_ICON_IMG[b && b.id] || ic); };
+const advBossIcon = b => { const ic = advCleanIcon(b && b.icon); return advIsImgIcon(ic) ? ic : (BOSS_ICON_IMG[b && b.id] || (ic === '👹' ? 'images/boss/default.webp' : ic)); };   // v165 기본 👹 → 기본 보스 그림
 const advCleanIcon = icon => { const t = String(icon || '').trim(); return advIsImgIcon(t) ? t : ([...t].slice(0, 2).join('').slice(0, 4) || '👹'); };
 const advChapterInfo = id => ADV_CHAPTERS.find(c => c.id === id) || { id, name: id, icon: '📘', desc: '' };
 // 한 챕터의 보스들을 단계 순서로

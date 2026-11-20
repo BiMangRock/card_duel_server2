@@ -1,0 +1,45 @@
+/* uiart.css — v165 이모지·CSS로 그리던 UI를 그림으로 바꾼다. style.css · polish.css · uiskin.css 다음에 읽는다.
+   그림: images/status/*.webp (상태·재화 아이콘) · images/ui/*.webp (버튼·패널·배경·카드 틀·방어도) · images/boss/default.webp */
+
+/* ---------- 줄 안에 들어가는 작은 아이콘 (ICO() 가 만든다) ---------- */
+.ico{display:inline-block; width:1.3em; height:1.3em; vertical-align:-.3em; object-fit:contain; pointer-events:none; filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
+.tag .ico{width:1.35em; height:1.35em; vertical-align:-.35em; margin-right:.05em;}
+.float .ico{width:1.45em; height:1.45em; vertical-align:-.38em;}
+/* 지갑: 동전 그림이 글자보다 조금 크게 */
+.walletView .ico, #shopGold .ico{width:1.45em; height:1.45em; vertical-align:-.4em;}
+
+/* 전장 하수인 위 키워드 뱃지: 그림 아이콘은 테두리 없이 그림만 (그림에 금테가 있다) */
+.zone .card .kw span:has(> .ico){padding:0; border:0; background:none; min-width:0; width:19px; height:19px;}
+.zone .card .kw span > .ico{width:100%; height:100%; vertical-align:top; filter:drop-shadow(0 1px 2px rgba(0,0,0,.8));}
+@media (orientation:landscape) and (max-height:540px){ .zone .card .kw span:has(> .ico){width:21px; height:21px;} }
+
+/* ---------- 작은 기능 버튼 ---------- */
+#logToggle:has(img){background:none; border:0; border-radius:0; width:2.3rem; height:2.3rem;}
+#logToggle img{width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));}
+#fsBtn .ico-btn{width:1.35em; height:1.35em; vertical-align:-.35em; filter:none;}
+#rotateHint .rh-icon.img{animation:none;}
+#rotateHint .rh-icon.img img{width:6rem; height:6rem; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,.6));}
+
+/* 가이드 조작법 그림 */
+.ico-ctl{display:block; width:2.6rem; height:2.6rem; object-fit:contain; margin:0 auto;}
+.gp-arrow .ico-ctl{width:3rem; height:3rem;}
+.step > i:has(.ico-ctl){font-style:normal;}
+
+/* ---------- 영웅 방어도 방패 ---------- */
+.armor-shield{background:url(/images/ui/armor.webp) center/contain no-repeat; clip-path:none; filter:drop-shadow(0 1px 3px rgba(0,0,0,.7));
+  min-width:2.1rem; height:2.4rem; padding-top:.42rem; align-items:flex-start; text-shadow:0 0 3px #000, 0 0 3px #000, 0 1px 2px #000;}
+
+/* ---------- 팝업 · 알림 패널 틀 (모서리 장식 9칸 늘이기) ---------- */
+.toast, .rank-panel, .offer-panel, .bet-box{
+  border:18px solid transparent; border-image:url(/images/ui/panel.webp) 64 fill / 18px / 0 stretch;
+  background:none; box-shadow:0 10px 26px rgba(0,0,0,.55);}
+.toast{border-width:12px; border-image-width:12px; padding:.15rem .55rem; border-radius:0;}
+.toast.gold{border-image-source:url(/images/ui/panel.webp); filter:drop-shadow(0 0 10px rgba(201,162,39,.55)); box-shadow:none;}
+.rank-panel, .offer-panel{border-radius:0;}
+.bet-box{border-radius:0; padding:.35rem .25rem;}
+
+/* ---------- 서브 화면 배경 (상점·덱·퀘스트 = 서재 / 대전·친구·설정 = 밤하늘 성탑) ---------- */
+#menu:has(.screen.show:not(#screen-main)){background:
+  linear-gradient(180deg, rgba(10,8,18,.55), rgba(10,8,18,.78)), url(/images/ui/bg_sub.webp) center/cover no-repeat fixed, var(--felt);}
+#menu#menu:has(#screen-pvp.show, #screen-friends.show, #screen-settings.show, #screen-difficulty.show, #screen-playmode.show, #screen-bet.show, #screen-mode.show, #screen-adventure.show){background:
+  linear-gradient(180deg, rgba(10,8,18,.5), rgba(10,8,18,.78)), url(/images/ui/bg_sub2.webp) center/cover no-repeat fixed, var(--felt);}

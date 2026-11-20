@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="/css/suneung.css">
 <link rel="stylesheet" href="/css/polish.css">
 <link rel="stylesheet" href="/css/uiskin.css">
+<link rel="stylesheet" href="/css/uiart.css">
 <link rel="stylesheet" href="/css/cardframe.css">
 <script src="/js/orient.js"></script>
 <script src="/js/fullscreen.js"></script>
@@ -142,7 +143,7 @@
 </div>
 
 <div id="menu">
-  <div id="menuTop"><button type="button" id="fsBtn">⛶ 전체화면</button><div id="userBar" hidden></div><span class="wallet walletView" id="menuWallet"></span></div>
+  <div id="menuTop"><button type="button" id="fsBtn"><img class="ico ico-btn" src="/images/ui/btn_fullscreen.webp" alt="" draggable="false"> 전체화면</button><div id="userBar" hidden></div><span class="wallet walletView" id="menuWallet"></span></div>
   <!-- v154 메인 화면: 왼쪽 메뉴 줄 + 가운데 모드 카드 3장 (예전 「게임 시작 → 모드 선택」 한 단계를 줄임). 버튼의 onclick · id 는 메뉴 둘러보기·배지 코드가 쓰므로 그대로 -->
   <div class="screen show" id="screen-main">
     <nav class="mm-rail" aria-label="메뉴">
@@ -422,8 +423,8 @@
     <button class="menu-btn back" onclick="showScreen('playmode')">뒤로</button>
   </div>
 </div>
-<div id="rotateHint" role="alertdialog" aria-label="가로 화면 안내"><div class="rh-icon">📱</div><p>가로로 돌려서 플레이해 주세요</p><button type="button" id="rotateFsBtn">전체화면 · 가로로 보기</button><small></small></div>
-<button type="button" id="logToggle" aria-label="전투 기록">📜</button>
+<div id="rotateHint" role="alertdialog" aria-label="가로 화면 안내"><div class="rh-icon img"><img src="/images/ui/btn_rotate.webp" alt="" draggable="false"></div><p>가로로 돌려서 플레이해 주세요</p><button type="button" id="rotateFsBtn">전체화면 · 가로로 보기</button><small></small></div>
+<button type="button" id="logToggle" aria-label="전투 기록"><img src="/images/ui/btn_log.webp" alt="" draggable="false"></button>
 
 
 <div class="offer-modal" id="offerModal">
