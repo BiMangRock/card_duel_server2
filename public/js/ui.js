@@ -1759,6 +1759,7 @@ function cardEl(c, opts={}){
   }
   { // v154 하스스톤식 카드 틀(.hs): 등급 보석(이름 띠 아래 가운데, 색은 상점·덱 편집의 등급 표시와 같다) · 전설이면 용 장식
     el.classList.add('hs');
+    if(!c.fatigue){ const f=document.createElement('i'); f.className='cframe'; f.setAttribute('aria-hidden','true'); const ar=el.querySelector('.card-art'); el.insertBefore(f, ar ? ar.nextSibling : el.firstChild); }   // v165 그림 카드 틀 (그림 창 위, 글자 아래)
     { const L=[...(c.name||'')].length; if(L>11) el.classList.add('nm-xl'); else if(L>7) el.classList.add('nm-l'); }   // 긴 이름은 띠 안에 들어가게 글씨를 줄인다
     const base=(typeof cardByName==='function' && cardByName(c.name)) || c, ri=RARITY_ORDER.indexOf(base.rarity||c.rarity);
     if(ri>=0 && !c.fatigue){ el.classList.add('rar-'+ri); const g=document.createElement('i'); g.className='rgem'; g.title=(base.rarity||c.rarity)+' 등급'; el.appendChild(g); }

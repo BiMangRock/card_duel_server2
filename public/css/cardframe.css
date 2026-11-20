@@ -1,0 +1,28 @@
+/* cardframe.css — v165 그림 카드 틀. uiart.css 다음에 읽는다. */
+/* ---------- 카드 틀 (손패 · 미리보기 · 덱 · 멀리건 등 / 전장 하수인은 예전 타원 그대로) ----------
+   틀 그림은 cardEl 이 넣는 <i class="cframe"> 에 깔고, 카드 상자보다 조금 크게 둔다. 그림 창은 틀 아래(z 1, 앞 순서), 글자는 틀 위.
+   그림 위 자리(그림 창 · 이름 띠 · 등급 보석 자리 · 설명 칸 · 소켓)에 맞춰 글자를 옮긴다. 지친 카드(fatigue)는 예전 모습
+   카드 상자 92×146px 기준 */
+:not(.zone) > .card.hs:not(.fatigue){border-color:transparent; background:none; box-shadow:none;}
+.card .cframe{display:none;}
+:not(.zone) > .card.hs .cframe{display:block; position:absolute; z-index:1; pointer-events:none; left:-6px; right:-6px; top:-2px; bottom:-2px;
+  background:url(/images/ui/frame_minion.webp) center/100% 100% no-repeat;}
+:not(.zone) > .card.hs.spell .cframe{left:-4px; right:-4px; top:-4px; bottom:-5px; background-image:url(/images/ui/frame_spell.webp);}
+:not(.zone) > .card.hs:not(.fatigue) .card-art, :not(.zone) > .card.hs:not(.fatigue):not(:has(.card-art))::before{z-index:1; border:0; box-shadow:none;
+  left:18px; right:auto; width:58px; margin-left:0; top:3px; height:72px; border-radius:50%;}
+:not(.zone) > .card.hs.spell:not(.fatigue) .card-art{left:19px; width:54px; top:5px; height:68px; margin-left:0; border-radius:27px 27px 2px 2px / 30px 30px 2px 2px;}
+:not(.zone) > .card.hs:not(.fatigue) .cname{top:71px; height:15px; left:9px; right:9px; padding:0 4px; background:none; clip-path:none; filter:none;
+  color:#2a1f0e; text-shadow:0 1px 0 rgba(255,245,220,.6);}
+:not(.zone) > .card.hs.spell:not(.fatigue) .cname{top:71.5px; height:13px; left:10px; right:10px; color:#241a3d;}
+:not(.zone) > .card.hs:not(.fatigue) .rgem{top:82px;}
+:not(.zone) > .card.hs.spell:not(.fatigue) .rgem{top:86.5px;}
+:not(.zone) > .card.hs:not(.fatigue) .effect{top:91px; bottom:13px; left:11px; right:11px; padding:3px 2px 1px; background:none; box-shadow:none; border-radius:0;}
+:not(.zone) > .card.hs.spell:not(.fatigue) .effect{top:95px; bottom:14px; left:9px; right:9px;}
+/* 마나 보석은 틀의 육각 소켓 위로, 공격력·생명력은 아래 소켓 위로 */
+:not(.zone) > .card.hs:not(.fatigue) .cost{top:1px; left:-4px;}
+:not(.zone) > .card.hs.spell:not(.fatigue) .cost{top:-3px; left:-4px;}
+:not(.zone) > .card.hs:not(.fatigue) .stats{left:-5px; right:-7px; bottom:-4px;}
+:not(.zone) > .card.hs:not(.fatigue) .stats .atk{margin-bottom:3px;}
+#cardPreview .card.hs:not(.fatigue) .card-art{height:72px;}
+#cardPreview .card.hs.spell:not(.fatigue) .card-art{height:68px;}
+:not(.zone) > .card.hs:not(.fatigue) .stats.spelltype{left:20px; right:20px; bottom:-7px;}
